@@ -6,9 +6,9 @@
 set -e
 
 REMOTE_NAME="github"
-REMOTE_URL="https://github.com/thedivine1/salesexpense-pro.git"
+REMOTE_URL="https://github.com/thedivine1/Fieldspend.git"
 BRANCH="main"
-COMMIT_MSG="feat: admin access, beta end date July 2026, post-beta ad monetization"
+COMMIT_MSG="fix: update onboarding text to 5 receipts free + open beta till 31st July 26, change support email to touchport.llp@gmail.com, remove caffeine.ai attribution from settings"
 
 echo "➤  Checking git remote..."
 if git remote get-url "$REMOTE_NAME" &>/dev/null; then
@@ -32,4 +32,4 @@ fi
 echo "➤  Pushing to GitHub ($REMOTE_NAME/$BRANCH)..."
 git push "$REMOTE_NAME" "$BRANCH" --force
 
-echo "✅  Done! Code pushed to https://github.com/thedivine1/salesexpense-pro"
+echo "✅  Done! Code pushed to https://github.com/thedivine1/Fieldspend"

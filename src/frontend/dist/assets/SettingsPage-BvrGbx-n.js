@@ -1,11 +1,11 @@
-import { c as createLucideIcon, r as reactExports, j as jsxRuntimeExports, a as useAppStore, t as tLang, L as LANGUAGES, d as ue, k as Moon, S as Sun } from "./index-CF0nR3YV.js";
-import { u as useComposedRefs, b as useControllableState, P as Primitive, c as composeEventHandlers, n as usePrevious, m as useSize, e as createContextScope, h as cn, j as Badge, B as Button } from "./index-B5pZLSOB.js";
-import { L as Label, I as Input } from "./label-DeID-t2a.js";
-import { S as ShieldCheck, M as Mail, a as Separator } from "./separator-BNehHIA1.js";
-import { i as isAdminUser, C as CircleCheck, a as isBetaPeriodActive, g as getBetaDaysLeft, c as createDefaultProfile, S as Sparkles } from "./premium-Hll_Pic7.js";
-import { m as motion } from "./proxy-KEY2c1R9.js";
-import { S as Star } from "./star-Bo2unxna.js";
-import { A as AnimatePresence } from "./index-B26f0ZnG.js";
+import { c as createLucideIcon, r as reactExports, j as jsxRuntimeExports, a as useAppStore, t as tLang, L as LANGUAGES, d as ue, k as Moon, S as Sun } from "./index-DZsRQdG0.js";
+import { u as useComposedRefs, b as useControllableState, P as Primitive, c as composeEventHandlers, n as usePrevious, m as useSize, e as createContextScope, h as cn, j as Badge, B as Button } from "./index-B-QWpeOq.js";
+import { L as Label, I as Input } from "./label-BzuSlc1o.js";
+import { S as ShieldCheck, M as Mail, a as Separator } from "./separator-Ctqr1o2d.js";
+import { i as isAdminUser, C as CircleCheck, a as isBetaPeriodActive, g as getBetaDaysLeft, c as createDefaultProfile, S as Sparkles } from "./premium-BY9SNphz.js";
+import { m as motion } from "./proxy-DLCgAu61.js";
+import { S as Star } from "./star-hyK8ztuA.js";
+import { A as AnimatePresence } from "./index-BexNpxAd.js";
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -889,7 +889,7 @@ function SettingsPage() {
                       /* @__PURE__ */ jsxRuntimeExports.jsxs(
                         "a",
                         {
-                          href: "mailto:support@fieldspend.com",
+                          href: "mailto:touchport.llp@gmail.com",
                           className: "flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/40 transition-smooth group",
                           "data-ocid": "settings.support_email_link",
                           children: [
@@ -900,7 +900,7 @@ function SettingsPage() {
                                 className: "text-muted-foreground group-hover:text-primary transition-colors shrink-0"
                               }
                             ),
-                            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm text-foreground truncate", children: "support@fieldspend.com" })
+                            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm text-foreground truncate", children: "touchport.llp@gmail.com" })
                           ]
                         }
                       ),
@@ -928,23 +928,7 @@ function SettingsPage() {
                 }
               )
             }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-center py-3", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground", children: [
-            "© ",
-            (/* @__PURE__ */ new Date()).getFullYear(),
-            " Fieldspend. Built with love using",
-            " ",
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "a",
-              {
-                href: `https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`,
-                className: "text-primary underline",
-                target: "_blank",
-                rel: "noopener noreferrer",
-                children: "caffeine.ai"
-              }
-            )
-          ] }) })
+          )
         ]
       }
     )

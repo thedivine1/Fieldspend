@@ -677,7 +677,7 @@ export default function SettingsPage() {
               <Separator />
               <div className="space-y-1">
                 <a
-                  href="mailto:support@fieldspend.com"
+                  href="mailto:touchport.llp@gmail.com"
                   className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/40 transition-smooth group"
                   data-ocid="settings.support_email_link"
                 >
@@ -686,7 +686,7 @@ export default function SettingsPage() {
                     className="text-muted-foreground group-hover:text-primary transition-colors shrink-0"
                   />
                   <span className="text-sm text-foreground truncate">
-                    support@fieldspend.com
+                    touchport.llp@gmail.com
                   </span>
                 </a>
                 <button
@@ -707,21 +707,6 @@ export default function SettingsPage() {
             </div>
           </Section>
         </motion.div>
-
-        {/* ── Footer ── */}
-        <div className="text-center py-3">
-          <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} Fieldspend. Built with love using{" "}
-            <a
-              href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
-              className="text-primary underline"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              caffeine.ai
-            </a>
-          </p>
-        </div>
       </div>
     </>
   );

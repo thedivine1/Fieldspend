@@ -1,12 +1,12 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/jspdf.es.min-CtNTzrvf.js","assets/index-CF0nR3YV.js","assets/index-CZ0b9xTh.css"])))=>i.map(i=>d[i]);
-import { c as createLucideIcon, _ as __vitePreload, e as t, R as React, a as useAppStore, r as reactExports, M as MONTH_KEYS, t as tLang, j as jsxRuntimeExports, b as Link, F as FileText, d as ue } from "./index-CF0nR3YV.js";
-import { A as AdModal, C as CircleAlert } from "./AdModal-DNONOCGv.js";
-import { B as Button, j as Badge } from "./index-B5pZLSOB.js";
-import { S as Select, b as SelectTrigger, c as SelectValue, d as SelectContent, e as SelectItem } from "./select-D9mEVm7r.js";
-import { S as ShieldCheck, a as Separator, M as Mail } from "./separator-BNehHIA1.js";
-import { h as hasPremiumAccess, i as isAdminUser, S as Sparkles, C as CircleCheck, a as isBetaPeriodActive } from "./premium-Hll_Pic7.js";
-import { m as motion } from "./proxy-KEY2c1R9.js";
-import "./index-B26f0ZnG.js";
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/jspdf.es.min-bPjnqAwK.js","assets/index-DZsRQdG0.js","assets/index-CZ0b9xTh.css"])))=>i.map(i=>d[i]);
+import { c as createLucideIcon, _ as __vitePreload, e as t, R as React, a as useAppStore, r as reactExports, M as MONTH_KEYS, t as tLang, j as jsxRuntimeExports, b as Link, F as FileText, d as ue } from "./index-DZsRQdG0.js";
+import { A as AdModal, C as CircleAlert } from "./AdModal-DiryTcgt.js";
+import { B as Button, j as Badge } from "./index-B-QWpeOq.js";
+import { S as Select, b as SelectTrigger, c as SelectValue, d as SelectContent, e as SelectItem } from "./select-DD2C3PDr.js";
+import { S as ShieldCheck, a as Separator, M as Mail } from "./separator-Ctqr1o2d.js";
+import { h as hasPremiumAccess, i as isAdminUser, S as Sparkles, C as CircleCheck, a as isBetaPeriodActive } from "./premium-BY9SNphz.js";
+import { m as motion } from "./proxy-DLCgAu61.js";
+import "./index-BexNpxAd.js";
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -94,7 +94,7 @@ function buildCategoryBreakdown(receipts) {
 }
 async function generateExpenseReport(profile, receipts, month, year, isFreeUser) {
   const { jsPDF } = await __vitePreload(async () => {
-    const { jsPDF: jsPDF2 } = await import("./jspdf.es.min-CtNTzrvf.js").then((n) => n.j);
+    const { jsPDF: jsPDF2 } = await import("./jspdf.es.min-bPjnqAwK.js").then((n) => n.j);
     return { jsPDF: jsPDF2 };
   }, true ? __vite__mapDeps([0,1,2]) : void 0);
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });

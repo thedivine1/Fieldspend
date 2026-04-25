@@ -1,6 +1,6 @@
-import { r as reactExports, u as useNavigate, a as useAppStore, s as setLanguage, j as jsxRuntimeExports, t as tLang, L as LANGUAGES } from "./index-CF0nR3YV.js";
-import { A as AnimatePresence } from "./index-B26f0ZnG.js";
-import { m as motion } from "./proxy-KEY2c1R9.js";
+import { r as reactExports, u as useNavigate, a as useAppStore, s as setLanguage, j as jsxRuntimeExports, t as tLang, L as LANGUAGES } from "./index-DZsRQdG0.js";
+import { A as AnimatePresence } from "./index-BexNpxAd.js";
+import { m as motion } from "./proxy-DLCgAu61.js";
 function SnapIllustration() {
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(
     "svg",
@@ -900,8 +900,8 @@ function OnboardingPage() {
         }
       ),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground text-center leading-relaxed", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-primary font-semibold", children: "Free:" }),
-        " 10 receipts/day • 60-day full access"
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-primary font-semibold", children: "5 receipts free" }),
+        " + open beta till 31st July 26"
       ] })
     ] })
   ] });

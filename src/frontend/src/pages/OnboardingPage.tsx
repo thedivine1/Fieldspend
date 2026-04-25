@@ -781,8 +781,8 @@ export default function OnboardingPage() {
 
         {/* Free tier info */}
         <p className="text-xs text-muted-foreground text-center leading-relaxed">
-          <span className="text-primary font-semibold">Free:</span> 10
-          receipts/day • 60-day full access
+          <span className="text-primary font-semibold">5 receipts free</span> +
+          open beta till 31st July 26
         </p>
       </div>
     </div>
