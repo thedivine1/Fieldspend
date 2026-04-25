@@ -1,4 +1,5 @@
 import { Layout } from "@/components/Layout";
+import { SplashScreen } from "@/components/SplashScreen";
 import { useAppStore } from "@/store/useAppStore";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -9,7 +10,7 @@ import {
   createRouter,
   redirect,
 } from "@tanstack/react-router";
-import { Suspense, lazy, useEffect } from "react";
+import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { Toaster } from "sonner";
 
 // Lazy pages
@@ -136,8 +137,12 @@ declare module "@tanstack/react-router" {
 // ─── App Root ─────────────────────────────────────────────────────────────────
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(true);
+  const handleSplashDismiss = useCallback(() => setShowSplash(false), []);
+
   return (
     <QueryClientProvider client={queryClient}>
+      {showSplash && <SplashScreen onDismiss={handleSplashDismiss} />}
       <RouterProvider router={router} />
       <Toaster position="top-center" richColors />
     </QueryClientProvider>

@@ -1,25 +1,36 @@
 import type { UserProfile } from "@/types";
 import {
-  BETA_DAYS,
+  ADMIN_EMAIL,
+  BETA_END_DATE,
   FREE_DAILY_LIMIT,
   PREMIUM_ANNUAL_RS,
   PREMIUM_MONTHLY_RS,
 } from "@/types";
 
-// ─── Beta Logic ───────────────────────────────────────────────────────────────
+// ─── Admin Check ──────────────────────────────────────────────────────────────
 
-export function isBetaPeriodActive(profile: UserProfile): boolean {
-  return Date.now() < profile.betaExpiryDate;
+export function isAdminUser(profile: UserProfile): boolean {
+  return (
+    (profile.email ?? "").toLowerCase().trim() === ADMIN_EMAIL.toLowerCase()
+  );
 }
 
-export function getBetaDaysLeft(profile: UserProfile): number {
-  const msLeft = profile.betaExpiryDate - Date.now();
+// ─── Beta Logic ───────────────────────────────────────────────────────────────
+
+/** Beta ends on the global fixed date July 31 2026 (IST), not per-user install date */
+export function isBetaPeriodActive(_profile?: UserProfile): boolean {
+  return Date.now() < BETA_END_DATE;
+}
+
+export function getBetaDaysLeft(_profile?: UserProfile): number {
+  const msLeft = BETA_END_DATE - Date.now();
   return Math.max(0, Math.ceil(msLeft / (1000 * 60 * 60 * 24)));
 }
 
 // ─── Access Control ───────────────────────────────────────────────────────────
 
 export function hasPremiumAccess(profile: UserProfile): boolean {
+  if (isAdminUser(profile)) return true;
   return profile.isPremium || isBetaPeriodActive(profile);
 }
 
@@ -36,9 +47,8 @@ export function canUploadReceipt(
   profile: UserProfile,
   dailyCount: number,
 ): UploadPermission {
-  if (hasPremiumAccess(profile)) {
-    return { allowed: true };
-  }
+  if (isAdminUser(profile)) return { allowed: true };
+  if (hasPremiumAccess(profile)) return { allowed: true };
 
   if (isFreeTierLimitReached(dailyCount)) {
     return {
@@ -65,14 +75,16 @@ export function createDefaultProfile(
   userId: string,
   name: string,
   companyName?: string,
+  email?: string,
 ): UserProfile {
   return {
     userId,
     name,
+    email,
     companyName,
     preferredLanguage: "en",
     isPremium: false,
-    betaExpiryDate: Date.now() + BETA_DAYS * 24 * 60 * 60 * 1000,
+    betaExpiryDate: BETA_END_DATE,
     dailyUploadCount: 0,
     lastUploadDate: new Date().toISOString().split("T")[0],
   };

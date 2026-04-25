@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { t } from "@/lib/i18n";
+import { MONTH_KEYS, tLang } from "@/lib/i18n";
 import { useAppStore } from "@/store/useAppStore";
 import type { Category, DayGroup, Receipt } from "@/types";
 import { Link } from "@tanstack/react-router";
@@ -66,20 +66,7 @@ const CATEGORY_ICONS: Record<Category, string> = {
   other: "📄",
 };
 
-const MONTH_NAMES = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
+// Month names are now derived reactively from translations — see useMonthNames() below
 
 const CATEGORIES: Category[] = [
   "cab",
@@ -118,13 +105,16 @@ function formatDayLabel(dateStr: string): string {
   return full;
 }
 
-function buildDaySummary(receipts: Receipt[]): string {
+function buildDaySummary(
+  receipts: Receipt[],
+  lang: import("@/types").Language,
+): string {
   const catCounts: Partial<Record<Category, number>> = {};
   for (const r of receipts) {
     catCounts[r.category] = (catCounts[r.category] ?? 0) + 1;
   }
   const parts = Object.entries(catCounts).map(
-    ([cat, cnt]) => `${cnt} ${t(`cat.${cat}`)}`,
+    ([cat, cnt]) => `${cnt} ${tLang(`cat.${cat}`, lang)}`,
   );
   const total = receipts.reduce((s, r) => s + (r.amount ?? 0), 0);
   return `${parts.join(", ")} — ${formatCurrency(total)} total`;
@@ -166,8 +156,15 @@ function groupByDay(
 // ─── Month Selector ───────────────────────────────────────────────────────────
 
 function MonthSelector() {
-  const { selectedMonth, selectedYear, setSelectedMonth, setSelectedYear } =
-    useAppStore();
+  const {
+    selectedMonth,
+    selectedYear,
+    setSelectedMonth,
+    setSelectedYear,
+    currentLanguage,
+  } = useAppStore();
+
+  const monthNames = MONTH_KEYS.map((key) => tLang(key, currentLanguage));
 
   function prev() {
     if (selectedMonth === 1) {
@@ -210,7 +207,7 @@ function MonthSelector() {
 
       <div className="text-center">
         <p className="font-display font-semibold text-foreground text-base">
-          {MONTH_NAMES[selectedMonth - 1]} {selectedYear}
+          {monthNames[selectedMonth - 1]} {selectedYear}
         </p>
       </div>
 
@@ -237,6 +234,8 @@ interface EditModalProps {
 }
 
 function EditModal({ receipt, onClose, onSave }: EditModalProps) {
+  const { currentLanguage } = useAppStore();
+  const lang = currentLanguage;
   const [date, setDate] = useState(receipt?.date ?? "");
   const [category, setCategory] = useState<Category>(
     receipt?.category ?? "other",
@@ -265,7 +264,7 @@ function EditModal({ receipt, onClose, onSave }: EditModalProps) {
     <Dialog open={!!receipt} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-sm mx-4" data-ocid="gallery.edit_dialog">
         <DialogHeader>
-          <DialogTitle>{t("action.edit")}</DialogTitle>
+          <DialogTitle>{tLang("action.edit", lang)}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
@@ -296,7 +295,7 @@ function EditModal({ receipt, onClose, onSave }: EditModalProps) {
               <SelectContent>
                 {CATEGORIES.map((cat) => (
                   <SelectItem key={cat} value={cat}>
-                    {CATEGORY_ICONS[cat]} {t(`cat.${cat}`)}
+                    {CATEGORY_ICONS[cat]} {tLang(`cat.${cat}`, lang)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -336,14 +335,16 @@ function EditModal({ receipt, onClose, onSave }: EditModalProps) {
             onClick={onClose}
             data-ocid="gallery.edit_cancel_button"
           >
-            {t("action.cancel")}
+            {tLang("action.cancel", lang)}
           </Button>
           <Button
             onClick={handleSave}
             disabled={saving || !date}
             data-ocid="gallery.edit_save_button"
           >
-            {saving ? "Saving…" : t("action.save")}
+            {saving
+              ? tLang("settings.saving", lang)
+              : tLang("action.save", lang)}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -360,6 +361,8 @@ interface DeleteDialogProps {
 }
 
 function DeleteDialog({ open, onClose, onConfirm }: DeleteDialogProps) {
+  const { currentLanguage } = useAppStore();
+  const lang = currentLanguage;
   const [deleting, setDeleting] = useState(false);
 
   async function handleConfirm() {
@@ -387,7 +390,7 @@ function DeleteDialog({ open, onClose, onConfirm }: DeleteDialogProps) {
             onClick={onClose}
             data-ocid="gallery.delete_cancel_button"
           >
-            {t("action.cancel")}
+            {tLang("action.cancel", lang)}
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={handleConfirm}
@@ -395,7 +398,7 @@ function DeleteDialog({ open, onClose, onConfirm }: DeleteDialogProps) {
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             data-ocid="gallery.delete_confirm_button"
           >
-            {deleting ? "Deleting…" : t("action.delete")}
+            {deleting ? "…" : tLang("action.delete", lang)}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -426,6 +429,7 @@ function ReceiptCard({
   onDragOver,
   onDrop,
 }: ReceiptCardProps) {
+  const { currentLanguage } = useAppStore();
   const catColor = CATEGORY_COLORS[receipt.category];
   const catIcon = CATEGORY_ICONS[receipt.category];
 
@@ -468,7 +472,7 @@ function ReceiptCard({
             variant="outline"
             className={`text-[10px] px-1.5 py-0 h-4 shrink-0 ${catColor}`}
           >
-            {catIcon} {t(`cat.${receipt.category}`)}
+            {catIcon} {tLang(`cat.${receipt.category}`, currentLanguage)}
           </Badge>
         </div>
         <p className="text-xs text-muted-foreground truncate">
@@ -528,6 +532,7 @@ function DayGroupCard({
   onDelete,
   onReorder,
 }: DayGroupCardProps) {
+  const { currentLanguage } = useAppStore();
   const dragIdRef = useRef<string | null>(null);
 
   function handleDragStart(e: React.DragEvent, id: string) {
@@ -570,7 +575,7 @@ function DayGroupCard({
             {group.label}
           </p>
           <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-            {buildDaySummary(group.receipts)}
+            {buildDaySummary(group.receipts, currentLanguage)}
           </p>
         </div>
         {group.total > 0 && (
@@ -603,6 +608,8 @@ function DayGroupCard({
 // ─── Empty State ──────────────────────────────────────────────────────────────
 
 function EmptyState({ hasMonthFilter }: { hasMonthFilter: boolean }) {
+  const { currentLanguage } = useAppStore();
+  const lang = currentLanguage;
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.96 }}
@@ -614,17 +621,19 @@ function EmptyState({ hasMonthFilter }: { hasMonthFilter: boolean }) {
         <InboxIcon size={40} className="text-primary" />
       </div>
       <h3 className="font-display font-bold text-xl text-foreground mb-2">
-        {hasMonthFilter ? "No receipts this month" : t("status.no_receipts")}
+        {hasMonthFilter
+          ? tLang("report.no_receipts", lang)
+          : tLang("status.no_receipts", lang)}
       </h3>
       <p className="text-muted-foreground text-sm mb-6 max-w-xs">
         {hasMonthFilter
-          ? "No receipts found for this month. Try a different month or upload new receipts."
-          : "Tap the button below to upload your first receipt and start tracking expenses."}
+          ? tLang("report.no_receipts", lang)
+          : tLang("onboard.step1.desc", lang)}
       </p>
       <Button asChild size="lg" data-ocid="gallery.upload_button">
         <Link to="/upload">
           <PlusCircleIcon size={18} className="mr-2" />
-          {t("action.upload")}
+          {tLang("action.upload", lang)}
         </Link>
       </Button>
     </motion.div>
@@ -642,6 +651,8 @@ function MonthTotalBar({
   month: number;
   year: number;
 }) {
+  const { currentLanguage } = useAppStore();
+  const monthNames = MONTH_KEYS.map((key) => tLang(key, currentLanguage));
   const grandTotal = groups.reduce((s, g) => s + g.total, 0);
   const receiptCount = groups.reduce((s, g) => s + g.receipts.length, 0);
 
@@ -651,11 +662,11 @@ function MonthTotalBar({
     <div className="sticky bottom-0 z-20 bg-card border-t border-border px-4 py-3 flex items-center justify-between shadow-lg">
       <div>
         <p className="text-xs text-muted-foreground font-medium">
-          {MONTH_NAMES[month - 1]} {year} — {receiptCount}{" "}
-          {t("report.receipts")}
+          {monthNames[month - 1]} {year} — {receiptCount}{" "}
+          {tLang("report.receipts", currentLanguage)}
         </p>
         <p className="text-sm font-semibold text-foreground mt-0.5">
-          {t("report.total")}
+          {tLang("report.total", currentLanguage)}
         </p>
       </div>
       <span className="text-amount text-primary text-xl">

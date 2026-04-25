@@ -1,4 +1,3 @@
-import { i as getDefaultExportFromCjs } from "./index-Qp0UCZEp.js";
 function _mergeNamespaces(n, m) {
   for (var i = 0; i < m.length; i++) {
     const e = m[i];
@@ -1097,11 +1096,9 @@ var src = {
   setLogging,
   ...Tesseract
 };
-const index = /* @__PURE__ */ getDefaultExportFromCjs(src);
-const index$1 = /* @__PURE__ */ _mergeNamespaces({
-  __proto__: null,
-  default: index
+const index = /* @__PURE__ */ _mergeNamespaces({
+  __proto__: null
 }, [src]);
 export {
-  index$1 as i
+  index as i
 };

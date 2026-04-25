@@ -93,7 +93,7 @@ export async function generateExpenseReport(
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
-  doc.text("SalesExpense Pro", 15, 18);
+  doc.text("Fieldspend", 15, 18);
 
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
@@ -258,7 +258,7 @@ export async function generateExpenseReport(
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
     doc.text(
-      `SalesExpense Pro — Generated ${new Date().toLocaleDateString("en-IN")}`,
+      `Fieldspend — Generated ${new Date().toLocaleDateString("en-IN")}`,
       15,
       pageH - 3.5,
     );

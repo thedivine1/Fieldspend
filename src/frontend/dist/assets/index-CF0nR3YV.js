@@ -1,4 +1,4 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/OnboardingPage-9P5UJTHq.js","assets/index-y6MVdqPg.js","assets/proxy-JR3IeFZM.js","assets/GalleryPage-ByCjbeLj.js","assets/index-B0G-Jbi4.js","assets/select-BX4urHRz.js","assets/label-Bxdps9rE.js","assets/textarea-34hb3oP2.js","assets/UploadPage-TkTJpDGE.js","assets/premium-C3zV1u21.js","assets/circle-alert-BtIQXjz1.js","assets/star-CwggeFXJ.js","assets/ReportsPage-CW3XnDE0.js","assets/separator-DRlOiMSe.js","assets/SettingsPage-CcPVhIVO.js"])))=>i.map(i=>d[i]);
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/OnboardingPage-DGN9KwYe.js","assets/index-B26f0ZnG.js","assets/proxy-KEY2c1R9.js","assets/GalleryPage-DYV3C-lF.js","assets/index-B5pZLSOB.js","assets/select-D9mEVm7r.js","assets/label-DeID-t2a.js","assets/textarea-CO2P10eg.js","assets/UploadPage-DsY3XP6N.js","assets/AdModal-DNONOCGv.js","assets/premium-Hll_Pic7.js","assets/star-Bo2unxna.js","assets/ReportsPage-5vfVc9UH.js","assets/separator-BNehHIA1.js","assets/SettingsPage-Dt65lGGq.js"])))=>i.map(i=>d[i]);
 var __defProp = Object.defineProperty;
 var __typeError = (msg) => {
   throw TypeError(msg);
@@ -18494,7 +18494,7 @@ const STORAGE_KEY = "sep_language";
 const translations = {
   en: {
     // App
-    "app.name": "SalesExpense Pro",
+    "app.name": "Fieldspend",
     "app.tagline": "Expense tracking made easy",
     // Navigation
     "nav.home": "Home",
@@ -18533,7 +18533,7 @@ const translations = {
     "status.deleted": "Receipt deleted",
     "status.no_receipts": "No receipts yet",
     // Onboarding
-    "onboard.step1.title": "Welcome to SalesExpense Pro",
+    "onboard.step1.title": "Welcome to Fieldspend",
     "onboard.step1.desc": "Capture receipts instantly with your phone camera. We handle the rest.",
     "onboard.step2.title": "Smart Categorization",
     "onboard.step2.desc": "OCR auto-detects dates and expense categories — Cab, Meal, Hotel and more.",
@@ -18548,8 +18548,40 @@ const translations = {
     "report.total": "Grand Total",
     "report.month": "Month",
     "report.receipts": "Receipts",
+    "report.no_receipts": "No receipts for",
+    "report.add_first": "Upload Receipts",
+    "report.category_breakdown": "Category Breakdown",
+    "report.images_attached": "image attached",
+    "report.images_attached_plural": "images attached",
+    "report.items": "item",
+    "report.items_plural": "items",
+    "report.categories": "categories",
+    "report.generating": "Generating PDF…",
+    "report.watermark_note": "Watermark will be added to free version",
+    "report.share": "Share Report",
+    "report.whatsapp_note": "PDF is already downloaded. Attach it manually in WhatsApp.",
+    "report.set_profile": "Set your name in",
+    "report.set_profile2": "Settings",
+    "report.set_profile3": "to generate a report.",
+    "report.current_plan": "Current Plan",
+    "report.choose_plan": "Choose a Plan",
+    "report.upgrade": "Upgrade",
+    // Months
+    "months.jan": "January",
+    "months.feb": "February",
+    "months.mar": "March",
+    "months.apr": "April",
+    "months.may": "May",
+    "months.jun": "June",
+    "months.jul": "July",
+    "months.aug": "August",
+    "months.sep": "September",
+    "months.oct": "October",
+    "months.nov": "November",
+    "months.dec": "December",
     // Profile
     "profile.name": "Your Name",
+    "profile.email": "Email Address",
     "profile.company": "Company (optional)",
     "profile.save": "Save Profile",
     // Premium
@@ -18557,11 +18589,61 @@ const translations = {
     "premium.monthly": "₹99/month",
     "premium.annual": "₹49/month (annual)",
     "premium.beta_days_left": "Beta days remaining",
-    "premium.watermark": "SAMPLE - FREE VERSION"
+    "premium.watermark": "SAMPLE - FREE VERSION",
+    // Settings
+    "settings.title": "Settings",
+    "settings.profile": "Profile",
+    "settings.language": "Language",
+    "settings.appearance": "Appearance",
+    "settings.about": "About",
+    "settings.dark_mode": "Dark Mode",
+    "settings.dark_active": "Dark theme active",
+    "settings.light_active": "Light theme active",
+    "settings.beta_title": "Beta until July 31, 2026 — enjoy full access!",
+    "settings.beta_desc": "Fieldspend is free with full features until July 31, 2026. After that, free users will see ads. Upgrade to Premium for a clean, ad-free experience.",
+    "settings.days_remaining": "days until beta ends (July 31, 2026)",
+    "settings.beta_ends_date": "Beta ends July 31, 2026",
+    "settings.beta_days_remaining": "days remaining in beta",
+    "settings.current_plan": "Current Plan",
+    "settings.choose_plan": "Choose a Plan",
+    "settings.monthly": "Monthly",
+    "settings.annual": "Annual",
+    "settings.per_month": "per month",
+    "settings.save_50": "Save 50%!",
+    "settings.most_popular": "Most Popular",
+    "settings.unlimited_receipts": "Unlimited receipts",
+    "settings.no_watermark": "No watermark",
+    "settings.no_ads": "No ads ever",
+    "settings.priority_support": "Priority support",
+    "settings.everything_monthly": "Everything in Monthly",
+    "settings.best_value": "Best value",
+    "settings.premium_active": "You have full premium access — enjoy!",
+    "settings.upgrade": "Upgrade",
+    "settings.share_app": "Share App",
+    "settings.company_optional": "Optional",
+    "settings.company_label": "Company Name",
+    "settings.saving": "Saving…",
+    "settings.name_required": "Name is required",
+    "settings.coming_soon": "Coming Soon!",
+    "settings.premium_coming": "Premium upgrades are coming soon! You'll be notified as soon as payments are available.",
+    "settings.beta_access": "In the meantime, enjoy full beta access — unlimited receipts, clean PDF exports (no watermark), priority support.",
+    "settings.notify_me": "Notify Me",
+    "settings.close": "Close",
+    "settings.notified": "We'll notify you when premium is available!",
+    "settings.lang_set": "Language set to",
+    "settings.app_link_copied": "App link copied to clipboard!",
+    // Ads
+    "ad.advertisement": "Advertisement",
+    "ad.ends_in": "Ad ends in",
+    "ad.seconds": "seconds",
+    "ad.continue": "Continue",
+    "ad.upgrade_now": "Upgrade to Premium",
+    "ad.no_ads_premium": "Go Premium — No Ads, No Limits!",
+    "ad.of": "of"
   },
   hi: {
     // App
-    "app.name": "सेल्सएक्सपेंस प्रो",
+    "app.name": "Fieldspend",
     "app.tagline": "खर्च ट्रैकिंग आसान",
     // Navigation
     "nav.home": "होम",
@@ -18600,7 +18682,7 @@ const translations = {
     "status.deleted": "रसीद हटाई गई",
     "status.no_receipts": "अभी कोई रसीद नहीं",
     // Onboarding
-    "onboard.step1.title": "सेल्सएक्सपेंस प्रो में आपका स्वागत है",
+    "onboard.step1.title": "Fieldspend में आपका स्वागत है",
     "onboard.step1.desc": "अपने फोन कैमरे से तुरंत रसीद कैप्चर करें। बाकी हम संभालते हैं।",
     "onboard.step2.title": "स्मार्ट कैटेगरी",
     "onboard.step2.desc": "OCR खुद तारीख और खर्च की श्रेणी पहचानता है — कैब, भोजन, होटल आदि।",
@@ -18615,8 +18697,40 @@ const translations = {
     "report.total": "कुल योग",
     "report.month": "महीना",
     "report.receipts": "रसीदें",
+    "report.no_receipts": "इस महीने कोई रसीद नहीं",
+    "report.add_first": "रसीद अपलोड करें",
+    "report.category_breakdown": "श्रेणी सारांश",
+    "report.images_attached": "छवि संलग्न",
+    "report.images_attached_plural": "छवियाँ संलग्न",
+    "report.items": "आइटम",
+    "report.items_plural": "आइटम",
+    "report.categories": "श्रेणियाँ",
+    "report.generating": "PDF बन रहा है…",
+    "report.watermark_note": "मुफ़्त संस्करण में वॉटरमार्क जोड़ा जाएगा",
+    "report.share": "रिपोर्ट शेयर करें",
+    "report.whatsapp_note": "PDF डाउनलोड हो चुका है। WhatsApp में मैन्युअल अटैच करें।",
+    "report.set_profile": "रिपोर्ट बनाने के लिए",
+    "report.set_profile2": "सेटिंग्स",
+    "report.set_profile3": "में अपना नाम सेट करें।",
+    "report.current_plan": "वर्तमान प्लान",
+    "report.choose_plan": "प्लान चुनें",
+    "report.upgrade": "अपग्रेड",
+    // Months
+    "months.jan": "जनवरी",
+    "months.feb": "फरवरी",
+    "months.mar": "मार्च",
+    "months.apr": "अप्रैल",
+    "months.may": "मई",
+    "months.jun": "जून",
+    "months.jul": "जुलाई",
+    "months.aug": "अगस्त",
+    "months.sep": "सितंबर",
+    "months.oct": "अक्टूबर",
+    "months.nov": "नवंबर",
+    "months.dec": "दिसंबर",
     // Profile
     "profile.name": "आपका नाम",
+    "profile.email": "ईमेल पता",
     "profile.company": "कंपनी (वैकल्पिक)",
     "profile.save": "प्रोफ़ाइल सहेजें",
     // Premium
@@ -18624,11 +18738,61 @@ const translations = {
     "premium.monthly": "₹99/माह",
     "premium.annual": "₹49/माह (वार्षिक)",
     "premium.beta_days_left": "बीटा दिन शेष",
-    "premium.watermark": "नमूना - निःशुल्क संस्करण"
+    "premium.watermark": "नमूना - निःशुल्क संस्करण",
+    // Settings
+    "settings.title": "सेटिंग्स",
+    "settings.profile": "प्रोफाइल",
+    "settings.language": "भाषा",
+    "settings.appearance": "दिखावट",
+    "settings.about": "जानकारी",
+    "settings.dark_mode": "डार्क मोड",
+    "settings.dark_active": "डार्क थीम सक्रिय",
+    "settings.light_active": "लाइट थीम सक्रिय",
+    "settings.beta_title": "बीटा 31 जुलाई 2026 तक — पूरा एक्सेस लें!",
+    "settings.beta_desc": "Fieldspend 31 जुलाई 2026 तक मुफ़्त और पूरे फीचर के साथ उपलब्ध है। उसके बाद मुफ़्त यूजर्स को विज्ञापन दिखेंगे। प्रीमियम में अपग्रेड करें।",
+    "settings.days_remaining": "दिन शेष (31 जुलाई 2026 तक)",
+    "settings.beta_ends_date": "बीटा 31 जुलाई 2026 को समाप्त होगा",
+    "settings.beta_days_remaining": "बीटा में दिन शेष",
+    "settings.current_plan": "वर्तमान प्लान",
+    "settings.choose_plan": "प्लान चुनें",
+    "settings.monthly": "मासिक",
+    "settings.annual": "वार्षिक",
+    "settings.per_month": "प्रति माह",
+    "settings.save_50": "50% बचाएं!",
+    "settings.most_popular": "सबसे लोकप्रिय",
+    "settings.unlimited_receipts": "असीमित रसीदें",
+    "settings.no_watermark": "वॉटरमार्क नहीं",
+    "settings.no_ads": "कोई विज्ञापन नहीं",
+    "settings.priority_support": "प्राथमिकता सहायता",
+    "settings.everything_monthly": "मासिक की सब सुविधाएं",
+    "settings.best_value": "सर्वोत्तम मूल्य",
+    "settings.premium_active": "आपके पास पूर्ण प्रीमियम एक्सेस है — आनंद लें!",
+    "settings.upgrade": "अपग्रेड करें",
+    "settings.share_app": "ऐप शेयर करें",
+    "settings.company_optional": "वैकल्पिक",
+    "settings.company_label": "कंपनी का नाम",
+    "settings.saving": "सहेजा जा रहा है…",
+    "settings.name_required": "नाम आवश्यक है",
+    "settings.coming_soon": "जल्द आ रहा है!",
+    "settings.premium_coming": "प्रीमियम अपग्रेड जल्द उपलब्ध होगा! भुगतान उपलब्ध होते ही आपको सूचित किया जाएगा।",
+    "settings.beta_access": "इस बीच, पूर्ण बीटा एक्सेस का आनंद लें — असीमित रसीदें, साफ PDF निर्यात, प्राथमिकता सहायता।",
+    "settings.notify_me": "मुझे सूचित करें",
+    "settings.close": "बंद करें",
+    "settings.notified": "प्रीमियम उपलब्ध होने पर हम आपको सूचित करेंगे!",
+    "settings.lang_set": "भाषा बदली गई",
+    "settings.app_link_copied": "ऐप लिंक क्लिपबोर्ड पर कॉपी हुई!",
+    // Ads
+    "ad.advertisement": "विज्ञापन",
+    "ad.ends_in": "विज्ञापन समाप्त होगा",
+    "ad.seconds": "सेकंड में",
+    "ad.continue": "जारी रखें",
+    "ad.upgrade_now": "प्रीमियम में अपग्रेड करें",
+    "ad.no_ads_premium": "प्रीमियम लें — कोई विज्ञापन नहीं, कोई सीमा नहीं!",
+    "ad.of": "में से"
   },
   mr: {
     // App
-    "app.name": "सेल्सएक्स्पेन्स प्रो",
+    "app.name": "Fieldspend",
     "app.tagline": "खर्च ट्रॅकिंग सोपे",
     // Navigation
     "nav.home": "होम",
@@ -18667,7 +18831,7 @@ const translations = {
     "status.deleted": "पावती हटवली",
     "status.no_receipts": "अद्याप कोणत्याही पावत्या नाहीत",
     // Onboarding
-    "onboard.step1.title": "सेल्सएक्स्पेन्स प्रोमध्ये आपले स्वागत आहे",
+    "onboard.step1.title": "Fieldspend मध्ये आपले स्वागत आहे",
     "onboard.step1.desc": "आपल्या फोन कॅमेऱ्याने त्वरित पावत्या कॅप्चर करा. बाकी आम्ही सांभाळतो.",
     "onboard.step2.title": "स्मार्ट वर्गीकरण",
     "onboard.step2.desc": "OCR स्वतः तारीख आणि खर्चाची श्रेणी ओळखतो — कॅब, जेवण, हॉटेल इ.",
@@ -18682,8 +18846,40 @@ const translations = {
     "report.total": "एकूण",
     "report.month": "महिना",
     "report.receipts": "पावत्या",
+    "report.no_receipts": "या महिन्यात कोणत्याही पावत्या नाहीत",
+    "report.add_first": "पावती अपलोड करा",
+    "report.category_breakdown": "श्रेणी सारांश",
+    "report.images_attached": "प्रतिमा जोडली",
+    "report.images_attached_plural": "प्रतिमा जोडल्या",
+    "report.items": "आयटम",
+    "report.items_plural": "आयटम",
+    "report.categories": "श्रेण्या",
+    "report.generating": "PDF तयार होत आहे…",
+    "report.watermark_note": "मोफत आवृत्तीत वॉटरमार्क जोडला जाईल",
+    "report.share": "अहवाल शेअर करा",
+    "report.whatsapp_note": "PDF आधीच डाउनलोड झाला आहे. WhatsApp मध्ये मॅन्युअली जोडा.",
+    "report.set_profile": "अहवाल तयार करण्यासाठी",
+    "report.set_profile2": "सेटिंग्ज",
+    "report.set_profile3": "मध्ये आपले नाव सेट करा.",
+    "report.current_plan": "सध्याची योजना",
+    "report.choose_plan": "योजना निवडा",
+    "report.upgrade": "अपग्रेड करा",
+    // Months
+    "months.jan": "जानेवारी",
+    "months.feb": "फेब्रुवारी",
+    "months.mar": "मार्च",
+    "months.apr": "एप्रिल",
+    "months.may": "मे",
+    "months.jun": "जून",
+    "months.jul": "जुलै",
+    "months.aug": "ऑगस्ट",
+    "months.sep": "सप्टेंबर",
+    "months.oct": "ऑक्टोबर",
+    "months.nov": "नोव्हेंबर",
+    "months.dec": "डिसेंबर",
     // Profile
     "profile.name": "तुमचे नाव",
+    "profile.email": "ईमेल पत्ता",
     "profile.company": "कंपनी (पर्यायी)",
     "profile.save": "प्रोफाइल जतन करा",
     // Premium
@@ -18691,9 +18887,73 @@ const translations = {
     "premium.monthly": "₹99/महिना",
     "premium.annual": "₹49/महिना (वार्षिक)",
     "premium.beta_days_left": "बीटा दिवस शिल्लक",
-    "premium.watermark": "नमुना - मोफत आवृत्ती"
+    "premium.watermark": "नमुना - मोफत आवृत्ती",
+    // Settings
+    "settings.title": "सेटिंग्ज",
+    "settings.profile": "प्रोफाइल",
+    "settings.language": "भाषा",
+    "settings.appearance": "देखावा",
+    "settings.about": "माहिती",
+    "settings.dark_mode": "डार्क मोड",
+    "settings.dark_active": "डार्क थीम सक्रिय",
+    "settings.light_active": "लाइट थीम सक्रिय",
+    "settings.beta_title": "बीटा 31 जुलै 2026 पर्यंत — पूर्ण ॲक्सेस घ्या!",
+    "settings.beta_desc": "Fieldspend 31 जुलै 2026 पर्यंत मोफत आणि पूर्ण फीचरसह उपलब्ध आहे. त्यानंतर मोफत वापरकर्त्यांना जाहिराती दिसतील. प्रीमियमवर अपग्रेड करा.",
+    "settings.days_remaining": "दिवस शिल्लक (31 जुलै 2026 पर्यंत)",
+    "settings.beta_ends_date": "बीटा 31 जुलै 2026 रोजी संपेल",
+    "settings.beta_days_remaining": "बीटामध्ये दिवस शिल्लक",
+    "settings.current_plan": "सध्याची योजना",
+    "settings.choose_plan": "योजना निवडा",
+    "settings.monthly": "मासिक",
+    "settings.annual": "वार्षिक",
+    "settings.per_month": "दर महिना",
+    "settings.save_50": "50% बचत!",
+    "settings.most_popular": "सर्वात लोकप्रिय",
+    "settings.unlimited_receipts": "अमर्यादित पावत्या",
+    "settings.no_watermark": "वॉटरमार्क नाही",
+    "settings.no_ads": "जाहिराती नाहीत",
+    "settings.priority_support": "प्राधान्य सहाय्य",
+    "settings.everything_monthly": "मासिकातील सर्व सुविधा",
+    "settings.best_value": "सर्वोत्तम मूल्य",
+    "settings.premium_active": "तुमच्याकडे पूर्ण प्रीमियम ॲक्सेस आहे — आनंद घ्या!",
+    "settings.upgrade": "अपग्रेड करा",
+    "settings.share_app": "ॲप शेअर करा",
+    "settings.company_optional": "पर्यायी",
+    "settings.company_label": "कंपनीचे नाव",
+    "settings.saving": "जतन होत आहे…",
+    "settings.name_required": "नाव आवश्यक आहे",
+    "settings.coming_soon": "लवकरच येत आहे!",
+    "settings.premium_coming": "प्रीमियम अपग्रेड लवकरच उपलब्ध होतील! पेमेंट उपलब्ध होताच तुम्हाला सूचित केले जाईल.",
+    "settings.beta_access": "दरम्यान, पूर्ण बीटा ॲक्सेस घ्या — अमर्यादित पावत्या, स्वच्छ PDF निर्यात, प्राधान्य सहाय्य.",
+    "settings.notify_me": "मला सूचित करा",
+    "settings.close": "बंद करा",
+    "settings.notified": "प्रीमियम उपलब्ध झाल्यावर आम्ही तुम्हाला सूचित करू!",
+    "settings.lang_set": "भाषा बदलली",
+    "settings.app_link_copied": "ॲप लिंक क्लिपबोर्डवर कॉपी केली!",
+    // Ads
+    "ad.advertisement": "जाहिरात",
+    "ad.ends_in": "जाहिरात संपेल",
+    "ad.seconds": "सेकंदात",
+    "ad.continue": "पुढे जा",
+    "ad.upgrade_now": "प्रीमियमवर अपग्रेड करा",
+    "ad.no_ads_premium": "प्रीमियम घ्या — जाहिराती नाहीत, मर्यादा नाहीत!",
+    "ad.of": "पैकी"
   }
 };
+const MONTH_KEYS = [
+  "months.jan",
+  "months.feb",
+  "months.mar",
+  "months.apr",
+  "months.may",
+  "months.jun",
+  "months.jul",
+  "months.aug",
+  "months.sep",
+  "months.oct",
+  "months.nov",
+  "months.dec"
+];
 function getCurrentLanguage() {
   const stored = localStorage.getItem(STORAGE_KEY);
   if (stored && ["en", "hi", "mr"].includes(stored)) return stored;
@@ -18704,6 +18964,9 @@ function setLanguage(lang) {
 }
 function t(key) {
   const lang = getCurrentLanguage();
+  return translations[lang][key] ?? translations.en[key] ?? key;
+}
+function tLang(key, lang) {
   return translations[lang][key] ?? translations.en[key] ?? key;
 }
 const LANGUAGES = [
@@ -18944,7 +19207,7 @@ replaceTraps((oldTraps) => ({
     return isIteratorProp(target, prop) || oldTraps.has(target, prop);
   }
 }));
-const DB_NAME = "salesexpense-pro";
+const DB_NAME = "fieldspend";
 const DB_VERSION = 1;
 let _db = null;
 async function openDB() {
@@ -24598,12 +24861,12 @@ function Layout({ children }) {
               className: "font-display font-bold text-lg leading-tight text-foreground",
               "data-ocid": "header.app_name",
               children: [
-                "SalesExpense ",
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-primary", children: "Pro" })
+                "Field",
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-primary", children: "spend" })
               ]
             }
           ),
-          currentLanguage !== "en" && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground leading-none mt-0.5", children: t("app.name") })
+          currentLanguage !== "en" && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground leading-none mt-0.5", children: tLang("app.name", currentLanguage) })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
@@ -24649,7 +24912,7 @@ function Layout({ children }) {
                     children: /* @__PURE__ */ jsxRuntimeExports.jsx(Camera, { size: 24, className: "text-primary-foreground" })
                   }
                 ),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[10px] font-medium text-muted-foreground mt-1", children: t("nav.upload") })
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[10px] font-medium text-muted-foreground mt-1", children: tLang("nav.upload", currentLanguage) })
               ]
             }
           ) }),
@@ -24670,6 +24933,7 @@ function NavLink({
   item,
   isActive
 }) {
+  const { currentLanguage } = useAppStore();
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(
     Link,
     {
@@ -24678,7 +24942,78 @@ function NavLink({
       "data-ocid": item.ocid,
       children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: item.icon }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[10px]", children: t(item.labelKey) })
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[10px]", children: tLang(item.labelKey, currentLanguage) })
+      ]
+    }
+  );
+}
+function SplashScreen({ onDismiss }) {
+  const [fading, setFading] = reactExports.useState(false);
+  reactExports.useEffect(() => {
+    const fadeTimer = setTimeout(() => setFading(true), 1700);
+    const dismissTimer = setTimeout(() => onDismiss(), 2e3);
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(dismissTimer);
+    };
+  }, [onDismiss]);
+  function handleClick() {
+    setFading(true);
+    setTimeout(() => onDismiss(), 300);
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "button",
+    {
+      type: "button",
+      onClick: handleClick,
+      "aria-label": "Tap to continue",
+      style: {
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
+        opacity: fading ? 0 : 1,
+        transition: "opacity 300ms ease-out",
+        cursor: "pointer",
+        border: "none",
+        padding: 0
+      },
+      className: "bg-background flex flex-col items-center justify-center select-none w-full",
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "div",
+          {
+            className: "absolute inset-0 pointer-events-none",
+            style: {
+              background: "radial-gradient(ellipse 60% 40% at 50% 50%, hsl(var(--primary) / 0.12) 0%, transparent 70%)"
+            }
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative flex flex-col items-center gap-5", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "img",
+            {
+              src: "/logo.svg",
+              alt: "Fieldspend",
+              width: 140,
+              height: 140,
+              style: { width: 140, height: "auto" },
+              className: "drop-shadow-lg",
+              draggable: false
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-center gap-1", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "span",
+              {
+                className: "text-3xl font-bold tracking-tight text-primary",
+                style: { fontFamily: "var(--font-display, inherit)" },
+                children: "Fieldspend"
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm text-muted-foreground tracking-widest uppercase", children: "Expense Tracker" })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "absolute bottom-12 text-xs text-muted-foreground/50 tracking-wide", children: "Tap anywhere to continue" })
       ]
     }
   );
@@ -24959,11 +25294,11 @@ var $e = reactExports.forwardRef(function(e, t2) {
     })) : null;
   }));
 });
-const OnboardingPage = reactExports.lazy(() => __vitePreload(() => import("./OnboardingPage-9P5UJTHq.js"), true ? __vite__mapDeps([0,1,2]) : void 0));
-const GalleryPage = reactExports.lazy(() => __vitePreload(() => import("./GalleryPage-ByCjbeLj.js"), true ? __vite__mapDeps([3,4,5,6,7,2]) : void 0));
-const UploadPage = reactExports.lazy(() => __vitePreload(() => import("./UploadPage-TkTJpDGE.js"), true ? __vite__mapDeps([8,4,6,5,7,9,2,10,11,1]) : void 0));
-const ReportsPage = reactExports.lazy(() => __vitePreload(() => import("./ReportsPage-CW3XnDE0.js"), true ? __vite__mapDeps([12,4,5,13,9,2,10]) : void 0));
-const SettingsPage = reactExports.lazy(() => __vitePreload(() => import("./SettingsPage-CcPVhIVO.js"), true ? __vite__mapDeps([14,4,6,13,9,2,11,1]) : void 0));
+const OnboardingPage = reactExports.lazy(() => __vitePreload(() => import("./OnboardingPage-DGN9KwYe.js"), true ? __vite__mapDeps([0,1,2]) : void 0));
+const GalleryPage = reactExports.lazy(() => __vitePreload(() => import("./GalleryPage-DYV3C-lF.js"), true ? __vite__mapDeps([3,4,5,6,7,2]) : void 0));
+const UploadPage = reactExports.lazy(() => __vitePreload(() => import("./UploadPage-DsY3XP6N.js"), true ? __vite__mapDeps([8,9,4,1,2,10,6,5,7,11]) : void 0));
+const ReportsPage = reactExports.lazy(() => __vitePreload(() => import("./ReportsPage-5vfVc9UH.js"), true ? __vite__mapDeps([12,9,4,1,2,10,5,13]) : void 0));
+const SettingsPage = reactExports.lazy(() => __vitePreload(() => import("./SettingsPage-Dt65lGGq.js"), true ? __vite__mapDeps([14,4,6,13,10,2,11,1]) : void 0));
 const queryClient$1 = new QueryClient();
 function RootComponent() {
   const { initStore, loadReceipts, loadProfile } = useAppStore();
@@ -25032,7 +25367,10 @@ const routeTree = rootRoute.addChildren([
 ]);
 const router = createRouter({ routeTree });
 function App() {
+  const [showSplash, setShowSplash] = reactExports.useState(true);
+  const handleSplashDismiss = reactExports.useCallback(() => setShowSplash(false), []);
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(QueryClientProvider, { client: queryClient$1, children: [
+    showSplash && /* @__PURE__ */ jsxRuntimeExports.jsx(SplashScreen, { onDismiss: handleSplashDismiss }),
     /* @__PURE__ */ jsxRuntimeExports.jsx(RouterProvider, { router }),
     /* @__PURE__ */ jsxRuntimeExports.jsx($e, { position: "top-center", richColors: true })
   ] });
@@ -25049,7 +25387,7 @@ export {
   FileText as F,
   Image as I,
   LANGUAGES as L,
-  Moon as M,
+  MONTH_KEYS as M,
   React$4 as R,
   Sun as S,
   X,
@@ -25058,15 +25396,17 @@ export {
   Link as b,
   createLucideIcon as c,
   ue as d,
-  React$5 as e,
-  ReactDOM$2 as f,
+  t as e,
+  React$5 as f,
   getDailyCount as g,
-  reactDomExports as h,
-  getDefaultExportFromCjs as i,
+  ReactDOM$2 as h,
+  reactDomExports as i,
   jsxRuntimeExports as j,
-  commonjsGlobal as k,
+  Moon as k,
+  commonjsGlobal as l,
+  getDefaultExportFromCjs as m,
   reactExports as r,
   setLanguage as s,
-  t,
+  tLang as t,
   useNavigate as u
 };

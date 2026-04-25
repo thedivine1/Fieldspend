@@ -69,26 +69,115 @@ function dataUrlToFile(dataUrl: string, fileName: string): File {
   return new File([bytes], fileName, { type: mime });
 }
 
-// ─── Text Extraction ──────────────────────────────────────────────────────────
+/**
+ * Converts a File to a base64 string (without the data URL prefix).
+ */
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Strip the data URL prefix: "data:image/jpeg;base64,"
+      const base64 = result.split(",")[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ─── OCR.Space Primary Engine ─────────────────────────────────────────────────
+
+const OCR_SPACE_URL = "https://api.ocr.space/parse/image";
+const OCR_SPACE_KEY = "helloworld";
+
+interface OcrSpaceResult {
+  ParsedResults?: Array<{ ParsedText?: string }>;
+  IsErroredOnProcessing?: boolean;
+}
+
+/**
+ * Calls the OCR.Space API with a base64-encoded image.
+ * Returns extracted text or throws on failure.
+ */
+async function extractWithOcrSpace(source: File | string): Promise<string> {
+  let base64: string;
+  let mimeType = "image/jpeg";
+
+  if (typeof source === "string") {
+    // data URL — strip prefix
+    const parts = source.split(",");
+    base64 = parts[1];
+    const mimeMatch = parts[0].match(/:(.*?);/);
+    if (mimeMatch) mimeType = mimeMatch[1];
+  } else {
+    base64 = await fileToBase64(source);
+    mimeType = source.type || "image/jpeg";
+  }
+
+  const body = new FormData();
+  body.append("base64Image", `data:${mimeType};base64,${base64}`);
+  body.append("apikey", OCR_SPACE_KEY);
+  body.append("language", "eng");
+  body.append("OCREngine", "2");
+  body.append("isTable", "true");
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+  const response = await fetch(OCR_SPACE_URL, {
+    method: "POST",
+    body,
+    signal: controller.signal,
+  });
+  clearTimeout(timeoutId);
+
+  if (!response.ok) throw new Error(`OCR.Space HTTP ${response.status}`);
+
+  const json: OcrSpaceResult = await response.json();
+
+  if (json.IsErroredOnProcessing) throw new Error("OCR.Space processing error");
+
+  const text = json.ParsedResults?.[0]?.ParsedText ?? "";
+  if (!text.trim()) throw new Error("OCR.Space returned empty text");
+
+  return text;
+}
+
+// ─── Tesseract Fallback Engine ────────────────────────────────────────────────
+
+async function extractWithTesseract(source: File | string): Promise<string> {
+  const { createWorker } = await import("tesseract.js");
+  // Tesseract.js ships 'hin' (Hindi/Devanagari) which covers Marathi script too.
+  const worker = await createWorker(["eng", "hin"]);
+
+  const input =
+    typeof source === "string" ? dataUrlToFile(source, "receipt.jpg") : source;
+
+  const { data } = await worker.recognize(input);
+  await worker.terminate();
+  return data.text;
+}
+
+// ─── Text Extraction (Primary: OCR.Space → Fallback: Tesseract) ───────────────
 
 export async function extractTextFromImage(
   source: File | string,
 ): Promise<string> {
+  // Try OCR.Space first
   try {
-    const { createWorker } = await import("tesseract.js");
-    // Tesseract.js ships 'hin' (Hindi/Devanagari) which covers Marathi script too.
-    const worker = await createWorker(["eng", "hin"]);
-
-    // Accept either a File or a base64 data URL (rotated image)
-    const input =
-      typeof source === "string"
-        ? dataUrlToFile(source, "receipt.jpg")
-        : source;
-
-    const { data } = await worker.recognize(input);
-    await worker.terminate();
-    return data.text;
+    const text = await extractWithOcrSpace(source);
+    return text;
   } catch {
+    // Silent fallback — no user-facing error, no console.error
+    console.warn("[OCR] OCR.Space unavailable, falling back to Tesseract");
+  }
+
+  // Tesseract.js fallback
+  try {
+    return await extractWithTesseract(source);
+  } catch {
+    // Both engines failed — return empty string; UploadPage handles gracefully
     return "";
   }
 }
@@ -209,6 +298,7 @@ const CATEGORY_KEYWORDS: Record<Category, string[]> = {
     "vistara",
     "goair",
     "akasa",
+    "airasia",
     "airline",
     "airport",
     "boarding",
@@ -219,6 +309,7 @@ const CATEGORY_KEYWORDS: Record<Category, string[]> = {
   ],
   train: [
     "irctc",
+    "indian railways",
     "railway",
     "train",
     "station",
@@ -231,8 +322,10 @@ const CATEGORY_KEYWORDS: Record<Category, string[]> = {
   ],
   bus: [
     "msrtc",
-    "st bus",
+    "gsrtc",
     "ksrtc",
+    "st bus",
+    "redbus",
     "state transport",
     "bus",
     "volvo",
@@ -249,6 +342,7 @@ const CATEGORY_KEYWORDS: Record<Category, string[]> = {
     "guest house",
     "guesthouse",
     "oyo",
+    "makemytrip hotel",
     "room",
   ],
   meal: [

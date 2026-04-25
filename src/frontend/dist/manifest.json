@@ -1,6 +1,6 @@
 {
-  "name": "SalesExpense Pro",
-  "short_name": "SalesExp",
+  "name": "Fieldspend",
+  "short_name": "Fieldspend",
   "description": "Expense tracker for field sales professionals — capture receipts, auto-read amounts with OCR, and generate PDF reports.",
   "start_url": "/",
   "display": "standalone",

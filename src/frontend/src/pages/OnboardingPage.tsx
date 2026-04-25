@@ -1,4 +1,4 @@
-import { LANGUAGES, setLanguage as i18nSetLanguage, t } from "@/lib/i18n";
+import { LANGUAGES, setLanguage as i18nSetLanguage, tLang } from "@/lib/i18n";
 import { useAppStore } from "@/store/useAppStore";
 import type { Language } from "@/types";
 import { useNavigate } from "@tanstack/react-router";
@@ -636,8 +636,7 @@ export default function OnboardingPage() {
       {/* Top bar */}
       <div className="relative z-10 flex items-center justify-between px-5 pt-5 pb-2">
         <span className="font-display font-bold text-lg text-foreground tracking-tight">
-          Sales<span className="text-primary">Expense</span>{" "}
-          <span className="text-secondary">Pro</span>
+          Field<span className="text-primary">spend</span>
         </span>
         {!isLast && (
           <button
@@ -646,7 +645,7 @@ export default function OnboardingPage() {
             className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-muted/60"
             data-ocid="onboard.skip_button"
           >
-            {t("onboard.skip")}
+            {tLang("onboard.skip", lang)}
           </button>
         )}
       </div>
@@ -673,10 +672,10 @@ export default function OnboardingPage() {
             {/* Headline + body */}
             <div className="text-center max-w-sm px-2">
               <h2 className="font-display font-bold text-2xl text-foreground mb-3 leading-tight">
-                {t(slide.titleKey)}
+                {tLang(slide.titleKey, lang)}
               </h2>
               <p className="text-muted-foreground text-base leading-relaxed">
-                {t(slide.descKey)}
+                {tLang(slide.descKey, lang)}
               </p>
             </div>
 
@@ -758,11 +757,11 @@ export default function OnboardingPage() {
                 <path d="M9 12l2 2 4-4" />
                 <circle cx="12" cy="12" r="10" />
               </svg>
-              {t("onboard.get_started")}
+              {tLang("onboard.get_started", lang)}
             </>
           ) : (
             <>
-              {t("onboard.next")}
+              {tLang("onboard.next", lang)}
               <svg
                 width="18"
                 height="18"

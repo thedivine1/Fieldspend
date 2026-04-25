@@ -1,3 +1,4 @@
+import AdModal from "@/components/AdModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { getDailyCount } from "@/lib/db";
-import { t } from "@/lib/i18n";
+import { tLang } from "@/lib/i18n";
 import {
   detectAmount,
   detectCategory,
@@ -20,7 +21,12 @@ import {
   enforcePortraitOrientation,
   extractTextFromImage,
 } from "@/lib/ocr";
-import { canUploadReceipt, hasPremiumAccess } from "@/lib/premium";
+import {
+  canUploadReceipt,
+  hasPremiumAccess,
+  isAdminUser,
+  isBetaPeriodActive,
+} from "@/lib/premium";
 import { useAppStore } from "@/store/useAppStore";
 import type { Category, Receipt } from "@/types";
 import { FREE_DAILY_LIMIT } from "@/types";
@@ -41,6 +47,31 @@ import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+// ─── Upload counter helpers ───────────────────────────────────────────────────
+
+const UPLOAD_COUNT_KEY = "fieldspend_upload_count";
+const UPLOAD_DATE_KEY = "fieldspend_upload_date";
+
+function getTodayStr(): string {
+  return new Date().toISOString().split("T")[0];
+}
+
+function getUploadCount(): number {
+  const storedDate = localStorage.getItem(UPLOAD_DATE_KEY);
+  if (storedDate !== getTodayStr()) {
+    localStorage.setItem(UPLOAD_DATE_KEY, getTodayStr());
+    localStorage.setItem(UPLOAD_COUNT_KEY, "0");
+    return 0;
+  }
+  return Number(localStorage.getItem(UPLOAD_COUNT_KEY) ?? "0");
+}
+
+function incrementUploadCount(): number {
+  const count = getUploadCount() + 1;
+  localStorage.setItem(UPLOAD_COUNT_KEY, String(count));
+  return count;
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type QueueStatus = "pending" | "processing" | "done" | "error";
@@ -49,7 +80,6 @@ interface QueueItem {
   id: string;
   file: File;
   previewUrl: string;
-  /** Base64 data URL of the (possibly rotated) image, used for storage */
   imageDataUrl: string | null;
   status: QueueStatus;
   date: string;
@@ -116,6 +146,7 @@ function QueueItemCard({
   onSelect,
   onRemove,
 }: QueueItemCardProps) {
+  const { currentLanguage } = useAppStore();
   return (
     <motion.div
       layout
@@ -131,7 +162,6 @@ function QueueItemCard({
       onClick={onSelect}
       data-ocid={`upload.queue_item.${index + 1}`}
     >
-      {/* Thumbnail */}
       <div className="relative flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-muted">
         <img
           src={item.previewUrl}
@@ -144,21 +174,18 @@ function QueueItemCard({
           </div>
         )}
       </div>
-
-      {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           <span className="text-sm font-medium text-foreground truncate">
-            {CATEGORY_ICONS[item.category]} {t(`cat.${item.category}`)}
+            {CATEGORY_ICONS[item.category]}{" "}
+            {tLang(`cat.${item.category}`, currentLanguage)}
           </span>
         </div>
         <p className="text-xs text-muted-foreground truncate mt-0.5">
-          {item.date || t("status.processing")}
+          {item.date || tLang("status.processing", currentLanguage)}
           {item.amount ? ` · ₹${item.amount}` : ""}
         </p>
       </div>
-
-      {/* Status badge */}
       <div className="flex items-center gap-2 flex-shrink-0">
         {item.status === "done" && (
           <CheckCircle2Icon size={18} className="text-secondary" />
@@ -190,7 +217,8 @@ function QueueItemCard({
 
 export default function UploadPage() {
   const navigate = useNavigate();
-  const { addReceipt, userProfile } = useAppStore();
+  const { addReceipt, userProfile, currentLanguage } = useAppStore();
+  const lang = currentLanguage;
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
 
@@ -200,7 +228,11 @@ export default function UploadPage() {
   const [dailyCount, setDailyCount] = useState<number>(0);
   const [limitChecked, setLimitChecked] = useState(false);
 
-  // Check daily limit on mount
+  // Ad gate: show 2 ads every 5 uploads (post-beta free users only)
+  const [adGateQueue, setAdGateQueue] = useState<number>(0); // how many ads left to show
+  const [currentAd, setCurrentAd] = useState<number>(0); // 1 or 2
+  const [pendingSaveAfterAd, setPendingSaveAfterAd] = useState(false);
+
   useEffect(() => {
     getDailyCount(TODAY)
       .then((count) => {
@@ -210,6 +242,7 @@ export default function UploadPage() {
       .catch(() => setLimitChecked(true));
   }, []);
 
+  const isAdmin = userProfile ? isAdminUser(userProfile) : false;
   const isPremium = userProfile ? hasPremiumAccess(userProfile) : false;
   const limitReached =
     !isPremium && limitChecked && dailyCount >= FREE_DAILY_LIMIT;
@@ -219,19 +252,19 @@ export default function UploadPage() {
     (limitChecked && dailyCount < FREE_DAILY_LIMIT);
   const slotsLeft = Math.max(0, FREE_DAILY_LIMIT - dailyCount);
 
+  // Ads apply only post-beta for free non-admin users
+  const shouldShowAds = !isBetaPeriodActive() && !isPremium && !isAdmin;
+
   const activeItem = queue[activeIndex] ?? null;
 
-  // ─── OCR Processing ──────────────────────────────────────────────────────
+  // ─── OCR ──────────────────────────────────────────────────────────────────
 
   const processFile = useCallback(async (itemId: string, file: File) => {
     setQueue((prev) =>
       prev.map((q) => (q.id === itemId ? { ...q, status: "processing" } : q)),
     );
     try {
-      // Step 1: Enforce portrait orientation before OCR
       const rotatedDataUrl = await enforcePortraitOrientation(file);
-
-      // Step 2: Update preview and store rotated image URL if rotation happened
       if (rotatedDataUrl) {
         setQueue((prev) =>
           prev.map((q) =>
@@ -245,14 +278,11 @@ export default function UploadPage() {
           ),
         );
       }
-
-      // Step 3: Run OCR on the corrected image (rotated data URL or original file)
       const ocrSource: File | string = rotatedDataUrl ?? file;
       const text = await extractTextFromImage(ocrSource);
       const detectedDate = detectDate(text);
       const detectedCategory = detectCategory(text);
       const detectedAmount = detectAmount(text);
-
       setQueue((prev) =>
         prev.map((q) =>
           q.id === itemId
@@ -280,22 +310,19 @@ export default function UploadPage() {
     }
   }, []);
 
-  // ─── File Handling ───────────────────────────────────────────────────────
+  // ─── File handling ────────────────────────────────────────────────────────
 
   const enqueueFiles = useCallback(
     (files: File[]) => {
       if (!canUpload) {
-        toast.error(t("status.limit_reached"));
+        toast.error(tLang("status.limit_reached", lang));
         return;
       }
-
       const remaining = MAX_QUEUE - queue.length;
       const toAdd = files
         .slice(0, remaining)
         .filter((f) => f.type.startsWith("image/"));
-
       if (toAdd.length === 0) return;
-
       const newItems: QueueItem[] = toAdd.map((file) => ({
         id: generateId(),
         file,
@@ -309,20 +336,14 @@ export default function UploadPage() {
         ocrAttempted: false,
         ocrFailed: false,
       }));
-
       setQueue((prev) => {
         const updated = [...prev, ...newItems];
-        // Select new item if queue was empty
         if (prev.length === 0) setActiveIndex(0);
         return updated;
       });
-
-      // Start OCR for each new item
-      for (const item of newItems) {
-        processFile(item.id, item.file);
-      }
+      for (const item of newItems) processFile(item.id, item.file);
     },
-    [canUpload, queue.length, processFile],
+    [canUpload, queue.length, processFile, lang],
   );
 
   const handleCameraChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -333,21 +354,14 @@ export default function UploadPage() {
 
   const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files && files.length > 0) {
-      enqueueFiles(Array.from(files));
-    }
+    if (files && files.length > 0) enqueueFiles(Array.from(files));
     e.target.value = "";
   };
 
   const removeItem = (index: number) => {
-    setQueue((prev) => {
-      const updated = prev.filter((_, i) => i !== index);
-      return updated;
-    });
+    setQueue((prev) => prev.filter((_, i) => i !== index));
     setActiveIndex((prev) => Math.min(prev, Math.max(0, queue.length - 2)));
   };
-
-  // ─── Form update for active item ─────────────────────────────────────────
 
   function updateActive(patch: Partial<QueueItem>) {
     setQueue((prev) =>
@@ -355,21 +369,18 @@ export default function UploadPage() {
     );
   }
 
-  // ─── Save ────────────────────────────────────────────────────────────────
+  // ─── Save ─────────────────────────────────────────────────────────────────
 
-  async function handleSaveAll() {
+  async function doSaveAll() {
     const toSave = queue.filter((q) => q.status !== "done");
     if (toSave.length === 0) {
       navigate({ to: "/gallery" });
       return;
     }
-
     setIsSaving(true);
     let savedCount = 0;
-
     for (const item of toSave) {
       try {
-        // Use pre-rotated base64 if available; otherwise read original file
         const imageData =
           item.imageDataUrl ??
           (await new Promise<string>((resolve, reject) => {
@@ -382,7 +393,6 @@ export default function UploadPage() {
             reader.onerror = reject;
             reader.readAsDataURL(item.file);
           }));
-
         const receipt: Receipt = {
           id: generateId(),
           imageData,
@@ -397,22 +407,53 @@ export default function UploadPage() {
           prev.map((q) => (q.id === item.id ? { ...q, status: "done" } : q)),
         );
         savedCount++;
+
+        // Track upload count for ad gate (post-beta free users only)
+        if (shouldShowAds) {
+          const newCount = incrementUploadCount();
+          if (newCount % 5 === 0) {
+            // Trigger 2-ad gate after this batch
+            setPendingSaveAfterAd(true);
+          }
+        }
       } catch {
         setQueue((prev) =>
           prev.map((q) => (q.id === item.id ? { ...q, status: "error" } : q)),
         );
       }
     }
-
     setIsSaving(false);
-
     if (savedCount > 0) {
       toast.success(
-        savedCount === 1 ? t("status.saved") : `${savedCount} receipts saved!`,
+        savedCount === 1
+          ? tLang("status.saved", lang)
+          : `${savedCount} receipts saved!`,
       );
-      navigate({ to: "/gallery" });
+
+      // If ad gate triggered, show 2 ads before navigating
+      if (shouldShowAds && pendingSaveAfterAd) {
+        setPendingSaveAfterAd(false);
+        setAdGateQueue(2);
+        setCurrentAd(1);
+      } else {
+        navigate({ to: "/gallery" });
+      }
+    }
+  }
+
+  function handleSaveAll() {
+    doSaveAll();
+  }
+
+  // Ad 1 complete → show ad 2
+  function handleAdComplete() {
+    const remaining = adGateQueue - 1;
+    setAdGateQueue(remaining);
+    if (remaining > 0) {
+      setCurrentAd((prev) => prev + 1);
     } else {
-      toast.error("Failed to save receipts. Please try again.");
+      setCurrentAd(0);
+      navigate({ to: "/gallery" });
     }
   }
 
@@ -436,11 +477,10 @@ export default function UploadPage() {
             Daily Limit Reached
           </h2>
           <p className="text-sm text-muted-foreground mt-2 max-w-xs">
-            {t("status.limit_reached")} — Upgrade to Premium for unlimited
-            uploads.
+            {tLang("status.limit_reached", lang)} — Upgrade to Premium for
+            unlimited uploads.
           </p>
         </div>
-
         <div className="w-full space-y-2">
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>Today's usage</span>
@@ -454,7 +494,6 @@ export default function UploadPage() {
             data-ocid="upload.limit_progress"
           />
         </div>
-
         <div className="w-full space-y-3">
           <Button
             className="w-full gap-2"
@@ -463,7 +502,7 @@ export default function UploadPage() {
             onClick={() => navigate({ to: "/settings" })}
           >
             <StarIcon size={18} />
-            {t("action.upgrade")} · ₹49/mo
+            {tLang("action.upgrade", lang)} · ₹49/mo
           </Button>
           <Button
             variant="outline"
@@ -483,7 +522,6 @@ export default function UploadPage() {
   if (queue.length === 0) {
     return (
       <div className="px-4 py-6 space-y-6" data-ocid="upload.page">
-        {/* Hidden inputs */}
         <input
           ref={cameraRef}
           type="file"
@@ -503,7 +541,6 @@ export default function UploadPage() {
           aria-label="Gallery select"
         />
 
-        {/* Daily usage */}
         {limitChecked && !isPremium && (
           <motion.div
             initial={{ opacity: 0, y: -8 }}
@@ -531,7 +568,6 @@ export default function UploadPage() {
           </motion.div>
         )}
 
-        {/* Upload area */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -553,8 +589,6 @@ export default function UploadPage() {
               </p>
             </div>
           </div>
-
-          {/* Camera & Gallery buttons */}
           <div className="grid grid-cols-2 gap-3">
             <Button
               type="button"
@@ -565,7 +599,9 @@ export default function UploadPage() {
               data-ocid="upload.camera_button"
             >
               <CameraIcon size={24} className="text-primary" />
-              <span className="text-sm font-medium">{t("upload.camera")}</span>
+              <span className="text-sm font-medium">
+                {tLang("upload.camera", lang)}
+              </span>
             </Button>
             <Button
               type="button"
@@ -576,10 +612,11 @@ export default function UploadPage() {
               data-ocid="upload.gallery_button"
             >
               <ImageIcon size={24} className="text-secondary" />
-              <span className="text-sm font-medium">{t("upload.gallery")}</span>
+              <span className="text-sm font-medium">
+                {tLang("upload.gallery", lang)}
+              </span>
             </Button>
           </div>
-
           <p className="text-xs text-muted-foreground">
             Supports JPG, PNG, HEIC · Hindi &amp; English text supported
           </p>
@@ -591,272 +628,279 @@ export default function UploadPage() {
   // ─── Queue + Form view ────────────────────────────────────────────────────
 
   return (
-    <div className="px-4 py-4 space-y-4" data-ocid="upload.page">
-      {/* Hidden inputs */}
-      <input
-        ref={cameraRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={handleCameraChange}
-        aria-label="Camera capture"
-      />
-      <input
-        ref={galleryRef}
-        type="file"
-        accept="image/*"
-        multiple
-        className="hidden"
-        onChange={handleGalleryChange}
-        aria-label="Gallery select"
+    <>
+      {/* Ad gate modal — 2 ads after every 5 uploads for post-beta free users */}
+      <AdModal
+        isOpen={adGateQueue > 0}
+        onComplete={handleAdComplete}
+        adNumber={currentAd}
+        totalAds={2}
       />
 
-      {/* Queue header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-foreground">
-          {queue.length} receipt{queue.length > 1 ? "s" : ""} queued
-        </h2>
-        {queue.length < MAX_QUEUE && canUpload && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="text-primary gap-1.5 h-8"
-            onClick={() => galleryRef.current?.click()}
-            data-ocid="upload.add_more_button"
+      <div className="px-4 py-4 space-y-4" data-ocid="upload.page">
+        <input
+          ref={cameraRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={handleCameraChange}
+          aria-label="Camera capture"
+        />
+        <input
+          ref={galleryRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={handleGalleryChange}
+          aria-label="Gallery select"
+        />
+
+        {/* Queue header */}
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold text-foreground">
+            {queue.length} receipt{queue.length > 1 ? "s" : ""} queued
+          </h2>
+          {queue.length < MAX_QUEUE && canUpload && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-primary gap-1.5 h-8"
+              onClick={() => galleryRef.current?.click()}
+              data-ocid="upload.add_more_button"
+            >
+              <ImageIcon size={14} /> Add more
+            </Button>
+          )}
+        </div>
+
+        {/* Queue list */}
+        <div className="space-y-2" data-ocid="upload.queue_list">
+          <AnimatePresence>
+            {queue.map((item, i) => (
+              <QueueItemCard
+                key={item.id}
+                item={item}
+                index={i}
+                isActive={i === activeIndex}
+                onSelect={() => setActiveIndex(i)}
+                onRemove={() => removeItem(i)}
+              />
+            ))}
+          </AnimatePresence>
+        </div>
+
+        {/* Active item editor */}
+        {activeItem && (
+          <motion.div
+            key={activeItem.id}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-card border border-border rounded-2xl overflow-hidden"
+            data-ocid="upload.receipt_editor"
           >
-            <ImageIcon size={14} />
-            Add more
-          </Button>
-        )}
-      </div>
+            {/* Image preview */}
+            <div className="relative w-full h-52 bg-muted">
+              <img
+                src={activeItem.previewUrl}
+                alt="Receipt preview"
+                className="w-full h-full object-cover"
+              />
 
-      {/* Queue list */}
-      <div className="space-y-2" data-ocid="upload.queue_list">
-        <AnimatePresence>
-          {queue.map((item, i) => (
-            <QueueItemCard
-              key={item.id}
-              item={item}
-              index={i}
-              isActive={i === activeIndex}
-              onSelect={() => setActiveIndex(i)}
-              onRemove={() => removeItem(i)}
-            />
-          ))}
-        </AnimatePresence>
-      </div>
-
-      {/* Active item editor */}
-      {activeItem && (
-        <motion.div
-          key={activeItem.id}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-card border border-border rounded-2xl overflow-hidden"
-          data-ocid="upload.receipt_editor"
-        >
-          {/* Image preview */}
-          <div className="relative w-full h-52 bg-muted">
-            <img
-              src={activeItem.previewUrl}
-              alt="Receipt preview"
-              className="w-full h-full object-cover"
-            />
-
-            {/* Processing overlay */}
-            {activeItem.status === "processing" && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-2"
-                data-ocid="upload.processing_state"
-              >
-                <Loader2Icon size={28} className="text-primary animate-spin" />
-                <p className="text-sm font-medium text-foreground">
-                  {t("status.processing")}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Reading receipt with OCR…
-                </p>
-              </motion.div>
-            )}
-
-            {/* Orientation corrected badge */}
-            {activeItem.imageDataUrl &&
-              !activeItem.ocrFailed &&
-              activeItem.ocrAttempted && (
+              {activeItem.status === "processing" && (
                 <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="absolute top-3 left-3 flex items-center gap-1.5 px-2 py-1 rounded-full bg-background/80 text-foreground text-xs font-medium shadow"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-2"
+                  data-ocid="upload.processing_state"
                 >
-                  🔄 Portrait
+                  <Loader2Icon
+                    size={28}
+                    className="text-primary animate-spin"
+                  />
+                  <p className="text-sm font-medium text-foreground">
+                    {tLang("status.processing", lang)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Reading receipt with OCR…
+                  </p>
                 </motion.div>
               )}
 
-            {/* OCR done badge */}
-            {activeItem.ocrAttempted && !activeItem.ocrFailed && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground text-xs font-medium shadow-md"
-              >
-                <SparklesIcon size={12} />
-                OCR filled
-              </motion.div>
-            )}
-
-            {/* OCR error badge */}
-            {activeItem.ocrFailed && (
-              <div className="absolute top-3 left-3 right-3">
-                <div className="bg-destructive/90 text-destructive-foreground text-xs px-3 py-2 rounded-lg flex items-center justify-between gap-2">
-                  <span>Couldn't read receipt — fill in details manually</span>
-                  <button
-                    type="button"
-                    className="flex-shrink-0"
-                    onClick={() => processFile(activeItem.id, activeItem.file)}
-                    aria-label="Retry OCR"
-                    data-ocid="upload.retry_ocr"
+              {activeItem.imageDataUrl &&
+                !activeItem.ocrFailed &&
+                activeItem.ocrAttempted && (
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute top-3 left-3 flex items-center gap-1.5 px-2 py-1 rounded-full bg-background/80 text-foreground text-xs font-medium shadow"
                   >
-                    <RefreshCwIcon size={14} />
-                  </button>
+                    🔄 Portrait
+                  </motion.div>
+                )}
+
+              {activeItem.ocrAttempted && !activeItem.ocrFailed && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground text-xs font-medium shadow-md"
+                >
+                  <SparklesIcon size={12} /> OCR filled
+                </motion.div>
+              )}
+
+              {activeItem.ocrFailed && (
+                <div className="absolute top-3 left-3 right-3">
+                  <div className="bg-destructive/90 text-destructive-foreground text-xs px-3 py-2 rounded-lg flex items-center justify-between gap-2">
+                    <span>
+                      Couldn't read receipt — fill in details manually
+                    </span>
+                    <button
+                      type="button"
+                      className="flex-shrink-0"
+                      onClick={() =>
+                        processFile(activeItem.id, activeItem.file)
+                      }
+                      aria-label="Retry OCR"
+                      data-ocid="upload.retry_ocr"
+                    >
+                      <RefreshCwIcon size={14} />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-
-          {/* Form fields */}
-          <div className="p-4 space-y-4">
-            {/* Date */}
-            <div className="space-y-1.5">
-              <Label htmlFor="date" className="text-xs font-medium">
-                Date
-              </Label>
-              <Input
-                id="date"
-                type="date"
-                value={activeItem.date}
-                onChange={(e) => updateActive({ date: e.target.value })}
-                data-ocid="upload.date_input"
-              />
+              )}
             </div>
 
-            {/* Category */}
-            <div className="space-y-1.5">
-              <Label htmlFor="category" className="text-xs font-medium">
-                Category
-              </Label>
-              <div className="flex items-center gap-2">
-                <Select
-                  value={activeItem.category}
-                  onValueChange={(v) =>
-                    updateActive({ category: v as Category })
-                  }
-                >
-                  <SelectTrigger
-                    id="category"
-                    className="flex-1"
-                    data-ocid="upload.category_select"
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIES.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        <span className="flex items-center gap-2">
-                          <span>{CATEGORY_ICONS[cat]}</span>
-                          <span>{t(`cat.${cat}`)}</span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Badge
-                  className={`flex-shrink-0 text-xs ${CATEGORY_COLORS[activeItem.category]}`}
-                  variant="secondary"
-                >
-                  {CATEGORY_ICONS[activeItem.category]}
-                </Badge>
-              </div>
-            </div>
-
-            {/* Amount */}
-            <div className="space-y-1.5">
-              <Label htmlFor="amount" className="text-xs font-medium">
-                Amount (optional)
-              </Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">
-                  ₹
-                </span>
+            {/* Form fields */}
+            <div className="p-4 space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="date" className="text-xs font-medium">
+                  Date
+                </Label>
                 <Input
-                  id="amount"
-                  type="number"
-                  placeholder="0.00"
-                  className="pl-7"
-                  value={activeItem.amount}
-                  onChange={(e) => updateActive({ amount: e.target.value })}
-                  data-ocid="upload.amount_input"
+                  id="date"
+                  type="date"
+                  value={activeItem.date}
+                  onChange={(e) => updateActive({ date: e.target.value })}
+                  data-ocid="upload.date_input"
                 />
               </div>
-            </div>
 
-            {/* Notes */}
-            <div className="space-y-1.5">
-              <Label htmlFor="notes" className="text-xs font-medium">
-                Notes (optional)
-              </Label>
-              <Textarea
-                id="notes"
-                placeholder="Vendor name, purpose…"
-                value={activeItem.notes}
-                maxLength={200}
-                rows={2}
-                className="resize-none text-sm"
-                onChange={(e) => updateActive({ notes: e.target.value })}
-                data-ocid="upload.notes_textarea"
-              />
-              <p className="text-xs text-muted-foreground text-right">
-                {activeItem.notes.length}/200
-              </p>
-            </div>
-          </div>
-        </motion.div>
-      )}
+              <div className="space-y-1.5">
+                <Label htmlFor="category" className="text-xs font-medium">
+                  Category
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={activeItem.category}
+                    onValueChange={(v) =>
+                      updateActive({ category: v as Category })
+                    }
+                  >
+                    <SelectTrigger
+                      id="category"
+                      className="flex-1"
+                      data-ocid="upload.category_select"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map((cat) => (
+                        <SelectItem key={cat} value={cat}>
+                          <span className="flex items-center gap-2">
+                            <span>{CATEGORY_ICONS[cat]}</span>
+                            <span>{tLang(`cat.${cat}`, lang)}</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Badge
+                    className={`flex-shrink-0 text-xs ${CATEGORY_COLORS[activeItem.category]}`}
+                    variant="secondary"
+                  >
+                    {CATEGORY_ICONS[activeItem.category]}
+                  </Badge>
+                </div>
+              </div>
 
-      {/* Actions */}
-      <div className="space-y-3 pb-6">
-        <Button
-          className="w-full gap-2"
-          size="lg"
-          onClick={handleSaveAll}
-          disabled={isSaving || queue.every((q) => q.status === "processing")}
-          data-ocid="upload.save_button"
-        >
-          {isSaving ? (
-            <>
-              <Loader2Icon size={18} className="animate-spin" />
-              Saving…
-            </>
-          ) : (
-            <>
-              <CheckCircle2Icon size={18} />
-              Add to Gallery ({queue.filter((q) => q.status !== "done").length})
-            </>
-          )}
-        </Button>
-        <Button
-          variant="ghost"
-          className="w-full text-muted-foreground"
-          onClick={() => navigate({ to: "/gallery" })}
-          data-ocid="upload.discard_button"
-        >
-          <Trash2Icon size={14} className="mr-1.5" />
-          Discard all
-        </Button>
+              <div className="space-y-1.5">
+                <Label htmlFor="amount" className="text-xs font-medium">
+                  Amount (optional)
+                </Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">
+                    ₹
+                  </span>
+                  <Input
+                    id="amount"
+                    type="number"
+                    placeholder="0.00"
+                    className="pl-7"
+                    value={activeItem.amount}
+                    onChange={(e) => updateActive({ amount: e.target.value })}
+                    data-ocid="upload.amount_input"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="notes" className="text-xs font-medium">
+                  Notes (optional)
+                </Label>
+                <Textarea
+                  id="notes"
+                  placeholder="Vendor name, purpose…"
+                  value={activeItem.notes}
+                  maxLength={200}
+                  rows={2}
+                  className="resize-none text-sm"
+                  onChange={(e) => updateActive({ notes: e.target.value })}
+                  data-ocid="upload.notes_textarea"
+                />
+                <p className="text-xs text-muted-foreground text-right">
+                  {activeItem.notes.length}/200
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Actions */}
+        <div className="space-y-3 pb-6">
+          <Button
+            className="w-full gap-2"
+            size="lg"
+            onClick={handleSaveAll}
+            disabled={isSaving || queue.every((q) => q.status === "processing")}
+            data-ocid="upload.save_button"
+          >
+            {isSaving ? (
+              <>
+                <Loader2Icon size={18} className="animate-spin" />
+                Saving…
+              </>
+            ) : (
+              <>
+                <CheckCircle2Icon size={18} />
+                Add to Gallery (
+                {queue.filter((q) => q.status !== "done").length})
+              </>
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full text-muted-foreground"
+            onClick={() => navigate({ to: "/gallery" })}
+            data-ocid="upload.discard_button"
+          >
+            <Trash2Icon size={14} className="mr-1.5" />
+            Discard all
+          </Button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

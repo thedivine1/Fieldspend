@@ -1,4 +1,4 @@
-import { t } from "@/lib/i18n";
+import { tLang } from "@/lib/i18n";
 import { useAppStore } from "@/store/useAppStore";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
@@ -114,11 +114,11 @@ export function Layout({ children }: LayoutProps) {
               className="font-display font-bold text-lg leading-tight text-foreground"
               data-ocid="header.app_name"
             >
-              SalesExpense <span className="text-primary">Pro</span>
+              Field<span className="text-primary">spend</span>
             </span>
             {currentLanguage !== "en" && (
               <span className="text-xs text-muted-foreground leading-none mt-0.5">
-                {t("app.name")}
+                {tLang("app.name", currentLanguage)}
               </span>
             )}
           </div>
@@ -178,7 +178,7 @@ export function Layout({ children }: LayoutProps) {
                 <CameraIcon size={24} className="text-primary-foreground" />
               </span>
               <span className="text-[10px] font-medium text-muted-foreground mt-1">
-                {t("nav.upload")}
+                {tLang("nav.upload", currentLanguage)}
               </span>
             </Link>
           </div>
@@ -204,6 +204,7 @@ function NavLink({
   item: NavItem;
   isActive: boolean;
 }) {
+  const { currentLanguage } = useAppStore();
   return (
     <Link
       to={item.to}
@@ -211,7 +212,9 @@ function NavLink({
       data-ocid={item.ocid}
     >
       <span>{item.icon}</span>
-      <span className="text-[10px]">{t(item.labelKey)}</span>
+      <span className="text-[10px]">
+        {tLang(item.labelKey, currentLanguage)}
+      </span>
     </Link>
   );
 }

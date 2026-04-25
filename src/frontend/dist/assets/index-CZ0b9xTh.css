@@ -662,6 +662,9 @@ video {
 .bottom-0 {
   bottom: 0px;
 }
+.bottom-12 {
+  bottom: 3rem;
+}
 .left-0 {
   left: 0px;
 }
@@ -742,6 +745,9 @@ video {
 }
 .z-\[1\] {
   z-index: 1;
+}
+.z-\[9999\] {
+  z-index: 9999;
 }
 .col-start-2 {
   grid-column-start: 2;
@@ -940,6 +946,9 @@ video {
 .size-full {
   width: 100%;
   height: 100%;
+}
+.h-1 {
+  height: 0.25rem;
 }
 .h-1\.5 {
   height: 0.375rem;
@@ -1285,6 +1294,9 @@ video {
 .grid-cols-2 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
+.grid-cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
 .grid-cols-\[0_1fr\] {
   grid-template-columns: 0 1fr;
 }
@@ -1369,6 +1381,11 @@ video {
   margin-top: calc(0.5rem * calc(1 - var(--tw-space-y-reverse)));
   margin-bottom: calc(0.5rem * var(--tw-space-y-reverse));
 }
+.space-y-2\.5 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(0.625rem * calc(1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(0.625rem * var(--tw-space-y-reverse));
+}
 .space-y-3 > :not([hidden]) ~ :not([hidden]) {
   --tw-space-y-reverse: 0;
   margin-top: calc(0.75rem * calc(1 - var(--tw-space-y-reverse)));
@@ -1431,6 +1448,9 @@ video {
 }
 .break-words {
   overflow-wrap: break-word;
+}
+.break-all {
+  word-break: break-all;
 }
 .rounded-2xl {
   border-radius: 1rem;
@@ -1528,6 +1548,9 @@ video {
 }
 .border-primary\/30 {
   border-color: oklch(var(--primary) / 0.3);
+}
+.border-primary\/40 {
+  border-color: oklch(var(--primary) / 0.4);
 }
 .border-primary\/60 {
   border-color: oklch(var(--primary) / 0.6);
@@ -1710,6 +1733,13 @@ video {
   --tw-gradient-to: rgb(255 255 255 / 0)  var(--tw-gradient-to-position);
   --tw-gradient-stops: var(--tw-gradient-from), oklch(var(--secondary) / 0.1) var(--tw-gradient-via-position), var(--tw-gradient-to);
 }
+.via-secondary\/15 {
+  --tw-gradient-to: rgb(255 255 255 / 0)  var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), oklch(var(--secondary) / 0.15) var(--tw-gradient-via-position), var(--tw-gradient-to);
+}
+.to-accent\/10 {
+  --tw-gradient-to: oklch(var(--accent) / 0.1) var(--tw-gradient-to-position);
+}
 .to-secondary {
   --tw-gradient-to: oklch(var(--secondary) / 1) var(--tw-gradient-to-position);
 }
@@ -1747,11 +1777,11 @@ video {
 .p-3 {
   padding: 0.75rem;
 }
-.p-3\.5 {
-  padding: 0.875rem;
-}
 .p-4 {
   padding: 1rem;
+}
+.p-5 {
+  padding: 1.25rem;
 }
 .p-6 {
   padding: 1.5rem;
@@ -1948,6 +1978,9 @@ video {
 .text-\[11px\] {
   font-size: 11px;
 }
+.text-\[9px\] {
+  font-size: 9px;
+}
 .text-base {
   font-size: 1rem;
   line-height: 1.5rem;
@@ -2057,6 +2090,9 @@ video {
   --tw-text-opacity: 1;
   color: oklch(var(--muted-foreground) / var(--tw-text-opacity, 1));
 }
+.text-muted-foreground\/50 {
+  color: oklch(var(--muted-foreground) / 0.5);
+}
 .text-popover-foreground {
   color: oklch(var(--popover-foreground));
 }
@@ -2165,6 +2201,10 @@ video {
 .ring-offset-background {
   --tw-ring-offset-color: oklch(var(--background));
 }
+.drop-shadow-lg {
+  --tw-drop-shadow: drop-shadow(0 10px 8px rgb(0 0 0 / 0.04)) drop-shadow(0 4px 3px rgb(0 0 0 / 0.1));
+  filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
+}
 .filter {
   filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
 }
@@ -2251,6 +2291,9 @@ video {
 .ease-linear {
   transition-timing-function: linear;
 }
+.ease-out {
+  transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+}
 .\@container\/card-header {
   container-type: inline-size;
   container-name: card-header;
@@ -2304,6 +2347,9 @@ video {
 }
 .ease-linear {
   animation-timing-function: linear;
+}
+.ease-out {
+  animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
 }
 .running {
   animation-play-state: running;
@@ -3912,11 +3958,6 @@ video {
   color: rgb(251 191 36 / var(--tw-text-opacity, 1));
 }
 
-.dark\:text-amber-500:is(.dark *) {
-  --tw-text-opacity: 1;
-  color: rgb(245 158 11 / var(--tw-text-opacity, 1));
-}
-
 .dark\:text-muted-foreground:is(.dark *) {
   --tw-text-opacity: 1;
   color: oklch(var(--muted-foreground) / var(--tw-text-opacity, 1));
@@ -3991,6 +4032,11 @@ video {
 
   .sm\:gap-2\.5 {
     gap: 0.625rem;
+  }
+
+  .sm\:px-4 {
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 
   .sm\:pl-2\.5 {

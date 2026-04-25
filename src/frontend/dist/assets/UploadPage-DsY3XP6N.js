@@ -1,14 +1,13 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/index-Dea8f1p1.js","assets/index-Qp0UCZEp.js","assets/index-DCvuN_Ot.css"])))=>i.map(i=>d[i]);
-import { c as createLucideIcon, r as reactExports, j as jsxRuntimeExports, _ as __vitePreload, u as useNavigate, a as useAppStore, g as getDailyCount, d as ue, t, I as Image$1, C as Camera, X } from "./index-Qp0UCZEp.js";
-import { k as Primitive, h as cn, B as Button, j as Badge } from "./index-B0G-Jbi4.js";
-import { L as Label, I as Input } from "./label-Bxdps9rE.js";
-import { S as Select, b as SelectTrigger, c as SelectValue, d as SelectContent, e as SelectItem } from "./select-BX4urHRz.js";
-import { T as Textarea } from "./textarea-34hb3oP2.js";
-import { h as hasPremiumAccess, F as FREE_DAILY_LIMIT, S as Sparkles, C as CircleCheck } from "./premium-C3zV1u21.js";
-import { m as motion } from "./proxy-JR3IeFZM.js";
-import { C as CircleAlert } from "./circle-alert-BtIQXjz1.js";
-import { S as Star } from "./star-CwggeFXJ.js";
-import { A as AnimatePresence } from "./index-y6MVdqPg.js";
+import { c as createLucideIcon, r as reactExports, j as jsxRuntimeExports, _ as __vitePreload, u as useNavigate, a as useAppStore, g as getDailyCount, d as ue, t as tLang, I as Image$1, C as Camera, X } from "./index-CF0nR3YV.js";
+import { C as CircleAlert, A as AdModal } from "./AdModal-DNONOCGv.js";
+import { k as Primitive, h as cn, B as Button, j as Badge } from "./index-B5pZLSOB.js";
+import { L as Label, I as Input } from "./label-DeID-t2a.js";
+import { S as Select, b as SelectTrigger, c as SelectValue, d as SelectContent, e as SelectItem } from "./select-D9mEVm7r.js";
+import { T as Textarea } from "./textarea-CO2P10eg.js";
+import { i as isAdminUser, h as hasPremiumAccess, F as FREE_DAILY_LIMIT, S as Sparkles, C as CircleCheck, a as isBetaPeriodActive } from "./premium-Hll_Pic7.js";
+import { m as motion } from "./proxy-KEY2c1R9.js";
+import { S as Star } from "./star-Bo2unxna.js";
+import { A as AnimatePresence } from "./index-B26f0ZnG.js";
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -258,17 +257,74 @@ function dataUrlToFile(dataUrl, fileName) {
   }
   return new File([bytes], fileName, { type: mime });
 }
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      const base64 = result.split(",")[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+const OCR_SPACE_URL = "https://api.ocr.space/parse/image";
+const OCR_SPACE_KEY = "helloworld";
+async function extractWithOcrSpace(source) {
+  var _a, _b;
+  let base64;
+  let mimeType = "image/jpeg";
+  if (typeof source === "string") {
+    const parts = source.split(",");
+    base64 = parts[1];
+    const mimeMatch = parts[0].match(/:(.*?);/);
+    if (mimeMatch) mimeType = mimeMatch[1];
+  } else {
+    base64 = await fileToBase64(source);
+    mimeType = source.type || "image/jpeg";
+  }
+  const body = new FormData();
+  body.append("base64Image", `data:${mimeType};base64,${base64}`);
+  body.append("apikey", OCR_SPACE_KEY);
+  body.append("language", "eng");
+  body.append("OCREngine", "2");
+  body.append("isTable", "true");
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15e3);
+  const response = await fetch(OCR_SPACE_URL, {
+    method: "POST",
+    body,
+    signal: controller.signal
+  });
+  clearTimeout(timeoutId);
+  if (!response.ok) throw new Error(`OCR.Space HTTP ${response.status}`);
+  const json = await response.json();
+  if (json.IsErroredOnProcessing) throw new Error("OCR.Space processing error");
+  const text = ((_b = (_a = json.ParsedResults) == null ? void 0 : _a[0]) == null ? void 0 : _b.ParsedText) ?? "";
+  if (!text.trim()) throw new Error("OCR.Space returned empty text");
+  return text;
+}
+async function extractWithTesseract(source) {
+  const { createWorker } = await __vitePreload(async () => {
+    const { createWorker: createWorker2 } = await import("./index-NYFB56d-.js").then((n) => n.i);
+    return { createWorker: createWorker2 };
+  }, true ? [] : void 0);
+  const worker = await createWorker(["eng", "hin"]);
+  const input = typeof source === "string" ? dataUrlToFile(source, "receipt.jpg") : source;
+  const { data } = await worker.recognize(input);
+  await worker.terminate();
+  return data.text;
+}
 async function extractTextFromImage(source) {
   try {
-    const { createWorker } = await __vitePreload(async () => {
-      const { createWorker: createWorker2 } = await import("./index-Dea8f1p1.js").then((n) => n.i);
-      return { createWorker: createWorker2 };
-    }, true ? __vite__mapDeps([0,1,2]) : void 0);
-    const worker = await createWorker(["eng", "hin"]);
-    const input = typeof source === "string" ? dataUrlToFile(source, "receipt.jpg") : source;
-    const { data } = await worker.recognize(input);
-    await worker.terminate();
-    return data.text;
+    const text = await extractWithOcrSpace(source);
+    return text;
+  } catch {
+    console.warn("[OCR] OCR.Space unavailable, falling back to Tesseract");
+  }
+  try {
+    return await extractWithTesseract(source);
   } catch {
     return "";
   }
@@ -372,6 +428,7 @@ const CATEGORY_KEYWORDS = {
     "vistara",
     "goair",
     "akasa",
+    "airasia",
     "airline",
     "airport",
     "boarding",
@@ -382,6 +439,7 @@ const CATEGORY_KEYWORDS = {
   ],
   train: [
     "irctc",
+    "indian railways",
     "railway",
     "train",
     "station",
@@ -394,8 +452,10 @@ const CATEGORY_KEYWORDS = {
   ],
   bus: [
     "msrtc",
-    "st bus",
+    "gsrtc",
     "ksrtc",
+    "st bus",
+    "redbus",
     "state transport",
     "bus",
     "volvo",
@@ -412,6 +472,7 @@ const CATEGORY_KEYWORDS = {
     "guest house",
     "guesthouse",
     "oyo",
+    "makemytrip hotel",
     "room"
   ],
   meal: [
@@ -480,6 +541,25 @@ function detectAmount(text) {
   }
   return null;
 }
+const UPLOAD_COUNT_KEY = "fieldspend_upload_count";
+const UPLOAD_DATE_KEY = "fieldspend_upload_date";
+function getTodayStr() {
+  return (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+}
+function getUploadCount() {
+  const storedDate = localStorage.getItem(UPLOAD_DATE_KEY);
+  if (storedDate !== getTodayStr()) {
+    localStorage.setItem(UPLOAD_DATE_KEY, getTodayStr());
+    localStorage.setItem(UPLOAD_COUNT_KEY, "0");
+    return 0;
+  }
+  return Number(localStorage.getItem(UPLOAD_COUNT_KEY) ?? "0");
+}
+function incrementUploadCount() {
+  const count = getUploadCount() + 1;
+  localStorage.setItem(UPLOAD_COUNT_KEY, String(count));
+  return count;
+}
 const CATEGORIES = [
   "cab",
   "train",
@@ -519,6 +599,7 @@ function QueueItemCard({
   onSelect,
   onRemove
 }) {
+  const { currentLanguage } = useAppStore();
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(
     motion.div,
     {
@@ -546,10 +627,10 @@ function QueueItemCard({
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex items-center gap-1.5", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-sm font-medium text-foreground truncate", children: [
             CATEGORY_ICONS[item.category],
             " ",
-            t(`cat.${item.category}`)
+            tLang(`cat.${item.category}`, currentLanguage)
           ] }) }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground truncate mt-0.5", children: [
-            item.date || t("status.processing"),
+            item.date || tLang("status.processing", currentLanguage),
             item.amount ? ` · ₹${item.amount}` : ""
           ] })
         ] }),
@@ -578,7 +659,8 @@ function QueueItemCard({
 }
 function UploadPage() {
   const navigate = useNavigate();
-  const { addReceipt, userProfile } = useAppStore();
+  const { addReceipt, userProfile, currentLanguage } = useAppStore();
+  const lang = currentLanguage;
   const cameraRef = reactExports.useRef(null);
   const galleryRef = reactExports.useRef(null);
   const [queue, setQueue] = reactExports.useState([]);
@@ -586,16 +668,21 @@ function UploadPage() {
   const [isSaving, setIsSaving] = reactExports.useState(false);
   const [dailyCount, setDailyCount] = reactExports.useState(0);
   const [limitChecked, setLimitChecked] = reactExports.useState(false);
+  const [adGateQueue, setAdGateQueue] = reactExports.useState(0);
+  const [currentAd, setCurrentAd] = reactExports.useState(0);
+  const [pendingSaveAfterAd, setPendingSaveAfterAd] = reactExports.useState(false);
   reactExports.useEffect(() => {
     getDailyCount(TODAY).then((count) => {
       setDailyCount(count);
       setLimitChecked(true);
     }).catch(() => setLimitChecked(true));
   }, []);
+  const isAdmin = userProfile ? isAdminUser(userProfile) : false;
   const isPremium = userProfile ? hasPremiumAccess(userProfile) : false;
   const limitReached = !isPremium && limitChecked && dailyCount >= FREE_DAILY_LIMIT;
   const canUpload = isPremium || !limitChecked || limitChecked && dailyCount < FREE_DAILY_LIMIT;
   const slotsLeft = Math.max(0, FREE_DAILY_LIMIT - dailyCount);
+  const shouldShowAds = !isBetaPeriodActive() && !isPremium && !isAdmin;
   const activeItem = queue[activeIndex] ?? null;
   const processFile = reactExports.useCallback(async (itemId, file) => {
     setQueue(
@@ -643,7 +730,7 @@ function UploadPage() {
   const enqueueFiles = reactExports.useCallback(
     (files) => {
       if (!canUpload) {
-        ue.error(t("status.limit_reached"));
+        ue.error(tLang("status.limit_reached", lang));
         return;
       }
       const remaining = MAX_QUEUE - queue.length;
@@ -667,11 +754,9 @@ function UploadPage() {
         if (prev.length === 0) setActiveIndex(0);
         return updated;
       });
-      for (const item of newItems) {
-        processFile(item.id, item.file);
-      }
+      for (const item of newItems) processFile(item.id, item.file);
     },
-    [canUpload, queue.length, processFile]
+    [canUpload, queue.length, processFile, lang]
   );
   const handleCameraChange = (e) => {
     var _a;
@@ -681,16 +766,11 @@ function UploadPage() {
   };
   const handleGalleryChange = (e) => {
     const files = e.target.files;
-    if (files && files.length > 0) {
-      enqueueFiles(Array.from(files));
-    }
+    if (files && files.length > 0) enqueueFiles(Array.from(files));
     e.target.value = "";
   };
   const removeItem = (index) => {
-    setQueue((prev) => {
-      const updated = prev.filter((_, i) => i !== index);
-      return updated;
-    });
+    setQueue((prev) => prev.filter((_, i) => i !== index));
     setActiveIndex((prev) => Math.min(prev, Math.max(0, queue.length - 2)));
   };
   function updateActive(patch) {
@@ -698,7 +778,7 @@ function UploadPage() {
       (prev) => prev.map((q, i) => i === activeIndex ? { ...q, ...patch } : q)
     );
   }
-  async function handleSaveAll() {
+  async function doSaveAll() {
     const toSave = queue.filter((q) => q.status !== "done");
     if (toSave.length === 0) {
       navigate({ to: "/gallery" });
@@ -733,6 +813,12 @@ function UploadPage() {
           (prev) => prev.map((q) => q.id === item.id ? { ...q, status: "done" } : q)
         );
         savedCount++;
+        if (shouldShowAds) {
+          const newCount = incrementUploadCount();
+          if (newCount % 5 === 0) {
+            setPendingSaveAfterAd(true);
+          }
+        }
       } catch {
         setQueue(
           (prev) => prev.map((q) => q.id === item.id ? { ...q, status: "error" } : q)
@@ -742,11 +828,28 @@ function UploadPage() {
     setIsSaving(false);
     if (savedCount > 0) {
       ue.success(
-        savedCount === 1 ? t("status.saved") : `${savedCount} receipts saved!`
+        savedCount === 1 ? tLang("status.saved", lang) : `${savedCount} receipts saved!`
       );
-      navigate({ to: "/gallery" });
+      if (shouldShowAds && pendingSaveAfterAd) {
+        setPendingSaveAfterAd(false);
+        setAdGateQueue(2);
+        setCurrentAd(1);
+      } else {
+        navigate({ to: "/gallery" });
+      }
+    }
+  }
+  function handleSaveAll() {
+    doSaveAll();
+  }
+  function handleAdComplete() {
+    const remaining = adGateQueue - 1;
+    setAdGateQueue(remaining);
+    if (remaining > 0) {
+      setCurrentAd((prev) => prev + 1);
     } else {
-      ue.error("Failed to save receipts. Please try again.");
+      setCurrentAd(0);
+      navigate({ to: "/gallery" });
     }
   }
   if (limitChecked && limitReached) {
@@ -768,7 +871,7 @@ function UploadPage() {
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-xl font-bold text-foreground", children: "Daily Limit Reached" }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-sm text-muted-foreground mt-2 max-w-xs", children: [
-              t("status.limit_reached"),
+              tLang("status.limit_reached", lang),
               " — Upgrade to Premium for unlimited uploads."
             ] })
           ] }),
@@ -800,7 +903,7 @@ function UploadPage() {
                 onClick: () => navigate({ to: "/settings" }),
                 children: [
                   /* @__PURE__ */ jsxRuntimeExports.jsx(Star, { size: 18 }),
-                  t("action.upgrade"),
+                  tLang("action.upgrade", lang),
                   " · ₹49/mo"
                 ]
               }
@@ -914,7 +1017,7 @@ function UploadPage() {
                   "data-ocid": "upload.camera_button",
                   children: [
                     /* @__PURE__ */ jsxRuntimeExports.jsx(Camera, { size: 24, className: "text-primary" }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm font-medium", children: t("upload.camera") })
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm font-medium", children: tLang("upload.camera", lang) })
                   ]
                 }
               ),
@@ -932,7 +1035,7 @@ function UploadPage() {
                   "data-ocid": "upload.gallery_button",
                   children: [
                     /* @__PURE__ */ jsxRuntimeExports.jsx(Image$1, { size: 24, className: "text-secondary" }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm font-medium", children: t("upload.gallery") })
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm font-medium", children: tLang("upload.gallery", lang) })
                   ]
                 }
               )
@@ -943,260 +1046,277 @@ function UploadPage() {
       )
     ] });
   }
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "px-4 py-4 space-y-4", "data-ocid": "upload.page", children: [
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "input",
+      AdModal,
       {
-        ref: cameraRef,
-        type: "file",
-        accept: "image/*",
-        capture: "environment",
-        className: "hidden",
-        onChange: handleCameraChange,
-        "aria-label": "Camera capture"
+        isOpen: adGateQueue > 0,
+        onComplete: handleAdComplete,
+        adNumber: currentAd,
+        totalAds: 2
       }
     ),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "input",
-      {
-        ref: galleryRef,
-        type: "file",
-        accept: "image/*",
-        multiple: true,
-        className: "hidden",
-        onChange: handleGalleryChange,
-        "aria-label": "Gallery select"
-      }
-    ),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("h2", { className: "text-base font-semibold text-foreground", children: [
-        queue.length,
-        " receipt",
-        queue.length > 1 ? "s" : "",
-        " queued"
-      ] }),
-      queue.length < MAX_QUEUE && canUpload && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        Button,
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "px-4 py-4 space-y-4", "data-ocid": "upload.page", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "input",
         {
-          type: "button",
-          variant: "ghost",
-          size: "sm",
-          className: "text-primary gap-1.5 h-8",
-          onClick: () => {
-            var _a;
-            return (_a = galleryRef.current) == null ? void 0 : _a.click();
-          },
-          "data-ocid": "upload.add_more_button",
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(Image$1, { size: 14 }),
-            "Add more"
-          ]
+          ref: cameraRef,
+          type: "file",
+          accept: "image/*",
+          capture: "environment",
+          className: "hidden",
+          onChange: handleCameraChange,
+          "aria-label": "Camera capture"
         }
-      )
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-2", "data-ocid": "upload.queue_list", children: /* @__PURE__ */ jsxRuntimeExports.jsx(AnimatePresence, { children: queue.map((item, i) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-      QueueItemCard,
-      {
-        item,
-        index: i,
-        isActive: i === activeIndex,
-        onSelect: () => setActiveIndex(i),
-        onRemove: () => removeItem(i)
-      },
-      item.id
-    )) }) }),
-    activeItem && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-      motion.div,
-      {
-        initial: { opacity: 0, y: 8 },
-        animate: { opacity: 1, y: 0 },
-        className: "bg-card border border-border rounded-2xl overflow-hidden",
-        "data-ocid": "upload.receipt_editor",
-        children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative w-full h-52 bg-muted", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "img",
-              {
-                src: activeItem.previewUrl,
-                alt: "Receipt preview",
-                className: "w-full h-full object-cover"
-              }
-            ),
-            activeItem.status === "processing" && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-              motion.div,
-              {
-                initial: { opacity: 0 },
-                animate: { opacity: 1 },
-                className: "absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-2",
-                "data-ocid": "upload.processing_state",
-                children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { size: 28, className: "text-primary animate-spin" }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm font-medium text-foreground", children: t("status.processing") }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: "Reading receipt with OCR…" })
-                ]
-              }
-            ),
-            activeItem.imageDataUrl && !activeItem.ocrFailed && activeItem.ocrAttempted && /* @__PURE__ */ jsxRuntimeExports.jsx(
-              motion.div,
-              {
-                initial: { scale: 0 },
-                animate: { scale: 1 },
-                className: "absolute top-3 left-3 flex items-center gap-1.5 px-2 py-1 rounded-full bg-background/80 text-foreground text-xs font-medium shadow",
-                children: "🔄 Portrait"
-              }
-            ),
-            activeItem.ocrAttempted && !activeItem.ocrFailed && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-              motion.div,
-              {
-                initial: { scale: 0 },
-                animate: { scale: 1 },
-                className: "absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground text-xs font-medium shadow-md",
-                children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { size: 12 }),
-                  "OCR filled"
-                ]
-              }
-            ),
-            activeItem.ocrFailed && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute top-3 left-3 right-3", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-destructive/90 text-destructive-foreground text-xs px-3 py-2 rounded-lg flex items-center justify-between gap-2", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Couldn't read receipt — fill in details manually" }),
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "input",
+        {
+          ref: galleryRef,
+          type: "file",
+          accept: "image/*",
+          multiple: true,
+          className: "hidden",
+          onChange: handleGalleryChange,
+          "aria-label": "Gallery select"
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("h2", { className: "text-base font-semibold text-foreground", children: [
+          queue.length,
+          " receipt",
+          queue.length > 1 ? "s" : "",
+          " queued"
+        ] }),
+        queue.length < MAX_QUEUE && canUpload && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          Button,
+          {
+            type: "button",
+            variant: "ghost",
+            size: "sm",
+            className: "text-primary gap-1.5 h-8",
+            onClick: () => {
+              var _a;
+              return (_a = galleryRef.current) == null ? void 0 : _a.click();
+            },
+            "data-ocid": "upload.add_more_button",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Image$1, { size: 14 }),
+              " Add more"
+            ]
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-2", "data-ocid": "upload.queue_list", children: /* @__PURE__ */ jsxRuntimeExports.jsx(AnimatePresence, { children: queue.map((item, i) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+        QueueItemCard,
+        {
+          item,
+          index: i,
+          isActive: i === activeIndex,
+          onSelect: () => setActiveIndex(i),
+          onRemove: () => removeItem(i)
+        },
+        item.id
+      )) }) }),
+      activeItem && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        motion.div,
+        {
+          initial: { opacity: 0, y: 8 },
+          animate: { opacity: 1, y: 0 },
+          className: "bg-card border border-border rounded-2xl overflow-hidden",
+          "data-ocid": "upload.receipt_editor",
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative w-full h-52 bg-muted", children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "button",
+                "img",
                 {
-                  type: "button",
-                  className: "flex-shrink-0",
-                  onClick: () => processFile(activeItem.id, activeItem.file),
-                  "aria-label": "Retry OCR",
-                  "data-ocid": "upload.retry_ocr",
-                  children: /* @__PURE__ */ jsxRuntimeExports.jsx(RefreshCw, { size: 14 })
+                  src: activeItem.previewUrl,
+                  alt: "Receipt preview",
+                  className: "w-full h-full object-cover"
                 }
-              )
-            ] }) })
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-4 space-y-4", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-1.5", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "date", className: "text-xs font-medium", children: "Date" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                Input,
+              ),
+              activeItem.status === "processing" && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                motion.div,
                 {
-                  id: "date",
-                  type: "date",
-                  value: activeItem.date,
-                  onChange: (e) => updateActive({ date: e.target.value }),
-                  "data-ocid": "upload.date_input"
+                  initial: { opacity: 0 },
+                  animate: { opacity: 1 },
+                  className: "absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-2",
+                  "data-ocid": "upload.processing_state",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      LoaderCircle,
+                      {
+                        size: 28,
+                        className: "text-primary animate-spin"
+                      }
+                    ),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm font-medium text-foreground", children: tLang("status.processing", lang) }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: "Reading receipt with OCR…" })
+                  ]
                 }
-              )
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-1.5", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "category", className: "text-xs font-medium", children: "Category" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  Select,
-                  {
-                    value: activeItem.category,
-                    onValueChange: (v) => updateActive({ category: v }),
-                    children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(
-                        SelectTrigger,
-                        {
-                          id: "category",
-                          className: "flex-1",
-                          "data-ocid": "upload.category_select",
-                          children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, {})
-                        }
-                      ),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: CATEGORIES.map((cat) => /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: cat, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-2", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: CATEGORY_ICONS[cat] }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t(`cat.${cat}`) })
-                      ] }) }, cat)) })
-                    ]
-                  }
-                ),
+              ),
+              activeItem.imageDataUrl && !activeItem.ocrFailed && activeItem.ocrAttempted && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                motion.div,
+                {
+                  initial: { scale: 0 },
+                  animate: { scale: 1 },
+                  className: "absolute top-3 left-3 flex items-center gap-1.5 px-2 py-1 rounded-full bg-background/80 text-foreground text-xs font-medium shadow",
+                  children: "🔄 Portrait"
+                }
+              ),
+              activeItem.ocrAttempted && !activeItem.ocrFailed && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                motion.div,
+                {
+                  initial: { scale: 0 },
+                  animate: { scale: 1 },
+                  className: "absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground text-xs font-medium shadow-md",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { size: 12 }),
+                    " OCR filled"
+                  ]
+                }
+              ),
+              activeItem.ocrFailed && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute top-3 left-3 right-3", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-destructive/90 text-destructive-foreground text-xs px-3 py-2 rounded-lg flex items-center justify-between gap-2", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Couldn't read receipt — fill in details manually" }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  Badge,
+                  "button",
                   {
-                    className: `flex-shrink-0 text-xs ${CATEGORY_COLORS[activeItem.category]}`,
-                    variant: "secondary",
-                    children: CATEGORY_ICONS[activeItem.category]
+                    type: "button",
+                    className: "flex-shrink-0",
+                    onClick: () => processFile(activeItem.id, activeItem.file),
+                    "aria-label": "Retry OCR",
+                    "data-ocid": "upload.retry_ocr",
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(RefreshCw, { size: 14 })
                   }
                 )
-              ] })
+              ] }) })
             ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-1.5", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "amount", className: "text-xs font-medium", children: "Amount (optional)" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground", children: "₹" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-4 space-y-4", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-1.5", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "date", className: "text-xs font-medium", children: "Date" }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx(
                   Input,
                   {
-                    id: "amount",
-                    type: "number",
-                    placeholder: "0.00",
-                    className: "pl-7",
-                    value: activeItem.amount,
-                    onChange: (e) => updateActive({ amount: e.target.value }),
-                    "data-ocid": "upload.amount_input"
+                    id: "date",
+                    type: "date",
+                    value: activeItem.date,
+                    onChange: (e) => updateActive({ date: e.target.value }),
+                    "data-ocid": "upload.date_input"
                   }
                 )
-              ] })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-1.5", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "notes", className: "text-xs font-medium", children: "Notes (optional)" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                Textarea,
-                {
-                  id: "notes",
-                  placeholder: "Vendor name, purpose…",
-                  value: activeItem.notes,
-                  maxLength: 200,
-                  rows: 2,
-                  className: "resize-none text-sm",
-                  onChange: (e) => updateActive({ notes: e.target.value }),
-                  "data-ocid": "upload.notes_textarea"
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground text-right", children: [
-                activeItem.notes.length,
-                "/200"
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-1.5", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "category", className: "text-xs font-medium", children: "Category" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                    Select,
+                    {
+                      value: activeItem.category,
+                      onValueChange: (v) => updateActive({ category: v }),
+                      children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          SelectTrigger,
+                          {
+                            id: "category",
+                            className: "flex-1",
+                            "data-ocid": "upload.category_select",
+                            children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, {})
+                          }
+                        ),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: CATEGORIES.map((cat) => /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: cat, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-2", children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: CATEGORY_ICONS[cat] }),
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: tLang(`cat.${cat}`, lang) })
+                        ] }) }, cat)) })
+                      ]
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    Badge,
+                    {
+                      className: `flex-shrink-0 text-xs ${CATEGORY_COLORS[activeItem.category]}`,
+                      variant: "secondary",
+                      children: CATEGORY_ICONS[activeItem.category]
+                    }
+                  )
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-1.5", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "amount", className: "text-xs font-medium", children: "Amount (optional)" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground", children: "₹" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    Input,
+                    {
+                      id: "amount",
+                      type: "number",
+                      placeholder: "0.00",
+                      className: "pl-7",
+                      value: activeItem.amount,
+                      onChange: (e) => updateActive({ amount: e.target.value }),
+                      "data-ocid": "upload.amount_input"
+                    }
+                  )
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-1.5", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "notes", className: "text-xs font-medium", children: "Notes (optional)" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  Textarea,
+                  {
+                    id: "notes",
+                    placeholder: "Vendor name, purpose…",
+                    value: activeItem.notes,
+                    maxLength: 200,
+                    rows: 2,
+                    className: "resize-none text-sm",
+                    onChange: (e) => updateActive({ notes: e.target.value }),
+                    "data-ocid": "upload.notes_textarea"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground text-right", children: [
+                  activeItem.notes.length,
+                  "/200"
+                ] })
               ] })
             ] })
-          ] })
-        ]
-      },
-      activeItem.id
-    ),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-3 pb-6", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        Button,
-        {
-          className: "w-full gap-2",
-          size: "lg",
-          onClick: handleSaveAll,
-          disabled: isSaving || queue.every((q) => q.status === "processing"),
-          "data-ocid": "upload.save_button",
-          children: isSaving ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { size: 18, className: "animate-spin" }),
-            "Saving…"
-          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheck, { size: 18 }),
-            "Add to Gallery (",
-            queue.filter((q) => q.status !== "done").length,
-            ")"
-          ] })
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        Button,
-        {
-          variant: "ghost",
-          className: "w-full text-muted-foreground",
-          onClick: () => navigate({ to: "/gallery" }),
-          "data-ocid": "upload.discard_button",
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(Trash2, { size: 14, className: "mr-1.5" }),
-            "Discard all"
           ]
-        }
-      )
+        },
+        activeItem.id
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-3 pb-6", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Button,
+          {
+            className: "w-full gap-2",
+            size: "lg",
+            onClick: handleSaveAll,
+            disabled: isSaving || queue.every((q) => q.status === "processing"),
+            "data-ocid": "upload.save_button",
+            children: isSaving ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { size: 18, className: "animate-spin" }),
+              "Saving…"
+            ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheck, { size: 18 }),
+              "Add to Gallery (",
+              queue.filter((q) => q.status !== "done").length,
+              ")"
+            ] })
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          Button,
+          {
+            variant: "ghost",
+            className: "w-full text-muted-foreground",
+            onClick: () => navigate({ to: "/gallery" }),
+            "data-ocid": "upload.discard_button",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Trash2, { size: 14, className: "mr-1.5" }),
+              "Discard all"
+            ]
+          }
+        )
+      ] })
     ] })
   ] });
 }

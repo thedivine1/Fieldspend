@@ -1,7 +1,7 @@
 import type { ExpenseId, Receipt, UserProfile } from "@/types";
 import { type IDBPDatabase, openDB as idbOpen } from "idb";
 
-const DB_NAME = "salesexpense-pro";
+const DB_NAME = "fieldspend";
 const DB_VERSION = 1;
 
 type AppDB = {

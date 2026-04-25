@@ -1,6 +1,6 @@
-import { r as reactExports, u as useNavigate, a as useAppStore, s as setLanguage, j as jsxRuntimeExports, t, L as LANGUAGES } from "./index-Qp0UCZEp.js";
-import { A as AnimatePresence } from "./index-y6MVdqPg.js";
-import { m as motion } from "./proxy-JR3IeFZM.js";
+import { r as reactExports, u as useNavigate, a as useAppStore, s as setLanguage, j as jsxRuntimeExports, t as tLang, L as LANGUAGES } from "./index-CF0nR3YV.js";
+import { A as AnimatePresence } from "./index-B26f0ZnG.js";
+import { m as motion } from "./proxy-KEY2c1R9.js";
 function SnapIllustration() {
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(
     "svg",
@@ -777,10 +777,8 @@ function OnboardingPage() {
     ),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative z-10 flex items-center justify-between px-5 pt-5 pb-2", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "font-display font-bold text-lg text-foreground tracking-tight", children: [
-        "Sales",
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-primary", children: "Expense" }),
-        " ",
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-secondary", children: "Pro" })
+        "Field",
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-primary", children: "spend" })
       ] }),
       !isLast && /* @__PURE__ */ jsxRuntimeExports.jsx(
         "button",
@@ -789,7 +787,7 @@ function OnboardingPage() {
           onClick: handleSkip,
           className: "text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-muted/60",
           "data-ocid": "onboard.skip_button",
-          children: t("onboard.skip")
+          children: tLang("onboard.skip", lang)
         }
       )
     ] }),
@@ -807,8 +805,8 @@ function OnboardingPage() {
         children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-full max-w-xs aspect-square rounded-3xl bg-card/80 backdrop-blur-sm border border-border/60 shadow-lg p-6 flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx(slide.IllustrationComponent, {}) }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-center max-w-sm px-2", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display font-bold text-2xl text-foreground mb-3 leading-tight", children: t(slide.titleKey) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground text-base leading-relaxed", children: t(slide.descKey) })
+            /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display font-bold text-2xl text-foreground mb-3 leading-tight", children: tLang(slide.titleKey, lang) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground text-base leading-relaxed", children: tLang(slide.descKey, lang) })
           ] }),
           slide.showLangSelector && /* @__PURE__ */ jsxRuntimeExports.jsx(
             motion.div,
@@ -880,9 +878,9 @@ function OnboardingPage() {
                 ]
               }
             ),
-            t("onboard.get_started")
+            tLang("onboard.get_started", lang)
           ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-            t("onboard.next"),
+            tLang("onboard.next", lang),
             /* @__PURE__ */ jsxRuntimeExports.jsx(
               "svg",
               {

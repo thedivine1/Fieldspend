@@ -1,9 +1,9 @@
-import { c as createLucideIcon, r as reactExports, j as jsxRuntimeExports, X, a as useAppStore, t, b as Link } from "./index-Qp0UCZEp.js";
-import { u as useComposedRefs, a as useLayoutEffect2, b as useControllableState, P as Primitive, c as composeEventHandlers, d as createContext2, e as createContextScope, f as createSlot, g as createSlottable, h as cn, i as buttonVariants, B as Button, j as Badge } from "./index-B0G-Jbi4.js";
-import { u as useId, P as Portal$1, h as hideOthers, R as ReactRemoveScroll, a as useFocusGuards, F as FocusScope, D as DismissableLayer, S as Select, b as SelectTrigger, c as SelectValue, d as SelectContent, e as SelectItem } from "./select-BX4urHRz.js";
-import { L as Label, I as Input } from "./label-Bxdps9rE.js";
-import { T as Textarea } from "./textarea-34hb3oP2.js";
-import { m as motion } from "./proxy-JR3IeFZM.js";
+import { c as createLucideIcon, r as reactExports, j as jsxRuntimeExports, X, a as useAppStore, M as MONTH_KEYS, t as tLang, b as Link } from "./index-CF0nR3YV.js";
+import { u as useComposedRefs, a as useLayoutEffect2, b as useControllableState, P as Primitive, c as composeEventHandlers, d as createContext2, e as createContextScope, f as createSlot, g as createSlottable, h as cn, i as buttonVariants, B as Button, j as Badge } from "./index-B5pZLSOB.js";
+import { u as useId, P as Portal$1, h as hideOthers, R as ReactRemoveScroll, a as useFocusGuards, F as FocusScope, D as DismissableLayer, S as Select, b as SelectTrigger, c as SelectValue, d as SelectContent, e as SelectItem } from "./select-D9mEVm7r.js";
+import { L as Label, I as Input } from "./label-DeID-t2a.js";
+import { T as Textarea } from "./textarea-CO2P10eg.js";
+import { m as motion } from "./proxy-KEY2c1R9.js";
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -909,20 +909,6 @@ const CATEGORY_ICONS = {
   meal: "🍽️",
   other: "📄"
 };
-const MONTH_NAMES = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December"
-];
 const CATEGORIES = [
   "cab",
   "train",
@@ -954,13 +940,13 @@ function formatDayLabel(dateStr) {
   if (dateStr === yesterdayStr) return `Yesterday — ${full}`;
   return full;
 }
-function buildDaySummary(receipts) {
+function buildDaySummary(receipts, lang) {
   const catCounts = {};
   for (const r of receipts) {
     catCounts[r.category] = (catCounts[r.category] ?? 0) + 1;
   }
   const parts = Object.entries(catCounts).map(
-    ([cat, cnt]) => `${cnt} ${t(`cat.${cat}`)}`
+    ([cat, cnt]) => `${cnt} ${tLang(`cat.${cat}`, lang)}`
   );
   const total = receipts.reduce((s, r) => s + (r.amount ?? 0), 0);
   return `${parts.join(", ")} — ${formatCurrency(total)} total`;
@@ -990,7 +976,14 @@ function groupByDay(receipts, month, year) {
   return groups.sort((a, b) => b.dateStr.localeCompare(a.dateStr));
 }
 function MonthSelector() {
-  const { selectedMonth, selectedYear, setSelectedMonth, setSelectedYear } = useAppStore();
+  const {
+    selectedMonth,
+    selectedYear,
+    setSelectedMonth,
+    setSelectedYear,
+    currentLanguage
+  } = useAppStore();
+  const monthNames = MONTH_KEYS.map((key) => tLang(key, currentLanguage));
   function prev() {
     if (selectedMonth === 1) {
       setSelectedMonth(12);
@@ -1025,7 +1018,7 @@ function MonthSelector() {
       }
     ),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-center", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "font-display font-semibold text-foreground text-base", children: [
-      MONTH_NAMES[selectedMonth - 1],
+      monthNames[selectedMonth - 1],
       " ",
       selectedYear
     ] }) }),
@@ -1044,6 +1037,8 @@ function MonthSelector() {
   ] });
 }
 function EditModal({ receipt, onClose, onSave }) {
+  const { currentLanguage } = useAppStore();
+  const lang = currentLanguage;
   const [date, setDate] = reactExports.useState((receipt == null ? void 0 : receipt.date) ?? "");
   const [category, setCategory] = reactExports.useState(
     (receipt == null ? void 0 : receipt.category) ?? "other"
@@ -1067,7 +1062,7 @@ function EditModal({ receipt, onClose, onSave }) {
     onClose();
   }
   return /* @__PURE__ */ jsxRuntimeExports.jsx(Dialog, { open: !!receipt, onOpenChange: (o) => !o && onClose(), children: /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogContent, { className: "max-w-sm mx-4", "data-ocid": "gallery.edit_dialog", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx(DialogHeader, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTitle, { children: t("action.edit") }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(DialogHeader, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTitle, { children: tLang("action.edit", lang) }) }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-4 py-2", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-1.5", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "edit-date", children: "Date" }),
@@ -1102,7 +1097,7 @@ function EditModal({ receipt, onClose, onSave }) {
               /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: CATEGORIES.map((cat) => /* @__PURE__ */ jsxRuntimeExports.jsxs(SelectItem, { value: cat, children: [
                 CATEGORY_ICONS[cat],
                 " ",
-                t(`cat.${cat}`)
+                tLang(`cat.${cat}`, lang)
               ] }, cat)) })
             ]
           }
@@ -1146,7 +1141,7 @@ function EditModal({ receipt, onClose, onSave }) {
           variant: "outline",
           onClick: onClose,
           "data-ocid": "gallery.edit_cancel_button",
-          children: t("action.cancel")
+          children: tLang("action.cancel", lang)
         }
       ),
       /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -1155,13 +1150,15 @@ function EditModal({ receipt, onClose, onSave }) {
           onClick: handleSave,
           disabled: saving || !date,
           "data-ocid": "gallery.edit_save_button",
-          children: saving ? "Saving…" : t("action.save")
+          children: saving ? tLang("settings.saving", lang) : tLang("action.save", lang)
         }
       )
     ] })
   ] }) });
 }
 function DeleteDialog({ open, onClose, onConfirm }) {
+  const { currentLanguage } = useAppStore();
+  const lang = currentLanguage;
   const [deleting, setDeleting] = reactExports.useState(false);
   async function handleConfirm() {
     setDeleting(true);
@@ -1185,7 +1182,7 @@ function DeleteDialog({ open, onClose, onConfirm }) {
             {
               onClick: onClose,
               "data-ocid": "gallery.delete_cancel_button",
-              children: t("action.cancel")
+              children: tLang("action.cancel", lang)
             }
           ),
           /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -1195,7 +1192,7 @@ function DeleteDialog({ open, onClose, onConfirm }) {
               disabled: deleting,
               className: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
               "data-ocid": "gallery.delete_confirm_button",
-              children: deleting ? "Deleting…" : t("action.delete")
+              children: deleting ? "…" : tLang("action.delete", lang)
             }
           )
         ] })
@@ -1213,6 +1210,7 @@ function ReceiptCard({
   onDragOver,
   onDrop
 }) {
+  const { currentLanguage } = useAppStore();
   const catColor = CATEGORY_COLORS[receipt.category];
   const catIcon = CATEGORY_ICONS[receipt.category];
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(
@@ -1252,7 +1250,7 @@ function ReceiptCard({
               children: [
                 catIcon,
                 " ",
-                t(`cat.${receipt.category}`)
+                tLang(`cat.${receipt.category}`, currentLanguage)
               ]
             }
           ) }),
@@ -1297,6 +1295,7 @@ function DayGroupCard({
   onDelete,
   onReorder
 }) {
+  const { currentLanguage } = useAppStore();
   const dragIdRef = reactExports.useRef(null);
   function handleDragStart(e, id) {
     dragIdRef.current = id;
@@ -1330,7 +1329,7 @@ function DayGroupCard({
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "daily-header sticky top-[57px] z-10 backdrop-blur-sm", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0 flex-1", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm font-semibold text-foreground truncate", children: group.label }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-muted-foreground mt-0.5 truncate", children: buildDaySummary(group.receipts) })
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-muted-foreground mt-0.5 truncate", children: buildDaySummary(group.receipts, currentLanguage) })
           ] }),
           group.total > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm font-bold text-primary shrink-0 ml-3 font-mono", children: formatCurrency(group.total) })
         ] }),
@@ -1353,6 +1352,8 @@ function DayGroupCard({
   );
 }
 function EmptyState({ hasMonthFilter }) {
+  const { currentLanguage } = useAppStore();
+  const lang = currentLanguage;
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(
     motion.div,
     {
@@ -1362,11 +1363,11 @@ function EmptyState({ hasMonthFilter }) {
       "data-ocid": "gallery.empty_state",
       children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-24 h-24 rounded-3xl bg-primary/10 flex items-center justify-center mb-5 text-4xl", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Inbox, { size: 40, className: "text-primary" }) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "font-display font-bold text-xl text-foreground mb-2", children: hasMonthFilter ? "No receipts this month" : t("status.no_receipts") }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground text-sm mb-6 max-w-xs", children: hasMonthFilter ? "No receipts found for this month. Try a different month or upload new receipts." : "Tap the button below to upload your first receipt and start tracking expenses." }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "font-display font-bold text-xl text-foreground mb-2", children: hasMonthFilter ? tLang("report.no_receipts", lang) : tLang("status.no_receipts", lang) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground text-sm mb-6 max-w-xs", children: hasMonthFilter ? tLang("report.no_receipts", lang) : tLang("onboard.step1.desc", lang) }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { asChild: true, size: "lg", "data-ocid": "gallery.upload_button", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Link, { to: "/upload", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(CirclePlus, { size: 18, className: "mr-2" }),
-          t("action.upload")
+          tLang("action.upload", lang)
         ] }) })
       ]
     }
@@ -1377,21 +1378,23 @@ function MonthTotalBar({
   month,
   year
 }) {
+  const { currentLanguage } = useAppStore();
+  const monthNames = MONTH_KEYS.map((key) => tLang(key, currentLanguage));
   const grandTotal = groups.reduce((s, g) => s + g.total, 0);
   const receiptCount = groups.reduce((s, g) => s + g.receipts.length, 0);
   if (receiptCount === 0) return null;
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "sticky bottom-0 z-20 bg-card border-t border-border px-4 py-3 flex items-center justify-between shadow-lg", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground font-medium", children: [
-        MONTH_NAMES[month - 1],
+        monthNames[month - 1],
         " ",
         year,
         " — ",
         receiptCount,
         " ",
-        t("report.receipts")
+        tLang("report.receipts", currentLanguage)
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm font-semibold text-foreground mt-0.5", children: t("report.total") })
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm font-semibold text-foreground mt-0.5", children: tLang("report.total", currentLanguage) })
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-amount text-primary text-xl", children: formatCurrency(grandTotal) })
   ] });

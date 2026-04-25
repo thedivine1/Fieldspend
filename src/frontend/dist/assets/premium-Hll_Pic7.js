@@ -1,4 +1,4 @@
-import { c as createLucideIcon } from "./index-Qp0UCZEp.js";
+import { c as createLucideIcon } from "./index-CF0nR3YV.js";
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -31,25 +31,31 @@ const __iconNode = [
 ];
 const Sparkles = createLucideIcon("sparkles", __iconNode);
 const FREE_DAILY_LIMIT = 10;
-const BETA_DAYS = 60;
-function isBetaPeriodActive(profile) {
-  return Date.now() < profile.betaExpiryDate;
+const BETA_END_DATE = (/* @__PURE__ */ new Date("2026-08-01T00:00:00+05:30")).getTime();
+const ADMIN_EMAIL = "coepianraider@gmail.com";
+function isAdminUser(profile) {
+  return (profile.email ?? "").toLowerCase().trim() === ADMIN_EMAIL.toLowerCase();
 }
-function getBetaDaysLeft(profile) {
-  const msLeft = profile.betaExpiryDate - Date.now();
+function isBetaPeriodActive(_profile) {
+  return Date.now() < BETA_END_DATE;
+}
+function getBetaDaysLeft(_profile) {
+  const msLeft = BETA_END_DATE - Date.now();
   return Math.max(0, Math.ceil(msLeft / (1e3 * 60 * 60 * 24)));
 }
 function hasPremiumAccess(profile) {
-  return profile.isPremium || isBetaPeriodActive(profile);
+  if (isAdminUser(profile)) return true;
+  return profile.isPremium || isBetaPeriodActive();
 }
-function createDefaultProfile(userId, name, companyName) {
+function createDefaultProfile(userId, name, companyName, email) {
   return {
     userId,
     name,
+    email,
     companyName,
     preferredLanguage: "en",
     isPremium: false,
-    betaExpiryDate: Date.now() + BETA_DAYS * 24 * 60 * 60 * 1e3,
+    betaExpiryDate: BETA_END_DATE,
     dailyUploadCount: 0,
     lastUploadDate: (/* @__PURE__ */ new Date()).toISOString().split("T")[0]
   };
@@ -58,8 +64,9 @@ export {
   CircleCheck as C,
   FREE_DAILY_LIMIT as F,
   Sparkles as S,
+  isBetaPeriodActive as a,
   createDefaultProfile as c,
   getBetaDaysLeft as g,
   hasPremiumAccess as h,
-  isBetaPeriodActive as i
+  isAdminUser as i
 };
