@@ -1,3 +1,4 @@
+import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { fileURLToPath, URL } from "url";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
@@ -14,14 +15,34 @@ process.env.STORAGE_GATEWAY_URL =
 
 export default defineConfig({
   logLevel: "error",
+
+  plugins: [
+    viteStaticCopy({
+      targets: [
+        {
+          src: 'src/frontend/public/sw.js', // ✅ FIXED
+          dest: ''
+        }
+      ]
+    }),
+
+    environment("all", { prefix: "CANISTER_" }),
+    environment("all", { prefix: "DFX_" }),
+    environment(["II_URL"]),
+    environment(["STORAGE_GATEWAY_URL"]),
+    react(),
+  ],
+
   build: {
     emptyOutDir: true,
     sourcemap: false,
     minify: false,
   },
+
   css: {
     postcss: "./postcss.config.js",
   },
+
   optimizeDeps: {
     esbuildOptions: {
       define: {
@@ -29,21 +50,7 @@ export default defineConfig({
       },
     },
   },
-  server: {
-    proxy: {
-      "/api": {
-        target: "http://127.0.0.1:4943",
-        changeOrigin: true,
-      },
-    },
-  },
-  plugins: [
-    environment("all", { prefix: "CANISTER_" }),
-    environment("all", { prefix: "DFX_" }),
-    environment(["II_URL"]),
-    environment(["STORAGE_GATEWAY_URL"]),
-    react(),
-  ],
+
   resolve: {
     alias: [
       {
@@ -55,6 +62,6 @@ export default defineConfig({
         replacement: fileURLToPath(new URL("./src", import.meta.url)),
       },
     ],
-    dedupe: ["@dfinity/agent"]
+    dedupe: ["@dfinity/agent"],
   },
 });
