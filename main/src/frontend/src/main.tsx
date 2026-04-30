@@ -30,7 +30,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
 // Register Service Worker (FINAL VERSION)
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker
-    .register("./sw.js")
+    .register("/sw.js")
     .then((reg) => {
       console.log("Service Worker registered", reg);
 

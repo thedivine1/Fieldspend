@@ -17,15 +17,6 @@ export default defineConfig({
   logLevel: "error",
 
   plugins: [
-    viteStaticCopy({
-      targets: [
-        {
-          src: 'src/frontend/public/sw.js', // ✅ FIXED
-          dest: ''
-        }
-      ]
-    }),
-
     environment("all", { prefix: "CANISTER_" }),
     environment("all", { prefix: "DFX_" }),
     environment(["II_URL"]),
