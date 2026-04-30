@@ -1,0 +1,49 @@
+type UserProfile = 
+ record {
+   betaExpiryDate: Timestamp;
+   companyName: opt text;
+   dailyUploadCount: nat;
+   isPremium: bool;
+   lastUploadDate: Timestamp;
+   name: text;
+   preferredLanguage: Language;
+   userId: UserId;
+ };
+type UserId = principal;
+type Timestamp = int;
+type Receipt = 
+ record {
+   amount: opt float64;
+   category: Category;
+   createdAt: Timestamp;
+   date: Timestamp;
+   id: ExpenseId;
+   imageData: text;
+   notes: opt text;
+ };
+type Language = 
+ variant {
+   en;
+   hi;
+   mr;
+ };
+type ExpenseId = nat;
+type Category = 
+ variant {
+   bus;
+   cab;
+   flight;
+   hotel;
+   meal;
+   other;
+   train;
+ };
+service : {
+  addExpense: (receipt: Receipt) -> (ExpenseId);
+  deleteExpense: (id: ExpenseId) -> ();
+  getDailyCount: () -> (nat) query;
+  getExpenses: () -> (vec Receipt) query;
+  getUserProfile: () -> (opt UserProfile);
+  updateExpense: (receipt: Receipt) -> ();
+  updateUserProfile: (profile: UserProfile) -> ();
+}
