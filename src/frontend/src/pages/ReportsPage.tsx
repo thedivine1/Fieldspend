@@ -2,6 +2,12 @@ import AdModal from "@/components/AdModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -24,15 +30,14 @@ import {
   CheckCircle2Icon,
   DownloadIcon,
   FileTextIcon,
-  MailIcon,
+  Share2Icon,
   ShieldCheckIcon,
   SparklesIcon,
   UploadIcon,
+  XIcon,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { useMemo, useState } from "react";
-import { SiWhatsapp } from "react-icons/si";
-import { toast } from "sonner";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -43,6 +48,8 @@ const CATEGORY_ICONS: Record<string, string> = {
   cab: "🚕",
   train: "🚆",
   bus: "🚌",
+  localBus: "🚌",
+  auto: "🛺",
   flight: "✈️",
   hotel: "🏨",
   meal: "🍽️",
@@ -53,6 +60,8 @@ const CATEGORY_COLORS: Record<string, string> = {
   cab: "badge-cab",
   train: "badge-train",
   bus: "badge-bus",
+  localBus: "badge-bus",
+  auto: "badge-cab",
   flight: "badge-flight",
   hotel: "badge-hotel",
   meal: "badge-meal",
@@ -65,25 +74,141 @@ function formatCurrency(amount: number): string {
   return `₹${amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function buildEmailBody(
-  breakdown: CategoryTotal[],
-  grandTotal: number,
-  monthName: string,
-  year: number,
-  lang: import("@/types").Language,
-): string {
-  const lines = breakdown.map(
-    (item) =>
-      `${tLang(`cat.${item.category}`, lang)}: ${formatCurrency(item.total)} (${item.count} ${item.count === 1 ? tLang("report.items", lang) : tLang("report.items_plural", lang)})`,
-  );
-  lines.push(
-    "",
-    `${tLang("report.total", lang)}: ${formatCurrency(grandTotal)}`,
-  );
-  return `${tLang("report.title", lang)} - ${monthName} ${year}\n\n${lines.join("\n")}`;
+/** Returns last day of the month as YYYY-MM-DD for the filename */
+function getPeriodEndDate(month: number, year: number): string {
+  const lastDay = new Date(year, month, 0).getDate();
+  return `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// ─── PDF Preview Modal ────────────────────────────────────────────────────────
+
+function PdfPreviewModal({
+  open,
+  onClose,
+  blob,
+  filename,
+}: {
+  open: boolean;
+  onClose: () => void;
+  blob: Blob;
+  filename: string;
+}) {
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  const [canShare, setCanShare] = useState(false);
+  const prevBlobRef = useRef<Blob | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    if (prevBlobRef.current === blob && objectUrl) return;
+    prevBlobRef.current = blob;
+    const url = URL.createObjectURL(blob);
+    setObjectUrl(url);
+    setCanShare(typeof navigator.share === "function");
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [open, blob, objectUrl]);
+
+  function handleDownload() {
+    if (!objectUrl) return;
+    const a = document.createElement("a");
+    a.href = objectUrl;
+    a.download = filename;
+    a.click();
+  }
+
+  async function handleShare() {
+    if (!canShare) {
+      handleDownload();
+      return;
+    }
+    const file = new File([blob], filename, { type: "application/pdf" });
+    try {
+      await navigator.share({ files: [file], title: filename });
+    } catch {
+      // user cancelled or share unsupported — fall back to download silently
+      handleDownload();
+    }
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) onClose();
+      }}
+    >
+      <DialogContent
+        className="max-w-[96vw] w-full sm:max-w-2xl p-0 overflow-hidden rounded-2xl"
+        data-ocid="pdf_preview.dialog"
+      >
+        <DialogHeader className="flex flex-row items-center justify-between px-4 pt-4 pb-0">
+          <DialogTitle className="text-sm font-semibold truncate text-foreground max-w-[70%]">
+            {filename}
+          </DialogTitle>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full p-1.5 hover:bg-muted/60 transition-colors"
+            aria-label="Close preview"
+            data-ocid="pdf_preview.close_button"
+          >
+            <XIcon size={16} />
+          </button>
+        </DialogHeader>
+
+        {/* PDF iframe preview */}
+        <div
+          className="bg-muted/30 mx-4 rounded-xl overflow-hidden"
+          style={{ height: "55vh" }}
+        >
+          {objectUrl ? (
+            <object
+              data={objectUrl}
+              type="application/pdf"
+              className="w-full h-full"
+              aria-label="PDF preview"
+            >
+              <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                PDF preview not available in this browser. Use the download
+                button below.
+              </div>
+            </object>
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <span className="inline-block w-6 h-6 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+            </div>
+          )}
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex gap-3 px-4 py-4">
+          <Button
+            className="flex-1 gap-2 h-11 rounded-xl"
+            onClick={handleDownload}
+            data-ocid="pdf_preview.download_button"
+          >
+            <DownloadIcon size={16} />
+            Download PDF
+          </Button>
+          {canShare && (
+            <Button
+              variant="outline"
+              className="flex-1 gap-2 h-11 rounded-xl"
+              onClick={handleShare}
+              data-ocid="pdf_preview.share_button"
+            >
+              <Share2Icon size={16} />
+              Share
+            </Button>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── CategoryRow ──────────────────────────────────────────────────────────────
 
 function CategoryRow({
   item,
@@ -156,10 +281,10 @@ export default function ReportsPage() {
   } = useAppStore();
 
   const [isGenerating, setIsGenerating] = useState(false);
-  const [pdfReady, setPdfReady] = useState(false);
   const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
-  // Ad gate for report generation
+  // Ad gate
   const [showAd, setShowAd] = useState(false);
   const [pendingPdf, setPendingPdf] = useState(false);
 
@@ -206,22 +331,19 @@ export default function ReportsPage() {
   const isAdmin = userProfile ? isAdminUser(userProfile) : false;
   const isFreeUser = !isPremium;
   const betaActive = isBetaPeriodActive();
-
-  // Ads apply post-beta for free non-admin users
   const shouldShowAd = !betaActive && isFreeUser && !isAdmin;
 
   const monthName = monthNames[selectedMonth - 1];
   const reportTitle = `${monthName} ${selectedYear}`;
+  const pdfFilename = `Expense_Report_${getPeriodEndDate(selectedMonth, selectedYear)}.pdf`;
 
   function handleMonthChange(v: string) {
     setSelectedMonth(Number(v));
-    setPdfReady(false);
     setPdfBlob(null);
   }
 
   function handleYearChange(v: string) {
     setSelectedYear(Number(v));
-    setPdfReady(false);
     setPdfBlob(null);
   }
 
@@ -229,7 +351,6 @@ export default function ReportsPage() {
     if (!userProfile) return;
     if (filteredReceipts.length === 0) return;
     setIsGenerating(true);
-    setPdfReady(false);
     try {
       const blob = await generateExpenseReport(
         userProfile,
@@ -238,15 +359,8 @@ export default function ReportsPage() {
         selectedYear,
         isFreeUser,
       );
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `expense-report-${selectedYear}-${String(selectedMonth).padStart(2, "0")}.pdf`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
       setPdfBlob(blob);
-      setPdfReady(true);
-      toast.success(tLang("status.saved", currentLanguage));
+      setShowPreview(true);
     } catch {
       // silent
     } finally {
@@ -271,29 +385,6 @@ export default function ReportsPage() {
     }
   }
 
-  function handleWhatsApp() {
-    const text = encodeURIComponent(
-      `${tLang("report.title", currentLanguage)}: ${reportTitle} — ${tLang("report.total", currentLanguage)}: ${formatCurrency(grandTotal)}\n\n(PDF attached separately)`,
-    );
-    window.open(`https://wa.me/?text=${text}`, "_blank");
-  }
-
-  function handleEmail() {
-    const subject = encodeURIComponent(
-      `${tLang("report.title", currentLanguage)} - ${reportTitle}`,
-    );
-    const body = encodeURIComponent(
-      buildEmailBody(
-        breakdown,
-        grandTotal,
-        monthName,
-        selectedYear,
-        currentLanguage,
-      ),
-    );
-    window.open(`mailto:?subject=${subject}&body=${body}`, "_blank");
-  }
-
   const hasNoProfile = !userProfile || !userProfile.name;
   const hasNoReceipts = filteredReceipts.length === 0;
 
@@ -305,6 +396,15 @@ export default function ReportsPage() {
         adNumber={1}
         totalAds={1}
       />
+
+      {pdfBlob && (
+        <PdfPreviewModal
+          open={showPreview}
+          onClose={() => setShowPreview(false)}
+          blob={pdfBlob}
+          filename={pdfFilename}
+        />
+      )}
 
       <div className="px-4 py-5 space-y-5 pb-8" data-ocid="reports.page">
         {/* Heading */}
@@ -388,7 +488,7 @@ export default function ReportsPage() {
                 className="shrink-0 text-xs border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
                 data-ocid="reports.upgrade_button"
               >
-                <SparklesIcon size={12} className="mr-1" />{" "}
+                <SparklesIcon size={12} className="mr-1" />
                 {tLang("report.upgrade", currentLanguage)}
               </Button>
             </Link>
@@ -528,7 +628,11 @@ export default function ReportsPage() {
                 📎 {filteredReceipts.length}{" "}
                 {filteredReceipts.length === 1
                   ? tLang("report.images_attached", currentLanguage)
-                  : tLang("report.images_attached_plural", currentLanguage)}
+                  : tLang(
+                      "report.images_attached_plural",
+                      currentLanguage,
+                    )}{" "}
+                · 3 per row thumbnails
               </p>
             </div>
           </motion.div>
@@ -568,6 +672,7 @@ export default function ReportsPage() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
+            className="space-y-2"
           >
             <Button
               className="w-full h-12 text-base font-semibold rounded-xl shadow-md gap-2 bg-primary hover:bg-primary/90"
@@ -587,67 +692,30 @@ export default function ReportsPage() {
                 </>
               )}
             </Button>
+
+            {/* Re-open preview button if blob exists */}
+            {pdfBlob && !isGenerating && (
+              <Button
+                variant="outline"
+                className="w-full h-10 rounded-xl gap-2 text-sm"
+                onClick={() => setShowPreview(true)}
+                data-ocid="reports.reopen_preview_button"
+              >
+                <Share2Icon size={15} />
+                View / Share Last Report
+              </Button>
+            )}
+
             {isFreeUser && !isGenerating && betaActive && (
-              <p className="text-xs text-center text-muted-foreground mt-2">
+              <p className="text-xs text-center text-muted-foreground">
                 {tLang("report.watermark_note", currentLanguage)}
               </p>
             )}
             {shouldShowAd && !isGenerating && (
-              <p className="text-xs text-center text-muted-foreground mt-2">
+              <p className="text-xs text-center text-muted-foreground">
                 📺 A short ad will play before download
               </p>
             )}
-          </motion.div>
-        )}
-
-        {/* Share buttons */}
-        {pdfReady && pdfBlob && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-3"
-            data-ocid="reports.share_section"
-          >
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">
-              {tLang("report.share", currentLanguage)}
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={handleWhatsApp}
-                className="flex items-center justify-center gap-2 bg-card border border-border rounded-xl px-4 py-3 hover:bg-muted/40 transition-smooth active:scale-95"
-                data-ocid="reports.whatsapp_button"
-              >
-                <SiWhatsapp size={20} className="text-[#25D366] shrink-0" />
-                <div className="text-left min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate">
-                    WhatsApp
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {tLang("action.share", currentLanguage)}
-                  </p>
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={handleEmail}
-                className="flex items-center justify-center gap-2 bg-card border border-border rounded-xl px-4 py-3 hover:bg-muted/40 transition-smooth active:scale-95"
-                data-ocid="reports.email_button"
-              >
-                <MailIcon size={20} className="text-primary shrink-0" />
-                <div className="text-left min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate">
-                    Email
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {tLang("action.share", currentLanguage)}
-                  </p>
-                </div>
-              </button>
-            </div>
-            <p className="text-xs text-muted-foreground text-center px-2">
-              💡 {tLang("report.whatsapp_note", currentLanguage)}
-            </p>
           </motion.div>
         )}
       </div>

@@ -1,5 +1,5 @@
-import { c as createLucideIcon, r as reactExports, j as jsxRuntimeExports } from "./index-DZsRQdG0.js";
-import { k as Primitive, h as cn } from "./index-B-QWpeOq.js";
+import { c as createLucideIcon, r as reactExports, j as jsxRuntimeExports } from "./index-DRalea1i.js";
+import { P as Primitive, d as cn } from "./index-CtbOs_Tp.js";
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -7,10 +7,13 @@ import { k as Primitive, h as cn } from "./index-B-QWpeOq.js";
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$1 = [
-  ["path", { d: "m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7", key: "132q7q" }],
-  ["rect", { x: "2", y: "4", width: "20", height: "16", rx: "2", key: "izxlao" }]
+  ["circle", { cx: "18", cy: "5", r: "3", key: "gq8acd" }],
+  ["circle", { cx: "6", cy: "12", r: "3", key: "w7nqdw" }],
+  ["circle", { cx: "18", cy: "19", r: "3", key: "1xt0gg" }],
+  ["line", { x1: "8.59", x2: "15.42", y1: "13.51", y2: "17.49", key: "47mynk" }],
+  ["line", { x1: "15.41", x2: "8.59", y1: "6.51", y2: "10.49", key: "1n3mei" }]
 ];
-const Mail = createLucideIcon("mail", __iconNode$1);
+const Share2 = createLucideIcon("share-2", __iconNode$1);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -72,7 +75,7 @@ function Separator({
   );
 }
 export {
-  Mail as M,
   ShieldCheck as S,
-  Separator as a
+  Separator as a,
+  Share2 as b
 };

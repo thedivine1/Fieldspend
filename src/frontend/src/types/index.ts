@@ -4,6 +4,8 @@ export type Category =
   | "cab"
   | "train"
   | "bus"
+  | "localBus"
+  | "auto"
   | "flight"
   | "hotel"
   | "meal"

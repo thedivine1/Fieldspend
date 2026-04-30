@@ -1,9 +1,10 @@
-import { c as createLucideIcon, r as reactExports, j as jsxRuntimeExports, X, a as useAppStore, M as MONTH_KEYS, t as tLang, b as Link } from "./index-DZsRQdG0.js";
-import { u as useComposedRefs, a as useLayoutEffect2, b as useControllableState, P as Primitive, c as composeEventHandlers, d as createContext2, e as createContextScope, f as createSlot, g as createSlottable, h as cn, i as buttonVariants, B as Button, j as Badge } from "./index-B-QWpeOq.js";
-import { u as useId, P as Portal$1, h as hideOthers, R as ReactRemoveScroll, a as useFocusGuards, F as FocusScope, D as DismissableLayer, S as Select, b as SelectTrigger, c as SelectValue, d as SelectContent, e as SelectItem } from "./select-DD2C3PDr.js";
-import { L as Label, I as Input } from "./label-BzuSlc1o.js";
-import { T as Textarea } from "./textarea-D15EJLM-.js";
-import { m as motion } from "./proxy-DLCgAu61.js";
+import { c as createLucideIcon, j as jsxRuntimeExports, r as reactExports, a as useAppStore, M as MONTH_KEYS, t as tLang, b as Link } from "./index-DRalea1i.js";
+import { u as useComposedRefs, c as composeEventHandlers, a as createSlottable, b as createContextScope, d as cn, e as buttonVariants, B as Button, f as Badge } from "./index-CtbOs_Tp.js";
+import { R as Root, W as WarningProvider, C as Content, T as Title, D as Description, a as Close, c as createDialogScope, P as Portal, O as Overlay, b as Trigger, d as Dialog, e as DialogContent, f as DialogHeader, g as DialogTitle, h as DialogFooter } from "./dialog-BBujmgjK.js";
+import { L as Label, I as Input } from "./label-70-r2va7.js";
+import { S as Select, a as SelectTrigger, b as SelectValue, c as SelectContent, d as SelectItem } from "./select-tJ1RCc9s.js";
+import { T as Textarea } from "./textarea-6CGw0t8a.js";
+import { m as motion } from "./proxy-BDLiLXn7.js";
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -93,435 +94,6 @@ const __iconNode = [
   ["path", { d: "M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2", key: "v07s0e" }]
 ];
 const Trash = createLucideIcon("trash", __iconNode);
-function useStateMachine(initialState, machine) {
-  return reactExports.useReducer((state, event) => {
-    const nextState = machine[state][event];
-    return nextState ?? state;
-  }, initialState);
-}
-var Presence = (props) => {
-  const { present, children } = props;
-  const presence = usePresence(present);
-  const child = typeof children === "function" ? children({ present: presence.isPresent }) : reactExports.Children.only(children);
-  const ref = useComposedRefs(presence.ref, getElementRef(child));
-  const forceMount = typeof children === "function";
-  return forceMount || presence.isPresent ? reactExports.cloneElement(child, { ref }) : null;
-};
-Presence.displayName = "Presence";
-function usePresence(present) {
-  const [node, setNode] = reactExports.useState();
-  const stylesRef = reactExports.useRef(null);
-  const prevPresentRef = reactExports.useRef(present);
-  const prevAnimationNameRef = reactExports.useRef("none");
-  const initialState = present ? "mounted" : "unmounted";
-  const [state, send] = useStateMachine(initialState, {
-    mounted: {
-      UNMOUNT: "unmounted",
-      ANIMATION_OUT: "unmountSuspended"
-    },
-    unmountSuspended: {
-      MOUNT: "mounted",
-      ANIMATION_END: "unmounted"
-    },
-    unmounted: {
-      MOUNT: "mounted"
-    }
-  });
-  reactExports.useEffect(() => {
-    const currentAnimationName = getAnimationName(stylesRef.current);
-    prevAnimationNameRef.current = state === "mounted" ? currentAnimationName : "none";
-  }, [state]);
-  useLayoutEffect2(() => {
-    const styles = stylesRef.current;
-    const wasPresent = prevPresentRef.current;
-    const hasPresentChanged = wasPresent !== present;
-    if (hasPresentChanged) {
-      const prevAnimationName = prevAnimationNameRef.current;
-      const currentAnimationName = getAnimationName(styles);
-      if (present) {
-        send("MOUNT");
-      } else if (currentAnimationName === "none" || (styles == null ? void 0 : styles.display) === "none") {
-        send("UNMOUNT");
-      } else {
-        const isAnimating = prevAnimationName !== currentAnimationName;
-        if (wasPresent && isAnimating) {
-          send("ANIMATION_OUT");
-        } else {
-          send("UNMOUNT");
-        }
-      }
-      prevPresentRef.current = present;
-    }
-  }, [present, send]);
-  useLayoutEffect2(() => {
-    if (node) {
-      let timeoutId;
-      const ownerWindow = node.ownerDocument.defaultView ?? window;
-      const handleAnimationEnd = (event) => {
-        const currentAnimationName = getAnimationName(stylesRef.current);
-        const isCurrentAnimation = currentAnimationName.includes(CSS.escape(event.animationName));
-        if (event.target === node && isCurrentAnimation) {
-          send("ANIMATION_END");
-          if (!prevPresentRef.current) {
-            const currentFillMode = node.style.animationFillMode;
-            node.style.animationFillMode = "forwards";
-            timeoutId = ownerWindow.setTimeout(() => {
-              if (node.style.animationFillMode === "forwards") {
-                node.style.animationFillMode = currentFillMode;
-              }
-            });
-          }
-        }
-      };
-      const handleAnimationStart = (event) => {
-        if (event.target === node) {
-          prevAnimationNameRef.current = getAnimationName(stylesRef.current);
-        }
-      };
-      node.addEventListener("animationstart", handleAnimationStart);
-      node.addEventListener("animationcancel", handleAnimationEnd);
-      node.addEventListener("animationend", handleAnimationEnd);
-      return () => {
-        ownerWindow.clearTimeout(timeoutId);
-        node.removeEventListener("animationstart", handleAnimationStart);
-        node.removeEventListener("animationcancel", handleAnimationEnd);
-        node.removeEventListener("animationend", handleAnimationEnd);
-      };
-    } else {
-      send("ANIMATION_END");
-    }
-  }, [node, send]);
-  return {
-    isPresent: ["mounted", "unmountSuspended"].includes(state),
-    ref: reactExports.useCallback((node2) => {
-      stylesRef.current = node2 ? getComputedStyle(node2) : null;
-      setNode(node2);
-    }, [])
-  };
-}
-function getAnimationName(styles) {
-  return (styles == null ? void 0 : styles.animationName) || "none";
-}
-function getElementRef(element) {
-  var _a, _b;
-  let getter = (_a = Object.getOwnPropertyDescriptor(element.props, "ref")) == null ? void 0 : _a.get;
-  let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.ref;
-  }
-  getter = (_b = Object.getOwnPropertyDescriptor(element, "ref")) == null ? void 0 : _b.get;
-  mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.props.ref;
-  }
-  return element.props.ref || element.ref;
-}
-var DIALOG_NAME = "Dialog";
-var [createDialogContext, createDialogScope] = createContextScope(DIALOG_NAME);
-var [DialogProvider, useDialogContext] = createDialogContext(DIALOG_NAME);
-var Dialog$1 = (props) => {
-  const {
-    __scopeDialog,
-    children,
-    open: openProp,
-    defaultOpen,
-    onOpenChange,
-    modal = true
-  } = props;
-  const triggerRef = reactExports.useRef(null);
-  const contentRef = reactExports.useRef(null);
-  const [open, setOpen] = useControllableState({
-    prop: openProp,
-    defaultProp: defaultOpen ?? false,
-    onChange: onOpenChange,
-    caller: DIALOG_NAME
-  });
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    DialogProvider,
-    {
-      scope: __scopeDialog,
-      triggerRef,
-      contentRef,
-      contentId: useId(),
-      titleId: useId(),
-      descriptionId: useId(),
-      open,
-      onOpenChange: setOpen,
-      onOpenToggle: reactExports.useCallback(() => setOpen((prevOpen) => !prevOpen), [setOpen]),
-      modal,
-      children
-    }
-  );
-};
-Dialog$1.displayName = DIALOG_NAME;
-var TRIGGER_NAME$1 = "DialogTrigger";
-var DialogTrigger = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeDialog, ...triggerProps } = props;
-    const context = useDialogContext(TRIGGER_NAME$1, __scopeDialog);
-    const composedTriggerRef = useComposedRefs(forwardedRef, context.triggerRef);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Primitive.button,
-      {
-        type: "button",
-        "aria-haspopup": "dialog",
-        "aria-expanded": context.open,
-        "aria-controls": context.contentId,
-        "data-state": getState(context.open),
-        ...triggerProps,
-        ref: composedTriggerRef,
-        onClick: composeEventHandlers(props.onClick, context.onOpenToggle)
-      }
-    );
-  }
-);
-DialogTrigger.displayName = TRIGGER_NAME$1;
-var PORTAL_NAME$1 = "DialogPortal";
-var [PortalProvider, usePortalContext] = createDialogContext(PORTAL_NAME$1, {
-  forceMount: void 0
-});
-var DialogPortal$1 = (props) => {
-  const { __scopeDialog, forceMount, children, container } = props;
-  const context = useDialogContext(PORTAL_NAME$1, __scopeDialog);
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(PortalProvider, { scope: __scopeDialog, forceMount, children: reactExports.Children.map(children, (child) => /* @__PURE__ */ jsxRuntimeExports.jsx(Presence, { present: forceMount || context.open, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Portal$1, { asChild: true, container, children: child }) })) });
-};
-DialogPortal$1.displayName = PORTAL_NAME$1;
-var OVERLAY_NAME$1 = "DialogOverlay";
-var DialogOverlay$1 = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const portalContext = usePortalContext(OVERLAY_NAME$1, props.__scopeDialog);
-    const { forceMount = portalContext.forceMount, ...overlayProps } = props;
-    const context = useDialogContext(OVERLAY_NAME$1, props.__scopeDialog);
-    return context.modal ? /* @__PURE__ */ jsxRuntimeExports.jsx(Presence, { present: forceMount || context.open, children: /* @__PURE__ */ jsxRuntimeExports.jsx(DialogOverlayImpl, { ...overlayProps, ref: forwardedRef }) }) : null;
-  }
-);
-DialogOverlay$1.displayName = OVERLAY_NAME$1;
-var Slot = createSlot("DialogOverlay.RemoveScroll");
-var DialogOverlayImpl = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeDialog, ...overlayProps } = props;
-    const context = useDialogContext(OVERLAY_NAME$1, __scopeDialog);
-    return (
-      // Make sure `Content` is scrollable even when it doesn't live inside `RemoveScroll`
-      // ie. when `Overlay` and `Content` are siblings
-      /* @__PURE__ */ jsxRuntimeExports.jsx(ReactRemoveScroll, { as: Slot, allowPinchZoom: true, shards: [context.contentRef], children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-        Primitive.div,
-        {
-          "data-state": getState(context.open),
-          ...overlayProps,
-          ref: forwardedRef,
-          style: { pointerEvents: "auto", ...overlayProps.style }
-        }
-      ) })
-    );
-  }
-);
-var CONTENT_NAME$1 = "DialogContent";
-var DialogContent$1 = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const portalContext = usePortalContext(CONTENT_NAME$1, props.__scopeDialog);
-    const { forceMount = portalContext.forceMount, ...contentProps } = props;
-    const context = useDialogContext(CONTENT_NAME$1, props.__scopeDialog);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Presence, { present: forceMount || context.open, children: context.modal ? /* @__PURE__ */ jsxRuntimeExports.jsx(DialogContentModal, { ...contentProps, ref: forwardedRef }) : /* @__PURE__ */ jsxRuntimeExports.jsx(DialogContentNonModal, { ...contentProps, ref: forwardedRef }) });
-  }
-);
-DialogContent$1.displayName = CONTENT_NAME$1;
-var DialogContentModal = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const context = useDialogContext(CONTENT_NAME$1, props.__scopeDialog);
-    const contentRef = reactExports.useRef(null);
-    const composedRefs = useComposedRefs(forwardedRef, context.contentRef, contentRef);
-    reactExports.useEffect(() => {
-      const content = contentRef.current;
-      if (content) return hideOthers(content);
-    }, []);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      DialogContentImpl,
-      {
-        ...props,
-        ref: composedRefs,
-        trapFocus: context.open,
-        disableOutsidePointerEvents: true,
-        onCloseAutoFocus: composeEventHandlers(props.onCloseAutoFocus, (event) => {
-          var _a;
-          event.preventDefault();
-          (_a = context.triggerRef.current) == null ? void 0 : _a.focus();
-        }),
-        onPointerDownOutside: composeEventHandlers(props.onPointerDownOutside, (event) => {
-          const originalEvent = event.detail.originalEvent;
-          const ctrlLeftClick = originalEvent.button === 0 && originalEvent.ctrlKey === true;
-          const isRightClick = originalEvent.button === 2 || ctrlLeftClick;
-          if (isRightClick) event.preventDefault();
-        }),
-        onFocusOutside: composeEventHandlers(
-          props.onFocusOutside,
-          (event) => event.preventDefault()
-        )
-      }
-    );
-  }
-);
-var DialogContentNonModal = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const context = useDialogContext(CONTENT_NAME$1, props.__scopeDialog);
-    const hasInteractedOutsideRef = reactExports.useRef(false);
-    const hasPointerDownOutsideRef = reactExports.useRef(false);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      DialogContentImpl,
-      {
-        ...props,
-        ref: forwardedRef,
-        trapFocus: false,
-        disableOutsidePointerEvents: false,
-        onCloseAutoFocus: (event) => {
-          var _a, _b;
-          (_a = props.onCloseAutoFocus) == null ? void 0 : _a.call(props, event);
-          if (!event.defaultPrevented) {
-            if (!hasInteractedOutsideRef.current) (_b = context.triggerRef.current) == null ? void 0 : _b.focus();
-            event.preventDefault();
-          }
-          hasInteractedOutsideRef.current = false;
-          hasPointerDownOutsideRef.current = false;
-        },
-        onInteractOutside: (event) => {
-          var _a, _b;
-          (_a = props.onInteractOutside) == null ? void 0 : _a.call(props, event);
-          if (!event.defaultPrevented) {
-            hasInteractedOutsideRef.current = true;
-            if (event.detail.originalEvent.type === "pointerdown") {
-              hasPointerDownOutsideRef.current = true;
-            }
-          }
-          const target = event.target;
-          const targetIsTrigger = (_b = context.triggerRef.current) == null ? void 0 : _b.contains(target);
-          if (targetIsTrigger) event.preventDefault();
-          if (event.detail.originalEvent.type === "focusin" && hasPointerDownOutsideRef.current) {
-            event.preventDefault();
-          }
-        }
-      }
-    );
-  }
-);
-var DialogContentImpl = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeDialog, trapFocus, onOpenAutoFocus, onCloseAutoFocus, ...contentProps } = props;
-    const context = useDialogContext(CONTENT_NAME$1, __scopeDialog);
-    const contentRef = reactExports.useRef(null);
-    const composedRefs = useComposedRefs(forwardedRef, contentRef);
-    useFocusGuards();
-    return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        FocusScope,
-        {
-          asChild: true,
-          loop: true,
-          trapped: trapFocus,
-          onMountAutoFocus: onOpenAutoFocus,
-          onUnmountAutoFocus: onCloseAutoFocus,
-          children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-            DismissableLayer,
-            {
-              role: "dialog",
-              id: context.contentId,
-              "aria-describedby": context.descriptionId,
-              "aria-labelledby": context.titleId,
-              "data-state": getState(context.open),
-              ...contentProps,
-              ref: composedRefs,
-              onDismiss: () => context.onOpenChange(false)
-            }
-          )
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(TitleWarning, { titleId: context.titleId }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(DescriptionWarning$1, { contentRef, descriptionId: context.descriptionId })
-      ] })
-    ] });
-  }
-);
-var TITLE_NAME$1 = "DialogTitle";
-var DialogTitle$1 = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeDialog, ...titleProps } = props;
-    const context = useDialogContext(TITLE_NAME$1, __scopeDialog);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.h2, { id: context.titleId, ...titleProps, ref: forwardedRef });
-  }
-);
-DialogTitle$1.displayName = TITLE_NAME$1;
-var DESCRIPTION_NAME$1 = "DialogDescription";
-var DialogDescription = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeDialog, ...descriptionProps } = props;
-    const context = useDialogContext(DESCRIPTION_NAME$1, __scopeDialog);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Primitive.p, { id: context.descriptionId, ...descriptionProps, ref: forwardedRef });
-  }
-);
-DialogDescription.displayName = DESCRIPTION_NAME$1;
-var CLOSE_NAME = "DialogClose";
-var DialogClose = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeDialog, ...closeProps } = props;
-    const context = useDialogContext(CLOSE_NAME, __scopeDialog);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Primitive.button,
-      {
-        type: "button",
-        ...closeProps,
-        ref: forwardedRef,
-        onClick: composeEventHandlers(props.onClick, () => context.onOpenChange(false))
-      }
-    );
-  }
-);
-DialogClose.displayName = CLOSE_NAME;
-function getState(open) {
-  return open ? "open" : "closed";
-}
-var TITLE_WARNING_NAME = "DialogTitleWarning";
-var [WarningProvider, useWarningContext] = createContext2(TITLE_WARNING_NAME, {
-  contentName: CONTENT_NAME$1,
-  titleName: TITLE_NAME$1,
-  docsSlug: "dialog"
-});
-var TitleWarning = ({ titleId }) => {
-  const titleWarningContext = useWarningContext(TITLE_WARNING_NAME);
-  const MESSAGE = `\`${titleWarningContext.contentName}\` requires a \`${titleWarningContext.titleName}\` for the component to be accessible for screen reader users.
-
-If you want to hide the \`${titleWarningContext.titleName}\`, you can wrap it with our VisuallyHidden component.
-
-For more information, see https://radix-ui.com/primitives/docs/components/${titleWarningContext.docsSlug}`;
-  reactExports.useEffect(() => {
-    if (titleId) {
-      const hasTitle = document.getElementById(titleId);
-      if (!hasTitle) console.error(MESSAGE);
-    }
-  }, [MESSAGE, titleId]);
-  return null;
-};
-var DESCRIPTION_WARNING_NAME = "DialogDescriptionWarning";
-var DescriptionWarning$1 = ({ contentRef, descriptionId }) => {
-  const descriptionWarningContext = useWarningContext(DESCRIPTION_WARNING_NAME);
-  const MESSAGE = `Warning: Missing \`Description\` or \`aria-describedby={undefined}\` for {${descriptionWarningContext.contentName}}.`;
-  reactExports.useEffect(() => {
-    var _a;
-    const describedById = (_a = contentRef.current) == null ? void 0 : _a.getAttribute("aria-describedby");
-    if (descriptionId && describedById) {
-      const hasDescription = document.getElementById(descriptionId);
-      if (!hasDescription) console.warn(MESSAGE);
-    }
-  }, [MESSAGE, contentRef, descriptionId]);
-  return null;
-};
-var Root = Dialog$1;
-var Trigger = DialogTrigger;
-var Portal = DialogPortal$1;
-var Overlay = DialogOverlay$1;
-var Content = DialogContent$1;
-var Title = DialogTitle$1;
-var Description = DialogDescription;
-var Close = DialogClose;
 var ROOT_NAME = "AlertDialog";
 var [createAlertDialogContext] = createContextScope(ROOT_NAME, [
   createDialogScope
@@ -784,103 +356,6 @@ function AlertDialogCancel({
     }
   );
 }
-function Dialog({
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Root, { "data-slot": "dialog", ...props });
-}
-function DialogPortal({
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(Portal, { "data-slot": "dialog-portal", ...props });
-}
-function DialogOverlay({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Overlay,
-    {
-      "data-slot": "dialog-overlay",
-      className: cn(
-        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
-        className
-      ),
-      ...props
-    }
-  );
-}
-function DialogContent({
-  className,
-  children,
-  showCloseButton = true,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogPortal, { "data-slot": "dialog-portal", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx(DialogOverlay, {}),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs(
-      Content,
-      {
-        "data-slot": "dialog-content",
-        className: cn(
-          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
-          className
-        ),
-        ...props,
-        children: [
-          children,
-          showCloseButton && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            Close,
-            {
-              "data-slot": "dialog-close",
-              className: "ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(X, {}),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "sr-only", children: "Close" })
-              ]
-            }
-          )
-        ]
-      }
-    )
-  ] });
-}
-function DialogHeader({ className, ...props }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "div",
-    {
-      "data-slot": "dialog-header",
-      className: cn("flex flex-col gap-2 text-center sm:text-left", className),
-      ...props
-    }
-  );
-}
-function DialogFooter({ className, ...props }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "div",
-    {
-      "data-slot": "dialog-footer",
-      className: cn(
-        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
-        className
-      ),
-      ...props
-    }
-  );
-}
-function DialogTitle({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Title,
-    {
-      "data-slot": "dialog-title",
-      className: cn("text-lg leading-none font-semibold", className),
-      ...props
-    }
-  );
-}
 function Skeleton({ className, ...props }) {
   return /* @__PURE__ */ jsxRuntimeExports.jsx(
     "div",
@@ -895,6 +370,8 @@ const CATEGORY_COLORS = {
   cab: "badge-cab",
   train: "badge-train",
   bus: "badge-bus",
+  localBus: "badge-bus",
+  auto: "badge-cab",
   flight: "badge-flight",
   hotel: "badge-hotel",
   meal: "badge-meal",
@@ -904,6 +381,8 @@ const CATEGORY_ICONS = {
   cab: "🚕",
   train: "🚆",
   bus: "🚌",
+  localBus: "🚐",
+  auto: "🛺",
   flight: "✈️",
   hotel: "🏨",
   meal: "🍽️",
@@ -911,6 +390,8 @@ const CATEGORY_ICONS = {
 };
 const CATEGORIES = [
   "cab",
+  "auto",
+  "localBus",
   "train",
   "bus",
   "flight",
@@ -1204,23 +685,45 @@ function ReceiptCard({
   receipt,
   index,
   dayIndex,
+  isDraggingThis,
   onEdit,
   onDelete,
   onDragStart,
   onDragOver,
-  onDrop
+  onDropOnCard
 }) {
   const { currentLanguage } = useAppStore();
   const catColor = CATEGORY_COLORS[receipt.category];
   const catIcon = CATEGORY_ICONS[receipt.category];
+  const longPressTimer = reactExports.useRef(null);
+  const cardRef = reactExports.useRef(null);
+  function handlePointerDown() {
+    longPressTimer.current = setTimeout(() => {
+      if (cardRef.current) {
+        cardRef.current.draggable = true;
+      }
+    }, 400);
+  }
+  function handlePointerUp() {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+  }
+  function handleNativeDragStart(e) {
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", receipt.id);
+    onDragStart(receipt.id, receipt.date);
+  }
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(
     "div",
     {
+      ref: cardRef,
       draggable: true,
-      onDragStart: (e) => onDragStart(e, receipt.id),
+      onDragStart: handleNativeDragStart,
       onDragOver,
-      onDrop: (e) => onDrop(e, receipt.id),
-      className: "receipt-card flex items-center gap-3 p-3 cursor-default select-none",
+      onDrop: (e) => onDropOnCard(e, receipt.id, receipt.date),
+      onPointerDown: handlePointerDown,
+      onPointerUp: handlePointerUp,
+      onPointerCancel: handlePointerUp,
+      className: `receipt-card flex items-center gap-3 p-3 cursor-default select-none transition-opacity duration-150 ${isDraggingThis ? "opacity-40 scale-[0.98]" : "opacity-100"}`,
       "data-ocid": `gallery.receipt.${dayIndex}.${index}`,
       children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -1288,65 +791,183 @@ function ReceiptCard({
     }
   );
 }
+function DayDropZone({
+  dateStr,
+  position,
+  isDragActive,
+  isDragOver,
+  onDragEnter,
+  onDragLeave,
+  onDrop
+}) {
+  if (!isDragActive) return null;
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "div",
+    {
+      onDragEnter,
+      onDragLeave,
+      onDragOver: (e) => e.preventDefault(),
+      onDrop: (e) => onDrop(e, dateStr),
+      className: `mx-4 rounded-lg border-2 border-dashed transition-all duration-150 ${position === "top" ? "mt-2 mb-1" : "mt-1 mb-2"} ${isDragOver ? "border-cyan-400 bg-cyan-400/10 h-10 flex items-center justify-center" : "border-border/50 h-2"}`,
+      "aria-hidden": "true",
+      children: isDragOver && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[11px] text-cyan-400 font-medium pointer-events-none", children: "Drop here" })
+    }
+  );
+}
 function DayGroupCard({
   group,
   groupIndex,
+  activeDrag,
   onEdit,
   onDelete,
-  onReorder
+  onDragStart,
+  onDragEnd,
+  onSameDayReorder,
+  onCrossDayDrop
 }) {
   const { currentLanguage } = useAppStore();
-  const dragIdRef = reactExports.useRef(null);
-  function handleDragStart(e, id) {
-    dragIdRef.current = id;
-    e.dataTransfer.effectAllowed = "move";
+  const [topZoneOver, setTopZoneOver] = reactExports.useState(false);
+  const [bottomZoneOver, setBottomZoneOver] = reactExports.useState(false);
+  const [headerOver, setHeaderOver] = reactExports.useState(false);
+  const containerRef = reactExports.useRef(null);
+  const [isVisible, setIsVisible] = reactExports.useState(false);
+  reactExports.useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setIsVisible(true);
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  const isDragFromOtherDay = activeDrag !== null && activeDrag.sourceDateStr !== group.dateStr;
+  const isDropTarget = isDragFromOtherDay && (topZoneOver || bottomZoneOver || headerOver);
+  function handleHeaderDragOver(e) {
+    if (!isDragFromOtherDay) return;
+    e.preventDefault();
+    setHeaderOver(true);
   }
-  function handleDragOver(e) {
+  function handleHeaderDragLeave() {
+    setHeaderOver(false);
+  }
+  function handleHeaderDrop(e) {
+    e.preventDefault();
+    setHeaderOver(false);
+    if (activeDrag && isDragFromOtherDay) {
+      onCrossDayDrop(activeDrag.receiptId, group.dateStr);
+    }
+    onDragEnd();
+  }
+  function handleZoneDrop(e, targetDateStr) {
+    e.preventDefault();
+    setTopZoneOver(false);
+    setBottomZoneOver(false);
+    if (activeDrag && isDragFromOtherDay) {
+      onCrossDayDrop(activeDrag.receiptId, targetDateStr);
+    }
+    onDragEnd();
+  }
+  function handleCardDragOver(e) {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
   }
-  function handleDrop(e, targetId) {
+  function handleDropOnCard(e, targetReceiptId, targetDateStr) {
     e.preventDefault();
-    const fromId = dragIdRef.current;
-    if (!fromId || fromId === targetId) return;
-    const current = [...group.receipts];
-    const fromIdx = current.findIndex((r) => r.id === fromId);
-    const toIdx = current.findIndex((r) => r.id === targetId);
-    if (fromIdx === -1 || toIdx === -1) return;
-    const [moved] = current.splice(fromIdx, 1);
-    current.splice(toIdx, 0, moved);
-    onReorder(group.dateStr, current);
-    dragIdRef.current = null;
+    if (!activeDrag) return;
+    if (activeDrag.sourceDateStr === group.dateStr) {
+      const current = [...group.receipts];
+      const fromIdx = current.findIndex((r) => r.id === activeDrag.receiptId);
+      const toIdx = current.findIndex((r) => r.id === targetReceiptId);
+      if (fromIdx !== -1 && toIdx !== -1 && fromIdx !== toIdx) {
+        const [moved] = current.splice(fromIdx, 1);
+        current.splice(toIdx, 0, moved);
+        onSameDayReorder(group.dateStr, current);
+      }
+    } else {
+      onCrossDayDrop(activeDrag.receiptId, targetDateStr);
+    }
+    onDragEnd();
   }
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(
     motion.div,
     {
+      ref: containerRef,
       initial: { opacity: 0, y: 12 },
       animate: { opacity: 1, y: 0 },
       transition: { delay: groupIndex * 0.05 },
       "data-ocid": `gallery.day_group.${groupIndex + 1}`,
+      onDragEnd,
       children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "daily-header sticky top-[57px] z-10 backdrop-blur-sm", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0 flex-1", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm font-semibold text-foreground truncate", children: group.label }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-muted-foreground mt-0.5 truncate", children: buildDaySummary(group.receipts, currentLanguage) })
-          ] }),
-          group.total > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm font-bold text-primary shrink-0 ml-3 font-mono", children: formatCurrency(group.total) })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "px-4 py-2 space-y-2", children: group.receipts.map((receipt, ri) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          DayDropZone,
+          {
+            dateStr: group.dateStr,
+            position: "top",
+            isDragActive: isDragFromOtherDay,
+            isDragOver: topZoneOver,
+            onDragEnter: () => setTopZoneOver(true),
+            onDragLeave: () => setTopZoneOver(false),
+            onDrop: handleZoneDrop
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            className: `daily-header sticky top-[57px] z-10 backdrop-blur-sm transition-all duration-150 ${isDropTarget || headerOver ? "border-2 border-dashed border-cyan-400 bg-cyan-400/10 rounded-lg mx-2" : ""}`,
+            onDragOver: handleHeaderDragOver,
+            onDragLeave: handleHeaderDragLeave,
+            onDrop: handleHeaderDrop,
+            "data-ocid": `gallery.day_header.${groupIndex + 1}`,
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0 flex-1", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm font-semibold text-foreground truncate", children: group.label }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-muted-foreground mt-0.5 truncate", children: buildDaySummary(group.receipts, currentLanguage) })
+              ] }),
+              group.total > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm font-bold text-primary shrink-0 ml-3 font-mono", children: formatCurrency(group.total) }),
+              headerOver && activeDrag && isDragFromOtherDay && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "ml-2 text-[11px] text-cyan-400 font-semibold shrink-0 pointer-events-none", children: "Move here" })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "px-4 py-2 space-y-2", children: isVisible ? group.receipts.map((receipt, ri) => /* @__PURE__ */ jsxRuntimeExports.jsx(
           ReceiptCard,
           {
             receipt,
             index: ri + 1,
             dayIndex: groupIndex + 1,
+            isDraggingThis: (activeDrag == null ? void 0 : activeDrag.receiptId) === receipt.id,
             onEdit,
             onDelete,
-            onDragStart: handleDragStart,
-            onDragOver: handleDragOver,
-            onDrop: handleDrop
+            onDragStart,
+            onDragOver: handleCardDragOver,
+            onDropOnCard: handleDropOnCard
           },
           receipt.id
-        )) })
+        )) : (
+          // Placeholder while off-screen
+          group.receipts.map((r, ri) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "div",
+            {
+              className: "h-[88px] rounded-xl bg-muted/40 animate-pulse",
+              style: { animationDelay: `${ri * 50}ms` }
+            },
+            `skeleton-${r.id}`
+          ))
+        ) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          DayDropZone,
+          {
+            dateStr: group.dateStr,
+            position: "bottom",
+            isDragActive: isDragFromOtherDay,
+            isDragOver: bottomZoneOver,
+            onDragEnter: () => setBottomZoneOver(true),
+            onDragLeave: () => setBottomZoneOver(false),
+            onDrop: handleZoneDrop
+          }
+        )
       ]
     }
   );
@@ -1413,18 +1034,59 @@ function GalleryPage() {
   reactExports.useEffect(() => {
     setIsLoadingReceipts(false);
   }, []);
+  const [activeDrag, setActiveDrag] = reactExports.useState(null);
   const [dayOrders, setDayOrders] = reactExports.useState(/* @__PURE__ */ new Map());
   const groups = reactExports.useMemo(() => {
     const base = groupByDay(receipts, selectedMonth, selectedYear);
     return base.map((g) => {
       const local = dayOrders.get(g.dateStr);
-      if (local) return { ...g, receipts: local };
+      if (local) {
+        const validIds = new Set(g.receipts.map((r) => r.id));
+        const reconciled = local.filter((r) => validIds.has(r.id));
+        const inLocal = new Set(reconciled.map((r) => r.id));
+        const extras = g.receipts.filter((r) => !inLocal.has(r.id));
+        return { ...g, receipts: [...reconciled, ...extras] };
+      }
       return g;
     });
   }, [receipts, selectedMonth, selectedYear, dayOrders]);
-  const handleReorder = reactExports.useCallback((dateStr, newOrder) => {
-    setDayOrders((prev) => new Map(prev).set(dateStr, newOrder));
+  const handleDragStart = reactExports.useCallback(
+    (receiptId, sourceDateStr) => {
+      setActiveDrag({ receiptId, sourceDateStr });
+    },
+    []
+  );
+  const handleDragEnd = reactExports.useCallback(() => {
+    setActiveDrag(null);
   }, []);
+  const handleSameDayReorder = reactExports.useCallback(
+    (dateStr, newOrder) => {
+      setDayOrders((prev) => new Map(prev).set(dateStr, newOrder));
+    },
+    []
+  );
+  const handleCrossDayDrop = reactExports.useCallback(
+    async (receiptId, targetDateStr) => {
+      const receipt = receipts.find((r) => r.id === receiptId);
+      if (!receipt || receipt.date === targetDateStr) return;
+      const updated = { ...receipt, date: targetDateStr };
+      setDayOrders((prev) => {
+        const next = new Map(prev);
+        const sourceDateStr = receipt.date;
+        const sourceOrder = next.get(sourceDateStr);
+        if (sourceOrder) {
+          next.set(
+            sourceDateStr,
+            sourceOrder.filter((r) => r.id !== receiptId)
+          );
+        }
+        next.delete(targetDateStr);
+        return next;
+      });
+      await updateReceipt(updated);
+    },
+    [receipts, updateReceipt]
+  );
   const handleSaveEdit = reactExports.useCallback(
     async (updated) => {
       await updateReceipt(updated);
@@ -1445,50 +1107,62 @@ function GalleryPage() {
       return next;
     });
   }, [deletingId, deleteReceipt]);
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col min-h-full", "data-ocid": "gallery.page", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx(MonthSelector, {}),
-    isLoadingReceipts ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-4 space-y-4", "data-ocid": "gallery.loading_state", children: [1, 2, 3].map((i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-2", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "h-8 w-3/4" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "h-20 w-full" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "h-20 w-full" })
-    ] }, i)) }) : groups.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx(EmptyState, { hasMonthFilter: receipts.length > 0 }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-1 pb-2", children: groups.map((group, gi) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-        DayGroupCard,
-        {
-          group,
-          groupIndex: gi,
-          onEdit: setEditingReceipt,
-          onDelete: setDeletingId,
-          onReorder: handleReorder
-        },
-        group.dateStr
-      )) }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        MonthTotalBar,
-        {
-          groups,
-          month: selectedMonth,
-          year: selectedYear
-        }
-      )
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
-      EditModal,
-      {
-        receipt: editingReceipt,
-        onClose: () => setEditingReceipt(null),
-        onSave: handleSaveEdit
-      }
-    ),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
-      DeleteDialog,
-      {
-        open: !!deletingId,
-        onClose: () => setDeletingId(null),
-        onConfirm: handleConfirmDelete
-      }
-    )
-  ] });
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "div",
+    {
+      className: "flex flex-col min-h-full",
+      "data-ocid": "gallery.page",
+      onDragEnd: handleDragEnd,
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(MonthSelector, {}),
+        isLoadingReceipts ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-4 space-y-4", "data-ocid": "gallery.loading_state", children: [1, 2, 3].map((i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "h-8 w-3/4" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "h-20 w-full" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "h-20 w-full" })
+        ] }, i)) }) : groups.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx(EmptyState, { hasMonthFilter: receipts.length > 0 }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-1 pb-2", children: groups.map((group, gi) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+            DayGroupCard,
+            {
+              group,
+              groupIndex: gi,
+              activeDrag,
+              onEdit: setEditingReceipt,
+              onDelete: setDeletingId,
+              onDragStart: handleDragStart,
+              onDragEnd: handleDragEnd,
+              onSameDayReorder: handleSameDayReorder,
+              onCrossDayDrop: handleCrossDayDrop
+            },
+            group.dateStr
+          )) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            MonthTotalBar,
+            {
+              groups,
+              month: selectedMonth,
+              year: selectedYear
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          EditModal,
+          {
+            receipt: editingReceipt,
+            onClose: () => setEditingReceipt(null),
+            onSave: handleSaveEdit
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          DeleteDialog,
+          {
+            open: !!deletingId,
+            onClose: () => setDeletingId(null),
+            onConfirm: handleConfirmDelete
+          }
+        )
+      ]
+    }
+  );
 }
 export {
   GalleryPage as default

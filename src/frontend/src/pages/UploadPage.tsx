@@ -14,11 +14,11 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { getDailyCount } from "@/lib/db";
 import { tLang } from "@/lib/i18n";
+import { processImage } from "@/lib/imageProcessing";
 import {
   detectAmount,
   detectCategory,
   detectDate,
-  enforcePortraitOrientation,
   extractTextFromImage,
 } from "@/lib/ocr";
 import {
@@ -94,6 +94,8 @@ interface QueueItem {
 
 const CATEGORIES: Category[] = [
   "cab",
+  "auto",
+  "localBus",
   "train",
   "bus",
   "flight",
@@ -106,6 +108,8 @@ const CATEGORY_COLORS: Record<Category, string> = {
   cab: "badge-cab",
   train: "badge-train",
   bus: "badge-bus",
+  localBus: "badge-bus",
+  auto: "badge-cab",
   flight: "badge-flight",
   hotel: "badge-hotel",
   meal: "badge-meal",
@@ -116,6 +120,8 @@ const CATEGORY_ICONS: Record<Category, string> = {
   cab: "🚕",
   train: "🚆",
   bus: "🚌",
+  localBus: "🚐",
+  auto: "🛺",
   flight: "✈️",
   hotel: "🏨",
   meal: "🍽️",
@@ -264,22 +270,20 @@ export default function UploadPage() {
       prev.map((q) => (q.id === itemId ? { ...q, status: "processing" } : q)),
     );
     try {
-      const rotatedDataUrl = await enforcePortraitOrientation(file);
-      if (rotatedDataUrl) {
-        setQueue((prev) =>
-          prev.map((q) =>
-            q.id === itemId
-              ? {
-                  ...q,
-                  previewUrl: rotatedDataUrl,
-                  imageDataUrl: rotatedDataUrl,
-                }
-              : q,
-          ),
-        );
-      }
-      const ocrSource: File | string = rotatedDataUrl ?? file;
-      const text = await extractTextFromImage(ocrSource);
+      // Full pipeline: EXIF rotate → edge-detect crop → resize → compress
+      const processedDataUrl = await processImage(file);
+      setQueue((prev) =>
+        prev.map((q) =>
+          q.id === itemId
+            ? {
+                ...q,
+                previewUrl: processedDataUrl,
+                imageDataUrl: processedDataUrl,
+              }
+            : q,
+        ),
+      );
+      const text = await extractTextFromImage(processedDataUrl);
       const detectedDate = detectDate(text);
       const detectedCategory = detectCategory(text);
       const detectedAmount = detectAmount(text);
@@ -383,16 +387,23 @@ export default function UploadPage() {
       try {
         const imageData =
           item.imageDataUrl ??
-          (await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-              const result = e.target?.result;
-              if (typeof result === "string") resolve(result);
-              else reject(new Error("Failed to read file"));
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(item.file);
-          }));
+          (await (async () => {
+            // Fallback: process the original file if imageDataUrl is missing
+            try {
+              return await processImage(item.file);
+            } catch {
+              return await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                  const result = e.target?.result;
+                  if (typeof result === "string") resolve(result);
+                  else reject(new Error("Failed to read file"));
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(item.file);
+              });
+            }
+          })());
         const receipt: Receipt = {
           id: generateId(),
           imageData,
@@ -737,7 +748,7 @@ export default function UploadPage() {
                     animate={{ scale: 1 }}
                     className="absolute top-3 left-3 flex items-center gap-1.5 px-2 py-1 rounded-full bg-background/80 text-foreground text-xs font-medium shadow"
                   >
-                    🔄 Portrait
+                    ✂️ Optimised
                   </motion.div>
                 )}
 

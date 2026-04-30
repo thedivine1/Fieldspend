@@ -1,13 +1,13 @@
-import { c as createLucideIcon, r as reactExports, j as jsxRuntimeExports, _ as __vitePreload, u as useNavigate, a as useAppStore, g as getDailyCount, d as ue, t as tLang, I as Image$1, C as Camera, X } from "./index-DZsRQdG0.js";
-import { C as CircleAlert, A as AdModal } from "./AdModal-DiryTcgt.js";
-import { k as Primitive, h as cn, B as Button, j as Badge } from "./index-B-QWpeOq.js";
-import { L as Label, I as Input } from "./label-BzuSlc1o.js";
-import { S as Select, b as SelectTrigger, c as SelectValue, d as SelectContent, e as SelectItem } from "./select-DD2C3PDr.js";
-import { T as Textarea } from "./textarea-D15EJLM-.js";
-import { i as isAdminUser, h as hasPremiumAccess, F as FREE_DAILY_LIMIT, S as Sparkles, C as CircleCheck, a as isBetaPeriodActive } from "./premium-BY9SNphz.js";
-import { m as motion } from "./proxy-DLCgAu61.js";
-import { S as Star } from "./star-hyK8ztuA.js";
-import { A as AnimatePresence } from "./index-BexNpxAd.js";
+import { c as createLucideIcon, r as reactExports, j as jsxRuntimeExports, _ as __vitePreload, u as useNavigate, a as useAppStore, g as getDailyCount, d as ue, t as tLang, I as Image$1, C as Camera, X } from "./index-DRalea1i.js";
+import { C as CircleAlert, A as AdModal } from "./AdModal-qiDv85o4.js";
+import { P as Primitive, d as cn, B as Button, f as Badge } from "./index-CtbOs_Tp.js";
+import { L as Label, I as Input } from "./label-70-r2va7.js";
+import { S as Select, a as SelectTrigger, b as SelectValue, c as SelectContent, d as SelectItem } from "./select-tJ1RCc9s.js";
+import { T as Textarea } from "./textarea-6CGw0t8a.js";
+import { i as isAdminUser, h as hasPremiumAccess, F as FREE_DAILY_LIMIT, S as Sparkles, C as CircleCheck, a as isBetaPeriodActive } from "./premium-RcsiXbTI.js";
+import { m as motion } from "./proxy-BDLiLXn7.js";
+import { S as Star } from "./star-CaC3lESs.js";
+import { A as AnimatePresence } from "./index-D1-kRxV1.js";
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -214,37 +214,286 @@ function Progress({
     }
   );
 }
-async function enforcePortraitOrientation(file) {
+function readExifOrientation(file) {
   return new Promise((resolve) => {
+    if (!file.type.includes("jpeg") && !file.type.includes("jpg")) {
+      resolve(1);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      var _a;
+      try {
+        const buffer = (_a = e.target) == null ? void 0 : _a.result;
+        if (!buffer || buffer.byteLength < 12) {
+          resolve(1);
+          return;
+        }
+        const view = new DataView(buffer);
+        if (view.getUint16(0) !== 65496) {
+          resolve(1);
+          return;
+        }
+        let offset = 2;
+        while (offset + 4 < buffer.byteLength) {
+          const marker = view.getUint16(offset);
+          const length = view.getUint16(offset + 2);
+          if (marker === 65505) {
+            const exifHeader = view.getUint32(offset + 4);
+            if (exifHeader !== 1165519206) {
+              resolve(1);
+              return;
+            }
+            const tiffOffset = offset + 10;
+            const littleEndian = view.getUint16(tiffOffset) === 18761;
+            const readUint16 = (o) => view.getUint16(tiffOffset + o, littleEndian);
+            const readUint32 = (o) => view.getUint32(tiffOffset + o, littleEndian);
+            if (readUint16(0) !== (littleEndian ? 18761 : 19789)) {
+            }
+            const ifdOffset = readUint32(4);
+            const entries = readUint16(ifdOffset);
+            for (let i = 0; i < entries; i++) {
+              const entryOffset = ifdOffset + 2 + i * 12;
+              if (entryOffset + 12 > buffer.byteLength - tiffOffset) break;
+              const tag = readUint16(entryOffset);
+              if (tag === 274) {
+                const orientation = readUint16(entryOffset + 8);
+                resolve(orientation);
+                return;
+              }
+            }
+          }
+          offset += 2 + length;
+        }
+        resolve(1);
+      } catch {
+        resolve(1);
+      }
+    };
+    reader.onerror = () => resolve(1);
+    reader.readAsArrayBuffer(file.slice(0, 65536));
+  });
+}
+function applyOrientation(img, orientation) {
+  const { naturalWidth: w, naturalHeight: h } = img;
+  const needsRotationFallback = orientation === 1 && w > h;
+  const effectiveOrientation = needsRotationFallback ? 6 : orientation;
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    canvas.width = w;
+    canvas.height = h;
+    return canvas;
+  }
+  if (effectiveOrientation >= 5 && effectiveOrientation <= 8) {
+    canvas.width = h;
+    canvas.height = w;
+  } else {
+    canvas.width = w;
+    canvas.height = h;
+  }
+  switch (effectiveOrientation) {
+    case 2:
+      ctx.transform(-1, 0, 0, 1, w, 0);
+      break;
+    case 3:
+      ctx.transform(-1, 0, 0, -1, w, h);
+      break;
+    case 4:
+      ctx.transform(1, 0, 0, -1, 0, h);
+      break;
+    case 5:
+      ctx.transform(0, 1, 1, 0, 0, 0);
+      break;
+    case 6:
+      ctx.transform(0, 1, -1, 0, h, 0);
+      break;
+    case 7:
+      ctx.transform(0, -1, -1, 0, h, w);
+      break;
+    case 8:
+      ctx.transform(0, -1, 1, 0, 0, w);
+      break;
+  }
+  ctx.drawImage(img, 0, 0, w, h);
+  return canvas;
+}
+function toGrayscale(ctx, w, h) {
+  const imageData = ctx.getImageData(0, 0, w, h);
+  const data = imageData.data;
+  const gray = new Uint8Array(w * h);
+  for (let i = 0; i < w * h; i++) {
+    gray[i] = data[i * 4] * 0.299 + data[i * 4 + 1] * 0.587 + data[i * 4 + 2] * 0.114;
+  }
+  return gray;
+}
+function sobelEdges(gray, w, h) {
+  const edges = new Uint8Array(w * h);
+  let maxMag = 0;
+  const mags = new Float32Array(w * h);
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const idx = y * w + x;
+      const gx = -gray[(y - 1) * w + (x - 1)] + gray[(y - 1) * w + (x + 1)] + -2 * gray[y * w + (x - 1)] + 2 * gray[y * w + (x + 1)] + -gray[(y + 1) * w + (x - 1)] + gray[(y + 1) * w + (x + 1)];
+      const gy = -gray[(y - 1) * w + (x - 1)] + -2 * gray[(y - 1) * w + x] + -gray[(y - 1) * w + (x + 1)] + gray[(y + 1) * w + (x - 1)] + 2 * gray[(y + 1) * w + x] + gray[(y + 1) * w + (x + 1)];
+      const mag = Math.sqrt(gx * gx + gy * gy);
+      mags[idx] = mag;
+      if (mag > maxMag) maxMag = mag;
+    }
+  }
+  if (maxMag > 0) {
+    for (let i = 0; i < w * h; i++) {
+      edges[i] = mags[i] / maxMag * 255;
+    }
+  }
+  return edges;
+}
+function findReceiptBounds(edges, w, h) {
+  const THRESHOLD = 76;
+  let minX = w;
+  let maxX = 0;
+  let minY = h;
+  let maxY = 0;
+  let edgeCount = 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (edges[y * w + x] >= THRESHOLD) {
+        edgeCount++;
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+  if (edgeCount < 100) return null;
+  const boxW = maxX - minX;
+  const boxH = maxY - minY;
+  const coverageX = boxW / w;
+  const coverageY = boxH / h;
+  if (coverageX < 0.2 || coverageY < 0.2 || coverageX > 0.95 || coverageY > 0.95) {
+    return null;
+  }
+  const padX = Math.floor(w * 0.02);
+  const padY = Math.floor(h * 0.02);
+  return {
+    x: Math.max(0, minX - padX),
+    y: Math.max(0, minY - padY),
+    w: Math.min(w, maxX + padX) - Math.max(0, minX - padX),
+    h: Math.min(h, maxY + padY) - Math.max(0, minY - padY)
+  };
+}
+function detectReceiptBounds(sourceCanvas) {
+  try {
+    const origW = sourceCanvas.width;
+    const origH = sourceCanvas.height;
+    const scale = Math.min(1, 400 / origW);
+    const sW = Math.floor(origW * scale);
+    const sH = Math.floor(origH * scale);
+    const smallCanvas = document.createElement("canvas");
+    smallCanvas.width = sW;
+    smallCanvas.height = sH;
+    const smallCtx = smallCanvas.getContext("2d");
+    if (!smallCtx) return null;
+    smallCtx.drawImage(sourceCanvas, 0, 0, sW, sH);
+    const gray = toGrayscale(smallCtx, sW, sH);
+    const edges = sobelEdges(gray, sW, sH);
+    const bounds = findReceiptBounds(edges, sW, sH);
+    if (!bounds) return null;
+    return {
+      x: Math.floor(bounds.x / scale),
+      y: Math.floor(bounds.y / scale),
+      w: Math.ceil(bounds.w / scale),
+      h: Math.ceil(bounds.h / scale)
+    };
+  } catch {
+    return null;
+  }
+}
+function cropCanvas(source, bounds) {
+  const canvas = document.createElement("canvas");
+  canvas.width = bounds.w;
+  canvas.height = bounds.h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return source;
+  ctx.drawImage(
+    source,
+    bounds.x,
+    bounds.y,
+    bounds.w,
+    bounds.h,
+    0,
+    0,
+    bounds.w,
+    bounds.h
+  );
+  return canvas;
+}
+function resizeCanvas(source) {
+  const MAX_W = 800;
+  const MAX_H = 1024;
+  const origW = source.width;
+  const origH = source.height;
+  if (origW <= MAX_W && origH <= MAX_H) return source;
+  const scaleW = MAX_W / origW;
+  const scaleH = MAX_H / origH;
+  const scale = Math.min(scaleW, scaleH);
+  const newW = Math.floor(origW * scale);
+  const newH = Math.floor(origH * scale);
+  const canvas = document.createElement("canvas");
+  canvas.width = newW;
+  canvas.height = newH;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return source;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(source, 0, 0, newW, newH);
+  return canvas;
+}
+function loadImageFromFile(file) {
+  return new Promise((resolve, reject) => {
     const img = new Image();
-    const objectUrl = URL.createObjectURL(file);
+    const url = URL.createObjectURL(file);
     img.onload = () => {
-      URL.revokeObjectURL(objectUrl);
-      const { naturalWidth: w, naturalHeight: h } = img;
-      if (h >= w) {
-        resolve(null);
-        return;
-      }
-      const canvas = document.createElement("canvas");
-      canvas.width = h;
-      canvas.height = w;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) {
-        resolve(null);
-        return;
-      }
-      ctx.translate(h / 2, w / 2);
-      ctx.rotate(Math.PI / 2);
-      ctx.drawImage(img, -w / 2, -h / 2, w, h);
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-      resolve(dataUrl);
+      URL.revokeObjectURL(url);
+      resolve(img);
     };
     img.onerror = () => {
-      URL.revokeObjectURL(objectUrl);
-      resolve(null);
+      URL.revokeObjectURL(url);
+      reject(new Error("Image load failed"));
     };
-    img.src = objectUrl;
+    img.src = url;
   });
+}
+async function processImage(file) {
+  try {
+    const [img, orientation] = await Promise.all([
+      loadImageFromFile(file),
+      readExifOrientation(file)
+    ]);
+    let canvas = applyOrientation(img, orientation);
+    try {
+      const bounds = detectReceiptBounds(canvas);
+      if (bounds && bounds.w > 50 && bounds.h > 50) {
+        canvas = cropCanvas(canvas, bounds);
+      }
+    } catch {
+    }
+    canvas = resizeCanvas(canvas);
+    return canvas.toDataURL("image/jpeg", 0.85);
+  } catch {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        var _a;
+        const result = (_a = e.target) == null ? void 0 : _a.result;
+        if (typeof result === "string") resolve(result);
+        else reject(new Error("FileReader failed"));
+      };
+      reader.onerror = () => reject(new Error("FileReader error"));
+      reader.readAsDataURL(file);
+    });
+  }
 }
 function dataUrlToFile(dataUrl, fileName) {
   const [header, base64] = dataUrl.split(",");
@@ -262,12 +511,33 @@ function fileToBase64(file) {
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result;
-      const base64 = result.split(",")[1];
-      resolve(base64);
+      resolve(result.split(",")[1]);
     };
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+let workerInstance = null;
+let workerInitPromise = null;
+async function getTesseractWorker() {
+  if (workerInstance) return workerInstance;
+  if (workerInitPromise) return workerInitPromise;
+  workerInitPromise = (async () => {
+    const { createWorker } = await __vitePreload(async () => {
+      const { createWorker: createWorker2 } = await import("./index-NYFB56d-.js").then((n) => n.i);
+      return { createWorker: createWorker2 };
+    }, true ? [] : void 0);
+    const worker = await createWorker(["eng", "hin"]);
+    workerInstance = worker;
+    return worker;
+  })();
+  return workerInitPromise;
+}
+async function extractWithTesseract(source) {
+  const worker = await getTesseractWorker();
+  const input = typeof source === "string" ? dataUrlToFile(source, "receipt.jpg") : source;
+  const { data } = await worker.recognize(input);
+  return data.text;
 }
 const OCR_SPACE_URL = "https://api.ocr.space/parse/image";
 const OCR_SPACE_KEY = "helloworld";
@@ -305,26 +575,14 @@ async function extractWithOcrSpace(source) {
   if (!text.trim()) throw new Error("OCR.Space returned empty text");
   return text;
 }
-async function extractWithTesseract(source) {
-  const { createWorker } = await __vitePreload(async () => {
-    const { createWorker: createWorker2 } = await import("./index-NYFB56d-.js").then((n) => n.i);
-    return { createWorker: createWorker2 };
-  }, true ? [] : void 0);
-  const worker = await createWorker(["eng", "hin"]);
-  const input = typeof source === "string" ? dataUrlToFile(source, "receipt.jpg") : source;
-  const { data } = await worker.recognize(input);
-  await worker.terminate();
-  return data.text;
-}
 async function extractTextFromImage(source) {
   try {
-    const text = await extractWithOcrSpace(source);
-    return text;
+    const text = await extractWithTesseract(source);
+    if (text.trim()) return text;
   } catch {
-    console.warn("[OCR] OCR.Space unavailable, falling back to Tesseract");
   }
   try {
-    return await extractWithTesseract(source);
+    return await extractWithOcrSpace(source);
   } catch {
     return "";
   }
@@ -375,16 +633,24 @@ function toISODate(day, month, year) {
   return `${year}-${padDate(month)}-${padDate(day)}`;
 }
 function detectDate(text) {
-  const dmyMatch = text.match(/\b(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})\b/);
+  const normalised = text.replace(/(?:date|दिनांक|dated)\s*[:\-]\s*/gi, "").trim();
+  const dmyMatch = normalised.match(
+    /\b(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})\b/
+  );
   if (dmyMatch) {
     const d = Number.parseInt(dmyMatch[1]);
     const m = Number.parseInt(dmyMatch[2]);
     const y = Number.parseInt(dmyMatch[3]);
-    if (d >= 1 && d <= 31 && m >= 1 && m <= 12) {
-      return toISODate(d, m, y);
-    }
+    if (d >= 1 && d <= 31 && m >= 1 && m <= 12) return toISODate(d, m, y);
   }
-  const engMonthMatch = text.match(
+  const isoMatch = normalised.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);
+  if (isoMatch) {
+    const y = Number.parseInt(isoMatch[1]);
+    const m = Number.parseInt(isoMatch[2]);
+    const d = Number.parseInt(isoMatch[3]);
+    if (d >= 1 && d <= 31 && m >= 1 && m <= 12) return toISODate(d, m, y);
+  }
+  const engMonthMatch = normalised.match(
     /\b(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\s+(\d{4})\b/i
   );
   if (engMonthMatch) {
@@ -393,33 +659,37 @@ function detectDate(text) {
     const y = Number.parseInt(engMonthMatch[3]);
     if (m) return toISODate(d, m, y);
   }
+  const usMonthMatch = normalised.match(
+    /\b(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\s+(\d{1,2}),?\s+(\d{4})\b/i
+  );
+  if (usMonthMatch) {
+    const m = ENGLISH_MONTHS[usMonthMatch[1].toLowerCase()];
+    const d = Number.parseInt(usMonthMatch[2]);
+    const y = Number.parseInt(usMonthMatch[3]);
+    if (m) return toISODate(d, m, y);
+  }
   for (const [monthName, monthNum] of Object.entries(HINDI_MONTHS)) {
     const regex = new RegExp(`(\\d{1,2})\\s+${monthName}\\s+(\\d{4})`);
-    const match = text.match(regex);
+    const match = normalised.match(regex);
     if (match) {
       const d = Number.parseInt(match[1]);
       const y = Number.parseInt(match[2]);
       return toISODate(d, monthNum, y);
     }
   }
-  const isoMatch = text.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);
-  if (isoMatch) {
-    return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
-  }
   return null;
 }
 const CATEGORY_KEYWORDS = {
-  cab: [
-    "uber",
-    "ola",
-    "rapido",
-    "namma yatri",
-    "taxi",
-    "cab",
-    "auto",
-    "rickshaw",
-    "autorickshaw",
-    "rikshaw"
+  cab: ["uber", "ola", "rapido", "namma yatri", "taxi", "cab"],
+  auto: ["auto rickshaw", "autorickshaw", "rikshaw", "three wheeler", "auto"],
+  localBus: [
+    "local bus",
+    "city bus",
+    "brts",
+    "pmpml",
+    "bmtc",
+    "best bus",
+    "amts"
   ],
   flight: [
     "indigo",
@@ -434,8 +704,8 @@ const CATEGORY_KEYWORDS = {
     "boarding",
     "departure",
     "arrival",
-    "pnr",
-    "seat no"
+    "airways",
+    "flight"
   ],
   train: [
     "irctc",
@@ -447,7 +717,6 @@ const CATEGORY_KEYWORDS = {
     "berth",
     "platform",
     "reservation",
-    "pnr",
     "express"
   ],
   bus: [
@@ -457,7 +726,6 @@ const CATEGORY_KEYWORDS = {
     "st bus",
     "redbus",
     "state transport",
-    "bus",
     "volvo",
     "travels",
     "roadways"
@@ -472,7 +740,6 @@ const CATEGORY_KEYWORDS = {
     "guest house",
     "guesthouse",
     "oyo",
-    "makemytrip hotel",
     "room"
   ],
   meal: [
@@ -497,8 +764,18 @@ const CATEGORY_KEYWORDS = {
 };
 function detectCategory(text) {
   const lower = text.toLowerCase();
-  for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
-    if (cat === "other") continue;
+  const orderedCategories = [
+    "localBus",
+    "train",
+    "flight",
+    "hotel",
+    "cab",
+    "auto",
+    "bus",
+    "meal"
+  ];
+  for (const cat of orderedCategories) {
+    const keywords = CATEGORY_KEYWORDS[cat];
     for (const kw of keywords) {
       if (lower.includes(kw)) return cat;
     }
@@ -511,9 +788,9 @@ function parseAmount(raw) {
   return Number.isNaN(val) || val <= 0 ? null : val;
 }
 function detectAmount(text) {
-  const AMOUNT_NUM = /[\d]{1,3}(?:,\d{3})*(?:\.\d{1,2})?/;
+  const AMOUNT_NUM = /[\d]{1,3}(?:,\d{3})*(?:\.\d{0,2})?/;
   const highConfidencePattern = new RegExp(
-    `(?:grand\\s+total|net\\s+payable|total\\s+amount|subtotal|net\\s+total)\\s*[:\\-]?\\s*(?:₹|rs\\.?|inr)?\\s*(${AMOUNT_NUM.source})`,
+    `(?:grand\\s+total|net\\s+payable|total\\s+amount|amount\\s+due|net\\s+total|subtotal)\\s*[:\\-]?\\s*(?:₹|rs\\.?|inr)?\\s*(${AMOUNT_NUM.source})`,
     "i"
   );
   const highMatch = text.match(highConfidencePattern);
@@ -562,6 +839,8 @@ function incrementUploadCount() {
 }
 const CATEGORIES = [
   "cab",
+  "auto",
+  "localBus",
   "train",
   "bus",
   "flight",
@@ -573,6 +852,8 @@ const CATEGORY_COLORS = {
   cab: "badge-cab",
   train: "badge-train",
   bus: "badge-bus",
+  localBus: "badge-bus",
+  auto: "badge-cab",
   flight: "badge-flight",
   hotel: "badge-hotel",
   meal: "badge-meal",
@@ -582,6 +863,8 @@ const CATEGORY_ICONS = {
   cab: "🚕",
   train: "🚆",
   bus: "🚌",
+  localBus: "🚐",
+  auto: "🛺",
   flight: "✈️",
   hotel: "🏨",
   meal: "🍽️",
@@ -689,20 +972,17 @@ function UploadPage() {
       (prev) => prev.map((q) => q.id === itemId ? { ...q, status: "processing" } : q)
     );
     try {
-      const rotatedDataUrl = await enforcePortraitOrientation(file);
-      if (rotatedDataUrl) {
-        setQueue(
-          (prev) => prev.map(
-            (q) => q.id === itemId ? {
-              ...q,
-              previewUrl: rotatedDataUrl,
-              imageDataUrl: rotatedDataUrl
-            } : q
-          )
-        );
-      }
-      const ocrSource = rotatedDataUrl ?? file;
-      const text = await extractTextFromImage(ocrSource);
+      const processedDataUrl = await processImage(file);
+      setQueue(
+        (prev) => prev.map(
+          (q) => q.id === itemId ? {
+            ...q,
+            previewUrl: processedDataUrl,
+            imageDataUrl: processedDataUrl
+          } : q
+        )
+      );
+      const text = await extractTextFromImage(processedDataUrl);
       const detectedDate = detectDate(text);
       const detectedCategory = detectCategory(text);
       const detectedAmount = detectAmount(text);
@@ -788,17 +1068,23 @@ function UploadPage() {
     let savedCount = 0;
     for (const item of toSave) {
       try {
-        const imageData = item.imageDataUrl ?? await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            var _a;
-            const result = (_a = e.target) == null ? void 0 : _a.result;
-            if (typeof result === "string") resolve(result);
-            else reject(new Error("Failed to read file"));
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(item.file);
-        });
+        const imageData = item.imageDataUrl ?? await (async () => {
+          try {
+            return await processImage(item.file);
+          } catch {
+            return await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                var _a;
+                const result = (_a = e.target) == null ? void 0 : _a.result;
+                if (typeof result === "string") resolve(result);
+                else reject(new Error("Failed to read file"));
+              };
+              reader.onerror = reject;
+              reader.readAsDataURL(item.file);
+            });
+          }
+        })();
         const receipt = {
           id: generateId(),
           imageData,
@@ -1161,7 +1447,7 @@ function UploadPage() {
                   initial: { scale: 0 },
                   animate: { scale: 1 },
                   className: "absolute top-3 left-3 flex items-center gap-1.5 px-2 py-1 rounded-full bg-background/80 text-foreground text-xs font-medium shadow",
-                  children: "🔄 Portrait"
+                  children: "✂️ Optimised"
                 }
               ),
               activeItem.ocrAttempted && !activeItem.ocrFailed && /* @__PURE__ */ jsxRuntimeExports.jsxs(

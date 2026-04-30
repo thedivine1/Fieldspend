@@ -1,11 +1,11 @@
-import { c as createLucideIcon, r as reactExports, j as jsxRuntimeExports, a as useAppStore, t as tLang, L as LANGUAGES, d as ue, k as Moon, S as Sun } from "./index-DZsRQdG0.js";
-import { u as useComposedRefs, b as useControllableState, P as Primitive, c as composeEventHandlers, n as usePrevious, m as useSize, e as createContextScope, h as cn, j as Badge, B as Button } from "./index-B-QWpeOq.js";
-import { L as Label, I as Input } from "./label-BzuSlc1o.js";
-import { S as ShieldCheck, M as Mail, a as Separator } from "./separator-Ctqr1o2d.js";
-import { i as isAdminUser, C as CircleCheck, a as isBetaPeriodActive, g as getBetaDaysLeft, c as createDefaultProfile, S as Sparkles } from "./premium-BY9SNphz.js";
-import { m as motion } from "./proxy-DLCgAu61.js";
-import { S as Star } from "./star-hyK8ztuA.js";
-import { A as AnimatePresence } from "./index-BexNpxAd.js";
+import { c as createLucideIcon, r as reactExports, j as jsxRuntimeExports, a as useAppStore, t as tLang, L as LANGUAGES, d as ue, k as Moon, S as Sun } from "./index-DRalea1i.js";
+import { u as useComposedRefs, h as useControllableState, i as Primitive, c as composeEventHandlers, n as usePrevious, m as useSize, b as createContextScope, d as cn, f as Badge, B as Button } from "./index-CtbOs_Tp.js";
+import { L as Label, I as Input } from "./label-70-r2va7.js";
+import { S as ShieldCheck, a as Separator, b as Share2 } from "./separator-wBqn7Rb9.js";
+import { i as isAdminUser, C as CircleCheck, a as isBetaPeriodActive, g as getBetaDaysLeft, c as createDefaultProfile, S as Sparkles } from "./premium-RcsiXbTI.js";
+import { m as motion } from "./proxy-BDLiLXn7.js";
+import { S as Star } from "./star-CaC3lESs.js";
+import { A as AnimatePresence } from "./index-D1-kRxV1.js";
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -106,13 +106,10 @@ const Info = createLucideIcon("info", __iconNode$2);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$1 = [
-  ["circle", { cx: "18", cy: "5", r: "3", key: "gq8acd" }],
-  ["circle", { cx: "6", cy: "12", r: "3", key: "w7nqdw" }],
-  ["circle", { cx: "18", cy: "19", r: "3", key: "1xt0gg" }],
-  ["line", { x1: "8.59", x2: "15.42", y1: "13.51", y2: "17.49", key: "47mynk" }],
-  ["line", { x1: "15.41", x2: "8.59", y1: "6.51", y2: "10.49", key: "1n3mei" }]
+  ["path", { d: "m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7", key: "132q7q" }],
+  ["rect", { x: "2", y: "4", width: "20", height: "16", rx: "2", key: "izxlao" }]
 ];
-const Share2 = createLucideIcon("share-2", __iconNode$1);
+const Mail = createLucideIcon("mail", __iconNode$1);
 /**
  * @license lucide-react v0.511.0 - ISC
  *

@@ -36,7 +36,6 @@ export async function enforcePortraitOrientation(
         return;
       }
 
-      // Translate to new center, rotate, draw
       ctx.translate(h / 2, w / 2);
       ctx.rotate(Math.PI / 2);
       ctx.drawImage(img, -w / 2, -h / 2, w, h);
@@ -77,16 +76,49 @@ function fileToBase64(file: File): Promise<string> {
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result as string;
-      // Strip the data URL prefix: "data:image/jpeg;base64,"
-      const base64 = result.split(",")[1];
-      resolve(base64);
+      resolve(result.split(",")[1]);
     };
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
 }
 
-// ─── OCR.Space Primary Engine ─────────────────────────────────────────────────
+// ─── Tesseract Singleton Worker ───────────────────────────────────────────────
+
+type TesseractWorker = Awaited<
+  ReturnType<typeof import("tesseract.js").createWorker>
+>;
+
+let workerInstance: TesseractWorker | null = null;
+let workerInitPromise: Promise<TesseractWorker> | null = null;
+
+async function getTesseractWorker(): Promise<TesseractWorker> {
+  if (workerInstance) return workerInstance;
+
+  if (workerInitPromise) return workerInitPromise;
+
+  workerInitPromise = (async () => {
+    const { createWorker } = await import("tesseract.js");
+    // 'hin' covers Hindi (Devanagari) which also handles Marathi script
+    const worker = await createWorker(["eng", "hin"]);
+    workerInstance = worker;
+    return worker;
+  })();
+
+  return workerInitPromise;
+}
+
+// ─── PRIMARY: Tesseract.js (offline, no API) ──────────────────────────────────
+
+async function extractWithTesseract(source: File | string): Promise<string> {
+  const worker = await getTesseractWorker();
+  const input =
+    typeof source === "string" ? dataUrlToFile(source, "receipt.jpg") : source;
+  const { data } = await worker.recognize(input);
+  return data.text;
+}
+
+// ─── FALLBACK: OCR.Space API ──────────────────────────────────────────────────
 
 const OCR_SPACE_URL = "https://api.ocr.space/parse/image";
 const OCR_SPACE_KEY = "helloworld";
@@ -96,16 +128,11 @@ interface OcrSpaceResult {
   IsErroredOnProcessing?: boolean;
 }
 
-/**
- * Calls the OCR.Space API with a base64-encoded image.
- * Returns extracted text or throws on failure.
- */
 async function extractWithOcrSpace(source: File | string): Promise<string> {
   let base64: string;
   let mimeType = "image/jpeg";
 
   if (typeof source === "string") {
-    // data URL — strip prefix
     const parts = source.split(",");
     base64 = parts[1];
     const mimeMatch = parts[0].match(/:(.*?);/);
@@ -135,7 +162,6 @@ async function extractWithOcrSpace(source: File | string): Promise<string> {
   if (!response.ok) throw new Error(`OCR.Space HTTP ${response.status}`);
 
   const json: OcrSpaceResult = await response.json();
-
   if (json.IsErroredOnProcessing) throw new Error("OCR.Space processing error");
 
   const text = json.ParsedResults?.[0]?.ParsedText ?? "";
@@ -144,40 +170,23 @@ async function extractWithOcrSpace(source: File | string): Promise<string> {
   return text;
 }
 
-// ─── Tesseract Fallback Engine ────────────────────────────────────────────────
-
-async function extractWithTesseract(source: File | string): Promise<string> {
-  const { createWorker } = await import("tesseract.js");
-  // Tesseract.js ships 'hin' (Hindi/Devanagari) which covers Marathi script too.
-  const worker = await createWorker(["eng", "hin"]);
-
-  const input =
-    typeof source === "string" ? dataUrlToFile(source, "receipt.jpg") : source;
-
-  const { data } = await worker.recognize(input);
-  await worker.terminate();
-  return data.text;
-}
-
-// ─── Text Extraction (Primary: OCR.Space → Fallback: Tesseract) ───────────────
+// ─── Text Extraction (Primary: Tesseract → Fallback: OCR.Space) ──────────────
 
 export async function extractTextFromImage(
   source: File | string,
 ): Promise<string> {
-  // Try OCR.Space first
+  // Tesseract.js is primary — offline, instant, no API quota
   try {
-    const text = await extractWithOcrSpace(source);
-    return text;
+    const text = await extractWithTesseract(source);
+    if (text.trim()) return text;
   } catch {
-    // Silent fallback — no user-facing error, no console.error
-    console.warn("[OCR] OCR.Space unavailable, falling back to Tesseract");
+    // silent — try fallback
   }
 
-  // Tesseract.js fallback
+  // OCR.Space as secondary fallback
   try {
-    return await extractWithTesseract(source);
+    return await extractWithOcrSpace(source);
   } catch {
-    // Both engines failed — return empty string; UploadPage handles gracefully
     return "";
   }
 }
@@ -234,19 +243,33 @@ function toISODate(day: number, month: number, year: number): string {
 }
 
 export function detectDate(text: string): string | null {
+  // Strip date-label prefixes so the regex hits the value regardless of label
+  const normalised = text
+    .replace(/(?:date|दिनांक|dated)\s*[:\-]\s*/gi, "")
+    .trim();
+
   // DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY
-  const dmyMatch = text.match(/\b(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})\b/);
+  const dmyMatch = normalised.match(
+    /\b(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})\b/,
+  );
   if (dmyMatch) {
     const d = Number.parseInt(dmyMatch[1]);
     const m = Number.parseInt(dmyMatch[2]);
     const y = Number.parseInt(dmyMatch[3]);
-    if (d >= 1 && d <= 31 && m >= 1 && m <= 12) {
-      return toISODate(d, m, y);
-    }
+    if (d >= 1 && d <= 31 && m >= 1 && m <= 12) return toISODate(d, m, y);
+  }
+
+  // YYYY-MM-DD (ISO)
+  const isoMatch = normalised.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);
+  if (isoMatch) {
+    const y = Number.parseInt(isoMatch[1]);
+    const m = Number.parseInt(isoMatch[2]);
+    const d = Number.parseInt(isoMatch[3]);
+    if (d >= 1 && d <= 31 && m >= 1 && m <= 12) return toISODate(d, m, y);
   }
 
   // DD Month YYYY (English)
-  const engMonthMatch = text.match(
+  const engMonthMatch = normalised.match(
     /\b(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\s+(\d{4})\b/i,
   );
   if (engMonthMatch) {
@@ -256,21 +279,26 @@ export function detectDate(text: string): string | null {
     if (m) return toISODate(d, m, y);
   }
 
+  // Month DD, YYYY (US format)
+  const usMonthMatch = normalised.match(
+    /\b(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\s+(\d{1,2}),?\s+(\d{4})\b/i,
+  );
+  if (usMonthMatch) {
+    const m = ENGLISH_MONTHS[usMonthMatch[1].toLowerCase()];
+    const d = Number.parseInt(usMonthMatch[2]);
+    const y = Number.parseInt(usMonthMatch[3]);
+    if (m) return toISODate(d, m, y);
+  }
+
   // DD Hindi-Month YYYY
   for (const [monthName, monthNum] of Object.entries(HINDI_MONTHS)) {
     const regex = new RegExp(`(\\d{1,2})\\s+${monthName}\\s+(\\d{4})`);
-    const match = text.match(regex);
+    const match = normalised.match(regex);
     if (match) {
       const d = Number.parseInt(match[1]);
       const y = Number.parseInt(match[2]);
       return toISODate(d, monthNum, y);
     }
-  }
-
-  // YYYY-MM-DD (ISO)
-  const isoMatch = text.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);
-  if (isoMatch) {
-    return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
   }
 
   return null;
@@ -279,17 +307,16 @@ export function detectDate(text: string): string | null {
 // ─── Category Detection ───────────────────────────────────────────────────────
 
 const CATEGORY_KEYWORDS: Record<Category, string[]> = {
-  cab: [
-    "uber",
-    "ola",
-    "rapido",
-    "namma yatri",
-    "taxi",
-    "cab",
-    "auto",
-    "rickshaw",
-    "autorickshaw",
-    "rikshaw",
+  cab: ["uber", "ola", "rapido", "namma yatri", "taxi", "cab"],
+  auto: ["auto rickshaw", "autorickshaw", "rikshaw", "three wheeler", "auto"],
+  localBus: [
+    "local bus",
+    "city bus",
+    "brts",
+    "pmpml",
+    "bmtc",
+    "best bus",
+    "amts",
   ],
   flight: [
     "indigo",
@@ -304,8 +331,8 @@ const CATEGORY_KEYWORDS: Record<Category, string[]> = {
     "boarding",
     "departure",
     "arrival",
-    "pnr",
-    "seat no",
+    "airways",
+    "flight",
   ],
   train: [
     "irctc",
@@ -317,7 +344,6 @@ const CATEGORY_KEYWORDS: Record<Category, string[]> = {
     "berth",
     "platform",
     "reservation",
-    "pnr",
     "express",
   ],
   bus: [
@@ -327,7 +353,6 @@ const CATEGORY_KEYWORDS: Record<Category, string[]> = {
     "st bus",
     "redbus",
     "state transport",
-    "bus",
     "volvo",
     "travels",
     "roadways",
@@ -342,7 +367,6 @@ const CATEGORY_KEYWORDS: Record<Category, string[]> = {
     "guest house",
     "guesthouse",
     "oyo",
-    "makemytrip hotel",
     "room",
   ],
   meal: [
@@ -368,44 +392,43 @@ const CATEGORY_KEYWORDS: Record<Category, string[]> = {
 
 export function detectCategory(text: string): Category | null {
   const lower = text.toLowerCase();
-  for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS) as [
-    Category,
-    string[],
-  ][]) {
-    if (cat === "other") continue;
+
+  // Check multi-word keywords first (more specific) before single-word ones
+  const orderedCategories: Category[] = [
+    "localBus",
+    "train",
+    "flight",
+    "hotel",
+    "cab",
+    "auto",
+    "bus",
+    "meal",
+  ];
+
+  for (const cat of orderedCategories) {
+    const keywords = CATEGORY_KEYWORDS[cat];
     for (const kw of keywords) {
       if (lower.includes(kw)) return cat;
     }
   }
+
   return null;
 }
 
 // ─── Amount Detection ─────────────────────────────────────────────────────────
 
-/**
- * Normalises a matched number string (strips commas, trims) to a float.
- */
 function parseAmount(raw: string): number | null {
   const cleaned = raw.replace(/,/g, "").trim();
   const val = Number.parseFloat(cleaned);
   return Number.isNaN(val) || val <= 0 ? null : val;
 }
 
-/**
- * Extracts the most likely total amount from receipt text.
- *
- * Priority order (highest confidence first):
- *  1. Grand Total / Net Payable / Total Amount (label + number)
- *  2. Currency-prefixed amounts   ₹ 1,234.50 / Rs. 500 / INR 200
- *  3. Plain labelled amounts      Total: 1234 / Amount: 500
- *  4. Fallback: first ₹/Rs. number in text
- */
 export function detectAmount(text: string): number | null {
-  const AMOUNT_NUM = /[\d]{1,3}(?:,\d{3})*(?:\.\d{1,2})?/;
+  const AMOUNT_NUM = /[\d]{1,3}(?:,\d{3})*(?:\.\d{0,2})?/;
 
-  // 1. High-confidence total labels (Grand Total, Net Payable, Total Amount, TOTAL)
+  // 1. High-confidence total labels
   const highConfidencePattern = new RegExp(
-    `(?:grand\\s+total|net\\s+payable|total\\s+amount|subtotal|net\\s+total)\\s*[:\\-]?\\s*(?:₹|rs\\.?|inr)?\\s*(${AMOUNT_NUM.source})`,
+    `(?:grand\\s+total|net\\s+payable|total\\s+amount|amount\\s+due|net\\s+total|subtotal)\\s*[:\\-]?\\s*(?:₹|rs\\.?|inr)?\\s*(${AMOUNT_NUM.source})`,
     "i",
   );
   const highMatch = text.match(highConfidencePattern);
@@ -414,8 +437,7 @@ export function detectAmount(text: string): number | null {
     if (val) return val;
   }
 
-  // 2. Currency-prefixed amounts  ₹ 1,234.50 / Rs.500 / INR 200
-  //    (scan all, return the largest — usually the total on a receipt)
+  // 2. Currency-prefixed amounts — return the largest (usually the total)
   const currencyPattern = new RegExp(
     `(?:₹|rs\\.?|inr)\\s*(${AMOUNT_NUM.source})`,
     "gi",
@@ -429,7 +451,6 @@ export function detectAmount(text: string): number | null {
   }
 
   // 3. Labelled amounts without currency symbol
-  //    "Total: 1234", "Amount: 500", "TOTAL Rs.1250", "Net Payable 750"
   const labelledPattern = new RegExp(
     `(?:total|amount|payable|net|bill|charge)\\s*[:\\-]?\\s*(${AMOUNT_NUM.source})`,
     "i",
@@ -441,4 +462,29 @@ export function detectAmount(text: string): number | null {
   }
 
   return null;
+}
+
+// ─── Main Export: extractOCRData ──────────────────────────────────────────────
+
+/**
+ * Primary entry point for OCR processing.
+ * Accepts a base64 data URL or File.
+ * Runs Tesseract.js (offline) first, falls back to OCR.Space silently.
+ * All errors are caught — returns {} on failure.
+ */
+export async function extractOCRData(
+  imageData: string | File,
+): Promise<{ date?: string; amount?: number; category?: Category }> {
+  try {
+    const text = await extractTextFromImage(imageData);
+    if (!text.trim()) return {};
+
+    const date = detectDate(text) ?? undefined;
+    const amount = detectAmount(text) ?? undefined;
+    const category = detectCategory(text) ?? undefined;
+
+    return { date, amount, category };
+  } catch {
+    return {};
+  }
 }

@@ -1,12 +1,13 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/jspdf.es.min-bPjnqAwK.js","assets/index-DZsRQdG0.js","assets/index-CZ0b9xTh.css"])))=>i.map(i=>d[i]);
-import { c as createLucideIcon, _ as __vitePreload, e as t, R as React, a as useAppStore, r as reactExports, M as MONTH_KEYS, t as tLang, j as jsxRuntimeExports, b as Link, F as FileText, d as ue } from "./index-DZsRQdG0.js";
-import { A as AdModal, C as CircleAlert } from "./AdModal-DiryTcgt.js";
-import { B as Button, j as Badge } from "./index-B-QWpeOq.js";
-import { S as Select, b as SelectTrigger, c as SelectValue, d as SelectContent, e as SelectItem } from "./select-DD2C3PDr.js";
-import { S as ShieldCheck, a as Separator, M as Mail } from "./separator-Ctqr1o2d.js";
-import { h as hasPremiumAccess, i as isAdminUser, S as Sparkles, C as CircleCheck, a as isBetaPeriodActive } from "./premium-BY9SNphz.js";
-import { m as motion } from "./proxy-DLCgAu61.js";
-import "./index-BexNpxAd.js";
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/jspdf.es.min-DzInp5XC.js","assets/index-DRalea1i.js","assets/index-D0HYbBVU.css"])))=>i.map(i=>d[i]);
+import { c as createLucideIcon, _ as __vitePreload, e as t, a as useAppStore, r as reactExports, M as MONTH_KEYS, t as tLang, j as jsxRuntimeExports, b as Link, F as FileText, X } from "./index-DRalea1i.js";
+import { A as AdModal, C as CircleAlert } from "./AdModal-qiDv85o4.js";
+import { B as Button, f as Badge } from "./index-CtbOs_Tp.js";
+import { d as Dialog, e as DialogContent, f as DialogHeader, g as DialogTitle } from "./dialog-BBujmgjK.js";
+import { S as Select, a as SelectTrigger, b as SelectValue, c as SelectContent, d as SelectItem } from "./select-tJ1RCc9s.js";
+import { S as ShieldCheck, a as Separator, b as Share2 } from "./separator-wBqn7Rb9.js";
+import { h as hasPremiumAccess, i as isAdminUser, S as Sparkles, C as CircleCheck, a as isBetaPeriodActive } from "./premium-RcsiXbTI.js";
+import { m as motion } from "./proxy-BDLiLXn7.js";
+import "./index-D1-kRxV1.js";
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -49,316 +50,401 @@ const CATEGORY_COLORS$1 = {
   cab: [20, 148, 195],
   train: [34, 120, 80],
   bus: [130, 80, 200],
+  localBus: [100, 60, 180],
+  auto: [180, 120, 20],
   flight: [50, 120, 210],
   hotel: [200, 130, 20],
   meal: [200, 60, 60],
   other: [100, 100, 100]
 };
+const PAGE_W = 210;
+const PAGE_H = 297;
+const MARGIN = 10;
+const CONTENT_W = PAGE_W - MARGIN * 2;
+const THUMB_COLS = 3;
+const THUMB_GAP = 5;
+const THUMB_W = (CONTENT_W - THUMB_GAP * (THUMB_COLS - 1)) / THUMB_COLS;
+const THUMB_H = THUMB_W * 0.75;
+const FOOTER_H = 10;
+const HEADER_H = 18;
 function formatCurrency$1(amount) {
   return `₹${amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
-function addWatermark(doc) {
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  doc.setGState(doc.GState({ opacity: 0.12 }));
-  doc.setFontSize(48);
-  doc.setTextColor(180, 0, 0);
-  doc.setFont("helvetica", "bold");
-  doc.text("SAMPLE", pageWidth / 2, pageHeight / 2 - 20, {
-    align: "center",
-    angle: 45
+function formatDateLabel(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("en-IN", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric"
   });
-  doc.text("FREE VERSION", pageWidth / 2, pageHeight / 2 + 20, {
-    align: "center",
-    angle: 45
+}
+async function compressToThumbnail(dataUrl) {
+  return new Promise((resolve) => {
+    try {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const scale = Math.min(1, 200 / img.width);
+          const w = Math.round(img.width * scale);
+          const h = Math.round(img.height * scale);
+          const canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            resolve(null);
+            return;
+          }
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL("image/jpeg", 0.5));
+        } catch {
+          resolve(null);
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = dataUrl;
+    } catch {
+      resolve(null);
+    }
   });
-  doc.setGState(doc.GState({ opacity: 1 }));
-  doc.setTextColor(0, 0, 0);
 }
 function buildCategoryBreakdown(receipts) {
   const map = /* @__PURE__ */ new Map();
   for (const r of receipts) {
-    const existing = map.get(r.category);
-    if (existing) {
-      existing.total += r.amount ?? 0;
-      existing.count += 1;
-    } else {
+    const ex = map.get(r.category);
+    if (ex) {
+      ex.total += r.amount ?? 0;
+      ex.count += 1;
+    } else
       map.set(r.category, {
         category: r.category,
         total: r.amount ?? 0,
         count: 1
       });
-    }
   }
   return Array.from(map.values()).sort((a, b) => b.total - a.total);
 }
-async function generateExpenseReport(profile, receipts, month, year, isFreeUser) {
-  const { jsPDF } = await __vitePreload(async () => {
-    const { jsPDF: jsPDF2 } = await import("./jspdf.es.min-bPjnqAwK.js").then((n) => n.j);
-    return { jsPDF: jsPDF2 };
-  }, true ? __vite__mapDeps([0,1,2]) : void 0);
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const pageWidth = doc.internal.pageSize.getWidth();
+function groupByDate(receipts) {
+  const map = /* @__PURE__ */ new Map();
+  const sorted = [...receipts].sort((a, b) => a.date.localeCompare(b.date));
+  for (const r of sorted) {
+    const arr = map.get(r.date) ?? [];
+    arr.push(r);
+    map.set(r.date, arr);
+  }
+  return map;
+}
+function addWatermark(doc) {
+  const w = doc.internal.pageSize.getWidth();
+  const h = doc.internal.pageSize.getHeight();
+  doc.setGState(doc.GState({ opacity: 0.1 }));
+  doc.setFontSize(44);
+  doc.setTextColor(180, 0, 0);
+  doc.setFont("helvetica", "bold");
+  doc.text("SAMPLE", w / 2, h / 2 - 18, { align: "center", angle: 45 });
+  doc.text("FREE VERSION", w / 2, h / 2 + 18, { align: "center", angle: 45 });
+  doc.setGState(doc.GState({ opacity: 1 }));
+  doc.setTextColor(0, 0, 0);
+}
+function drawMiniHeader(doc, left, right) {
+  doc.setFillColor(12, 90, 110);
+  doc.rect(0, 0, PAGE_W, HEADER_H, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.text(left, MARGIN, 11.5);
+  doc.text(right, PAGE_W - MARGIN, 11.5, { align: "right" });
+  doc.setTextColor(30, 30, 30);
+}
+function drawCoverPage(doc, profile, receipts, month, year) {
   const monthName = MONTH_NAMES[month - 1];
   const reportTitle = `${t("report.title")} — ${monthName} ${year}`;
   const breakdown = buildCategoryBreakdown(receipts);
-  const grandTotal = receipts.reduce((sum, r) => sum + (r.amount ?? 0), 0);
+  const grandTotal = receipts.reduce((s, r) => s + (r.amount ?? 0), 0);
   doc.setFillColor(12, 90, 110);
-  doc.rect(0, 0, pageWidth, 40, "F");
+  doc.rect(0, 0, PAGE_W, 42, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
-  doc.text("Fieldspend", 15, 18);
+  doc.text("Fieldspend", MARGIN, 18);
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
-  doc.text(reportTitle, 15, 28);
-  if (profile.companyName) {
-    doc.text(profile.companyName, pageWidth - 15, 18, { align: "right" });
-  }
-  doc.text(profile.name, pageWidth - 15, 28, { align: "right" });
+  doc.text(reportTitle, MARGIN, 29);
+  if (profile.companyName)
+    doc.text(profile.companyName, PAGE_W - MARGIN, 18, { align: "right" });
+  doc.text(profile.name, PAGE_W - MARGIN, 29, { align: "right" });
   doc.setTextColor(30, 30, 30);
   doc.setFontSize(9);
   doc.setFont("helvetica", "italic");
   doc.text(
     `Prepared: ${(/* @__PURE__ */ new Date()).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`,
-    15,
-    50
+    MARGIN,
+    51
   );
   doc.setFillColor(240, 252, 250);
-  doc.roundedRect(15, 56, pageWidth - 30, 22, 3, 3, "F");
+  doc.roundedRect(MARGIN, 57, CONTENT_W, 22, 3, 3, "F");
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(60, 60, 60);
-  doc.text(t("report.total"), 22, 67);
+  doc.text(t("report.total"), MARGIN + 7, 68);
   doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(12, 90, 110);
-  doc.text(formatCurrency$1(grandTotal), pageWidth - 22, 67, { align: "right" });
+  doc.text(formatCurrency$1(grandTotal), PAGE_W - MARGIN - 7, 68, {
+    align: "right"
+  });
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(80, 80, 80);
-  doc.text(`Total ${t("report.receipts")}: ${receipts.length}`, 22, 74);
-  let y = 90;
+  doc.text(`Total ${t("report.receipts")}: ${receipts.length}`, MARGIN + 7, 75);
+  let y = 91;
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(30, 30, 30);
-  doc.text("Category Breakdown", 15, y);
+  doc.text("Category Breakdown", MARGIN, y);
   y += 8;
   doc.setFillColor(12, 90, 110);
-  doc.rect(15, y, pageWidth - 30, 8, "F");
+  doc.rect(MARGIN, y, CONTENT_W, 8, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
-  doc.text("Category", 20, y + 5.5);
-  doc.text("Count", pageWidth / 2, y + 5.5, { align: "center" });
-  doc.text("Amount", pageWidth - 20, y + 5.5, { align: "right" });
+  doc.text("Category", MARGIN + 5, y + 5.5);
+  doc.text("Count", PAGE_W / 2, y + 5.5, { align: "center" });
+  doc.text("Amount", PAGE_W - MARGIN - 5, y + 5.5, { align: "right" });
   y += 8;
   breakdown.forEach((item, i) => {
     const rowColor = i % 2 === 0 ? [248, 252, 251] : [255, 255, 255];
     doc.setFillColor(...rowColor);
-    doc.rect(15, y, pageWidth - 30, 8, "F");
+    doc.rect(MARGIN, y, CONTENT_W, 8, "F");
     const catColor = CATEGORY_COLORS$1[item.category] ?? [100, 100, 100];
     doc.setFillColor(...catColor);
-    doc.rect(15, y, 3, 8, "F");
+    doc.rect(MARGIN, y, 3, 8, "F");
     doc.setTextColor(30, 30, 30);
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
-    const catLabel = item.category.charAt(0).toUpperCase() + item.category.slice(1);
-    doc.text(catLabel, 22, y + 5.5);
-    doc.text(String(item.count), pageWidth / 2, y + 5.5, { align: "center" });
+    const label = item.category.charAt(0).toUpperCase() + item.category.slice(1);
+    doc.text(label, MARGIN + 7, y + 5.5);
+    doc.text(String(item.count), PAGE_W / 2, y + 5.5, { align: "center" });
     doc.setFont("helvetica", "bold");
-    doc.text(formatCurrency$1(item.total), pageWidth - 20, y + 5.5, {
+    doc.text(formatCurrency$1(item.total), PAGE_W - MARGIN - 5, y + 5.5, {
       align: "right"
     });
     y += 8;
   });
   doc.setFillColor(12, 90, 110);
-  doc.rect(15, y, pageWidth - 30, 9, "F");
+  doc.rect(MARGIN, y, CONTENT_W, 9, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
-  doc.text("Grand Total", 22, y + 6);
-  doc.text(formatCurrency$1(grandTotal), pageWidth - 20, y + 6, {
+  doc.text("Grand Total", MARGIN + 7, y + 6);
+  doc.text(formatCurrency$1(grandTotal), PAGE_W - MARGIN - 5, y + 6, {
     align: "right"
   });
+}
+async function generateExpenseReport(profile, receipts, month, year, isFreeUser) {
+  const { jsPDF } = await __vitePreload(async () => {
+    const { jsPDF: jsPDF2 } = await import("./jspdf.es.min-DzInp5XC.js").then((n) => n.j);
+    return { jsPDF: jsPDF2 };
+  }, true ? __vite__mapDeps([0,1,2]) : void 0);
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4"
+  });
+  drawCoverPage(doc, profile, receipts, month, year);
   if (isFreeUser) addWatermark(doc);
-  for (const receipt of receipts) {
-    if (!receipt.imageData) continue;
-    doc.addPage();
+  const thumbMap = /* @__PURE__ */ new Map();
+  await Promise.all(
+    receipts.map(async (r) => {
+      if (!r.imageData) {
+        thumbMap.set(r.id, null);
+        return;
+      }
+      const thumb = await compressToThumbnail(r.imageData);
+      thumbMap.set(r.id, thumb);
+    })
+  );
+  const dayGroups = groupByDate(receipts);
+  const USABLE_H = PAGE_H - FOOTER_H;
+  let currentY = PAGE_H;
+  for (const [dateStr, dayReceipts] of dayGroups) {
+    const dayTotal = dayReceipts.reduce((s, r) => s + (r.amount ?? 0), 0);
+    const dateLabel = formatDateLabel(dateStr);
+    const DAY_HEADER_H = 12;
+    const ROW_H = THUMB_H + 6;
+    const rows = Math.ceil(dayReceipts.length / THUMB_COLS);
+    const sectionH = DAY_HEADER_H + rows * ROW_H + THUMB_GAP;
+    if (currentY + sectionH > USABLE_H) {
+      doc.addPage();
+      drawMiniHeader(
+        doc,
+        "Fieldspend — Daily Receipts",
+        `${MONTH_NAMES[month - 1]} ${year}`
+      );
+      if (isFreeUser) addWatermark(doc);
+      currentY = HEADER_H + 4;
+    }
+    doc.setFillColor(230, 245, 242);
+    doc.roundedRect(MARGIN, currentY, CONTENT_W, DAY_HEADER_H, 2, 2, "F");
     doc.setFillColor(12, 90, 110);
-    doc.rect(0, 0, pageWidth, 18, "F");
-    doc.setTextColor(255, 255, 255);
+    doc.rect(MARGIN, currentY, 3, DAY_HEADER_H, "F");
+    doc.setTextColor(12, 90, 110);
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
-    doc.text(`Receipt — ${receipt.date}`, 15, 12);
-    const catLabel = receipt.category.charAt(0).toUpperCase() + receipt.category.slice(1);
-    doc.text(catLabel, pageWidth - 15, 12, { align: "right" });
-    const imgMaxW = pageWidth - 20;
-    const imgMaxH = 200;
-    try {
-      doc.addImage(
-        receipt.imageData,
-        "JPEG",
-        10,
-        22,
-        imgMaxW,
-        imgMaxH,
-        void 0,
-        "FAST"
-      );
-    } catch {
+    doc.text(dateLabel, MARGIN + 6, currentY + 8);
+    doc.setTextColor(80, 80, 80);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(
+      `${dayReceipts.length} receipt${dayReceipts.length !== 1 ? "s" : ""}`,
+      PAGE_W / 2,
+      currentY + 8,
+      { align: "center" }
+    );
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(12, 90, 110);
+    doc.text(formatCurrency$1(dayTotal), PAGE_W - MARGIN - 4, currentY + 8, {
+      align: "right"
+    });
+    currentY += DAY_HEADER_H + 3;
+    for (let i = 0; i < dayReceipts.length; i++) {
+      const col = i % THUMB_COLS;
+      const row = Math.floor(i / THUMB_COLS);
+      if (col === 0 && i > 0) {
+        const usedY = currentY + row * ROW_H;
+        if (usedY + ROW_H > USABLE_H) {
+          doc.addPage();
+          drawMiniHeader(
+            doc,
+            `${dateLabel} (cont.)`,
+            `${MONTH_NAMES[month - 1]} ${year}`
+          );
+          if (isFreeUser) addWatermark(doc);
+          currentY = HEADER_H + 4;
+          const remaining = dayReceipts.slice(i);
+          for (let j = 0; j < remaining.length; j++) {
+            const c = j % THUMB_COLS;
+            const r2 = Math.floor(j / THUMB_COLS);
+            if (c === 0 && j > 0 && currentY + (r2 + 1) * ROW_H > USABLE_H) {
+              doc.addPage();
+              drawMiniHeader(
+                doc,
+                `${dateLabel} (cont.)`,
+                `${MONTH_NAMES[month - 1]} ${year}`
+              );
+              if (isFreeUser) addWatermark(doc);
+              currentY = HEADER_H + 4;
+            }
+            const xPos2 = MARGIN + c * (THUMB_W + THUMB_GAP);
+            const yPos2 = currentY + Math.floor(j / THUMB_COLS) * ROW_H;
+            const rcp2 = remaining[j];
+            const thumb2 = thumbMap.get(rcp2.id);
+            if (thumb2) {
+              try {
+                doc.addImage(
+                  thumb2,
+                  "JPEG",
+                  xPos2,
+                  yPos2,
+                  THUMB_W,
+                  THUMB_H,
+                  void 0,
+                  "FAST"
+                );
+              } catch {
+              }
+            } else {
+              doc.setFillColor(230, 230, 230);
+              doc.rect(xPos2, yPos2, THUMB_W, THUMB_H, "F");
+              doc.setTextColor(160, 160, 160);
+              doc.setFontSize(7);
+              doc.setFont("helvetica", "normal");
+              doc.text("No image", xPos2 + THUMB_W / 2, yPos2 + THUMB_H / 2, {
+                align: "center"
+              });
+            }
+            if (rcp2.amount) {
+              doc.setFontSize(7);
+              doc.setFont("helvetica", "bold");
+              doc.setTextColor(12, 90, 110);
+              doc.text(
+                formatCurrency$1(rcp2.amount),
+                xPos2 + THUMB_W / 2,
+                yPos2 + THUMB_H + 4,
+                { align: "center" }
+              );
+            }
+          }
+          const finalRows = Math.ceil(remaining.length / THUMB_COLS);
+          currentY += finalRows * ROW_H + THUMB_GAP;
+          break;
+        }
+      }
+      const xPos = MARGIN + col * (THUMB_W + THUMB_GAP);
+      const yPos = currentY + row * ROW_H;
+      const rcp = dayReceipts[i];
+      const thumb = thumbMap.get(rcp.id);
+      if (thumb) {
+        try {
+          doc.addImage(
+            thumb,
+            "JPEG",
+            xPos,
+            yPos,
+            THUMB_W,
+            THUMB_H,
+            void 0,
+            "FAST"
+          );
+        } catch {
+        }
+      } else {
+        doc.setFillColor(230, 230, 230);
+        doc.rect(xPos, yPos, THUMB_W, THUMB_H, "F");
+        doc.setTextColor(160, 160, 160);
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "normal");
+        doc.text("No image", xPos + THUMB_W / 2, yPos + THUMB_H / 2, {
+          align: "center"
+        });
+      }
+      if (rcp.amount) {
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(12, 90, 110);
+        doc.text(
+          formatCurrency$1(rcp.amount),
+          xPos + THUMB_W / 2,
+          yPos + THUMB_H + 4,
+          { align: "center" }
+        );
+      }
     }
-    if (receipt.amount) {
-      doc.setTextColor(12, 90, 110);
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.text(formatCurrency$1(receipt.amount), pageWidth - 15, 228, {
-        align: "right"
-      });
+    const lastRow = Math.ceil(dayReceipts.length / THUMB_COLS);
+    const expectedBottom = currentY + lastRow * ROW_H + THUMB_GAP;
+    if (expectedBottom > currentY) {
+      currentY = expectedBottom;
     }
-    if (receipt.notes) {
-      doc.setTextColor(80, 80, 80);
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "normal");
-      doc.text(receipt.notes, 15, 235, {
-        maxWidth: pageWidth - 30
-      });
-    }
-    if (isFreeUser) addWatermark(doc);
   }
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    const pageH = doc.internal.pageSize.getHeight();
     doc.setFillColor(240, 245, 245);
-    doc.rect(0, pageH - 10, pageWidth, 10, "F");
+    doc.rect(0, PAGE_H - FOOTER_H, PAGE_W, FOOTER_H, "F");
     doc.setTextColor(120, 120, 120);
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
     doc.text(
       `Fieldspend — Generated ${(/* @__PURE__ */ new Date()).toLocaleDateString("en-IN")}`,
-      15,
-      pageH - 3.5
+      MARGIN,
+      PAGE_H - 3.5
     );
-    doc.text(`Page ${i} of ${totalPages}`, pageWidth - 15, pageH - 3.5, {
+    doc.text(`Page ${i} of ${totalPages}`, PAGE_W - MARGIN, PAGE_H - 3.5, {
       align: "right"
     });
   }
   return doc.output("blob");
-}
-var DefaultContext = {
-  color: void 0,
-  size: void 0,
-  className: void 0,
-  style: void 0,
-  attr: void 0
-};
-var IconContext = React.createContext && /* @__PURE__ */ React.createContext(DefaultContext);
-var _excluded = ["attr", "size", "title"];
-function _objectWithoutProperties(e, t2) {
-  if (null == e) return {};
-  var o, r, i = _objectWithoutPropertiesLoose(e, t2);
-  if (Object.getOwnPropertySymbols) {
-    var n = Object.getOwnPropertySymbols(e);
-    for (r = 0; r < n.length; r++) o = n[r], -1 === t2.indexOf(o) && {}.propertyIsEnumerable.call(e, o) && (i[o] = e[o]);
-  }
-  return i;
-}
-function _objectWithoutPropertiesLoose(r, e) {
-  if (null == r) return {};
-  var t2 = {};
-  for (var n in r) if ({}.hasOwnProperty.call(r, n)) {
-    if (-1 !== e.indexOf(n)) continue;
-    t2[n] = r[n];
-  }
-  return t2;
-}
-function _extends() {
-  return _extends = Object.assign ? Object.assign.bind() : function(n) {
-    for (var e = 1; e < arguments.length; e++) {
-      var t2 = arguments[e];
-      for (var r in t2) ({}).hasOwnProperty.call(t2, r) && (n[r] = t2[r]);
-    }
-    return n;
-  }, _extends.apply(null, arguments);
-}
-function ownKeys(e, r) {
-  var t2 = Object.keys(e);
-  if (Object.getOwnPropertySymbols) {
-    var o = Object.getOwnPropertySymbols(e);
-    r && (o = o.filter(function(r2) {
-      return Object.getOwnPropertyDescriptor(e, r2).enumerable;
-    })), t2.push.apply(t2, o);
-  }
-  return t2;
-}
-function _objectSpread(e) {
-  for (var r = 1; r < arguments.length; r++) {
-    var t2 = null != arguments[r] ? arguments[r] : {};
-    r % 2 ? ownKeys(Object(t2), true).forEach(function(r2) {
-      _defineProperty(e, r2, t2[r2]);
-    }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t2)) : ownKeys(Object(t2)).forEach(function(r2) {
-      Object.defineProperty(e, r2, Object.getOwnPropertyDescriptor(t2, r2));
-    });
-  }
-  return e;
-}
-function _defineProperty(e, r, t2) {
-  return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t2, enumerable: true, configurable: true, writable: true }) : e[r] = t2, e;
-}
-function _toPropertyKey(t2) {
-  var i = _toPrimitive(t2, "string");
-  return "symbol" == typeof i ? i : i + "";
-}
-function _toPrimitive(t2, r) {
-  if ("object" != typeof t2 || !t2) return t2;
-  var e = t2[Symbol.toPrimitive];
-  if (void 0 !== e) {
-    var i = e.call(t2, r);
-    if ("object" != typeof i) return i;
-    throw new TypeError("@@toPrimitive must return a primitive value.");
-  }
-  return ("string" === r ? String : Number)(t2);
-}
-function Tree2Element(tree) {
-  return tree && tree.map((node, i) => /* @__PURE__ */ React.createElement(node.tag, _objectSpread({
-    key: i
-  }, node.attr), Tree2Element(node.child)));
-}
-function GenIcon(data) {
-  return (props) => /* @__PURE__ */ React.createElement(IconBase, _extends({
-    attr: _objectSpread({}, data.attr)
-  }, props), Tree2Element(data.child));
-}
-function IconBase(props) {
-  var elem = (conf) => {
-    var {
-      attr,
-      size,
-      title
-    } = props, svgProps = _objectWithoutProperties(props, _excluded);
-    var computedSize = size || conf.size || "1em";
-    var className;
-    if (conf.className) className = conf.className;
-    if (props.className) className = (className ? className + " " : "") + props.className;
-    return /* @__PURE__ */ React.createElement("svg", _extends({
-      stroke: "currentColor",
-      fill: "currentColor",
-      strokeWidth: "0"
-    }, conf.attr, attr, svgProps, {
-      className,
-      style: _objectSpread(_objectSpread({
-        color: props.color || conf.color
-      }, conf.style), props.style),
-      height: computedSize,
-      width: computedSize,
-      xmlns: "http://www.w3.org/2000/svg"
-    }), title && /* @__PURE__ */ React.createElement("title", null, title), props.children);
-  };
-  return IconContext !== void 0 ? /* @__PURE__ */ React.createElement(IconContext.Consumer, null, (conf) => elem(conf)) : elem(DefaultContext);
-}
-function SiWhatsapp(props) {
-  return GenIcon({ "attr": { "role": "img", "viewBox": "0 0 24 24" }, "child": [{ "tag": "path", "attr": { "d": "M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" }, "child": [] }] })(props);
 }
 const currentYear = (/* @__PURE__ */ new Date()).getFullYear();
 const YEARS = [currentYear, currentYear - 1, currentYear - 2];
@@ -366,6 +452,8 @@ const CATEGORY_ICONS = {
   cab: "🚕",
   train: "🚆",
   bus: "🚌",
+  localBus: "🚌",
+  auto: "🛺",
   flight: "✈️",
   hotel: "🏨",
   meal: "🍽️",
@@ -375,6 +463,8 @@ const CATEGORY_COLORS = {
   cab: "badge-cab",
   train: "badge-train",
   bus: "badge-bus",
+  localBus: "badge-bus",
+  auto: "badge-cab",
   flight: "badge-flight",
   hotel: "badge-hotel",
   meal: "badge-meal",
@@ -383,17 +473,125 @@ const CATEGORY_COLORS = {
 function formatCurrency(amount) {
   return `₹${amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
-function buildEmailBody(breakdown, grandTotal, monthName, year, lang) {
-  const lines = breakdown.map(
-    (item) => `${tLang(`cat.${item.category}`, lang)}: ${formatCurrency(item.total)} (${item.count} ${item.count === 1 ? tLang("report.items", lang) : tLang("report.items_plural", lang)})`
+function getPeriodEndDate(month, year) {
+  const lastDay = new Date(year, month, 0).getDate();
+  return `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+}
+function PdfPreviewModal({
+  open,
+  onClose,
+  blob,
+  filename
+}) {
+  const [objectUrl, setObjectUrl] = reactExports.useState(null);
+  const [canShare, setCanShare] = reactExports.useState(false);
+  const prevBlobRef = reactExports.useRef(null);
+  reactExports.useEffect(() => {
+    if (!open) return;
+    if (prevBlobRef.current === blob && objectUrl) return;
+    prevBlobRef.current = blob;
+    const url = URL.createObjectURL(blob);
+    setObjectUrl(url);
+    setCanShare(typeof navigator.share === "function");
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [open, blob, objectUrl]);
+  function handleDownload() {
+    if (!objectUrl) return;
+    const a = document.createElement("a");
+    a.href = objectUrl;
+    a.download = filename;
+    a.click();
+  }
+  async function handleShare() {
+    if (!canShare) {
+      handleDownload();
+      return;
+    }
+    const file = new File([blob], filename, { type: "application/pdf" });
+    try {
+      await navigator.share({ files: [file], title: filename });
+    } catch {
+      handleDownload();
+    }
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Dialog,
+    {
+      open,
+      onOpenChange: (v) => {
+        if (!v) onClose();
+      },
+      children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        DialogContent,
+        {
+          className: "max-w-[96vw] w-full sm:max-w-2xl p-0 overflow-hidden rounded-2xl",
+          "data-ocid": "pdf_preview.dialog",
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogHeader, { className: "flex flex-row items-center justify-between px-4 pt-4 pb-0", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTitle, { className: "text-sm font-semibold truncate text-foreground max-w-[70%]", children: filename }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  type: "button",
+                  onClick: onClose,
+                  className: "rounded-full p-1.5 hover:bg-muted/60 transition-colors",
+                  "aria-label": "Close preview",
+                  "data-ocid": "pdf_preview.close_button",
+                  children: /* @__PURE__ */ jsxRuntimeExports.jsx(X, { size: 16 })
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "div",
+              {
+                className: "bg-muted/30 mx-4 rounded-xl overflow-hidden",
+                style: { height: "55vh" },
+                children: objectUrl ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "object",
+                  {
+                    data: objectUrl,
+                    type: "application/pdf",
+                    className: "w-full h-full",
+                    "aria-label": "PDF preview",
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex items-center justify-center h-full text-sm text-muted-foreground", children: "PDF preview not available in this browser. Use the download button below." })
+                  }
+                ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex items-center justify-center h-full", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "inline-block w-6 h-6 rounded-full border-2 border-primary/30 border-t-primary animate-spin" }) })
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-3 px-4 py-4", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                Button,
+                {
+                  className: "flex-1 gap-2 h-11 rounded-xl",
+                  onClick: handleDownload,
+                  "data-ocid": "pdf_preview.download_button",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(Download, { size: 16 }),
+                    "Download PDF"
+                  ]
+                }
+              ),
+              canShare && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                Button,
+                {
+                  variant: "outline",
+                  className: "flex-1 gap-2 h-11 rounded-xl",
+                  onClick: handleShare,
+                  "data-ocid": "pdf_preview.share_button",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(Share2, { size: 16 }),
+                    "Share"
+                  ]
+                }
+              )
+            ] })
+          ]
+        }
+      )
+    }
   );
-  lines.push(
-    "",
-    `${tLang("report.total", lang)}: ${formatCurrency(grandTotal)}`
-  );
-  return `${tLang("report.title", lang)} - ${monthName} ${year}
-
-${lines.join("\n")}`;
 }
 function CategoryRow({
   item,
@@ -460,8 +658,8 @@ function ReportsPage() {
     currentLanguage
   } = useAppStore();
   const [isGenerating, setIsGenerating] = reactExports.useState(false);
-  const [pdfReady, setPdfReady] = reactExports.useState(false);
   const [pdfBlob, setPdfBlob] = reactExports.useState(null);
+  const [showPreview, setShowPreview] = reactExports.useState(false);
   const [showAd, setShowAd] = reactExports.useState(false);
   const [pendingPdf, setPendingPdf] = reactExports.useState(false);
   const monthNames = reactExports.useMemo(
@@ -503,21 +701,19 @@ function ReportsPage() {
   const shouldShowAd = !betaActive && isFreeUser && !isAdmin;
   const monthName = monthNames[selectedMonth - 1];
   const reportTitle = `${monthName} ${selectedYear}`;
+  const pdfFilename = `Expense_Report_${getPeriodEndDate(selectedMonth, selectedYear)}.pdf`;
   function handleMonthChange(v) {
     setSelectedMonth(Number(v));
-    setPdfReady(false);
     setPdfBlob(null);
   }
   function handleYearChange(v) {
     setSelectedYear(Number(v));
-    setPdfReady(false);
     setPdfBlob(null);
   }
   async function runPdfGeneration() {
     if (!userProfile) return;
     if (filteredReceipts.length === 0) return;
     setIsGenerating(true);
-    setPdfReady(false);
     try {
       const blob = await generateExpenseReport(
         userProfile,
@@ -526,15 +722,8 @@ function ReportsPage() {
         selectedYear,
         isFreeUser
       );
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `expense-report-${selectedYear}-${String(selectedMonth).padStart(2, "0")}.pdf`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1e4);
       setPdfBlob(blob);
-      setPdfReady(true);
-      ue.success(tLang("status.saved", currentLanguage));
+      setShowPreview(true);
     } catch {
     } finally {
       setIsGenerating(false);
@@ -555,29 +744,6 @@ function ReportsPage() {
       runPdfGeneration();
     }
   }
-  function handleWhatsApp() {
-    const text = encodeURIComponent(
-      `${tLang("report.title", currentLanguage)}: ${reportTitle} — ${tLang("report.total", currentLanguage)}: ${formatCurrency(grandTotal)}
-
-(PDF attached separately)`
-    );
-    window.open(`https://wa.me/?text=${text}`, "_blank");
-  }
-  function handleEmail() {
-    const subject = encodeURIComponent(
-      `${tLang("report.title", currentLanguage)} - ${reportTitle}`
-    );
-    const body = encodeURIComponent(
-      buildEmailBody(
-        breakdown,
-        grandTotal,
-        monthName,
-        selectedYear,
-        currentLanguage
-      )
-    );
-    window.open(`mailto:?subject=${subject}&body=${body}`, "_blank");
-  }
   const hasNoProfile = !userProfile || !userProfile.name;
   const hasNoReceipts = filteredReceipts.length === 0;
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
@@ -588,6 +754,15 @@ function ReportsPage() {
         onComplete: handleAdComplete,
         adNumber: 1,
         totalAds: 1
+      }
+    ),
+    pdfBlob && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      PdfPreviewModal,
+      {
+        open: showPreview,
+        onClose: () => setShowPreview(false),
+        blob: pdfBlob,
+        filename: pdfFilename
       }
     ),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "px-4 py-5 space-y-5 pb-8", "data-ocid": "reports.page", children: [
@@ -657,7 +832,6 @@ function ReportsPage() {
                 "data-ocid": "reports.upgrade_button",
                 children: [
                   /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { size: 12, className: "mr-1" }),
-                  " ",
                   tLang("report.upgrade", currentLanguage)
                 ]
               }
@@ -792,7 +966,12 @@ function ReportsPage() {
                 "📎 ",
                 filteredReceipts.length,
                 " ",
-                filteredReceipts.length === 1 ? tLang("report.images_attached", currentLanguage) : tLang("report.images_attached_plural", currentLanguage)
+                filteredReceipts.length === 1 ? tLang("report.images_attached", currentLanguage) : tLang(
+                  "report.images_attached_plural",
+                  currentLanguage
+                ),
+                " ",
+                "· 3 per row thumbnails"
               ] })
             ] })
           ]
@@ -835,6 +1014,7 @@ function ReportsPage() {
           initial: { opacity: 0, y: 8 },
           animate: { opacity: 1, y: 0 },
           transition: { delay: 0.15 },
+          className: "space-y-2",
           children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx(
               Button,
@@ -852,58 +1032,21 @@ function ReportsPage() {
                 ] })
               }
             ),
-            isFreeUser && !isGenerating && betaActive && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-center text-muted-foreground mt-2", children: tLang("report.watermark_note", currentLanguage) }),
-            shouldShowAd && !isGenerating && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-center text-muted-foreground mt-2", children: "📺 A short ad will play before download" })
-          ]
-        }
-      ),
-      pdfReady && pdfBlob && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        motion.div,
-        {
-          initial: { opacity: 0, y: 10 },
-          animate: { opacity: 1, y: 0 },
-          className: "space-y-3",
-          "data-ocid": "reports.share_section",
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center", children: tLang("report.share", currentLanguage) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-3", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "button",
-                {
-                  type: "button",
-                  onClick: handleWhatsApp,
-                  className: "flex items-center justify-center gap-2 bg-card border border-border rounded-xl px-4 py-3 hover:bg-muted/40 transition-smooth active:scale-95",
-                  "data-ocid": "reports.whatsapp_button",
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(SiWhatsapp, { size: 20, className: "text-[#25D366] shrink-0" }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-left min-w-0", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm font-semibold text-foreground truncate", children: "WhatsApp" }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground truncate", children: tLang("action.share", currentLanguage) })
-                    ] })
-                  ]
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "button",
-                {
-                  type: "button",
-                  onClick: handleEmail,
-                  className: "flex items-center justify-center gap-2 bg-card border border-border rounded-xl px-4 py-3 hover:bg-muted/40 transition-smooth active:scale-95",
-                  "data-ocid": "reports.email_button",
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(Mail, { size: 20, className: "text-primary shrink-0" }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-left min-w-0", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm font-semibold text-foreground truncate", children: "Email" }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground truncate", children: tLang("action.share", currentLanguage) })
-                    ] })
-                  ]
-                }
-              )
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground text-center px-2", children: [
-              "💡 ",
-              tLang("report.whatsapp_note", currentLanguage)
-            ] })
+            pdfBlob && !isGenerating && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              Button,
+              {
+                variant: "outline",
+                className: "w-full h-10 rounded-xl gap-2 text-sm",
+                onClick: () => setShowPreview(true),
+                "data-ocid": "reports.reopen_preview_button",
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(Share2, { size: 15 }),
+                  "View / Share Last Report"
+                ]
+              }
+            ),
+            isFreeUser && !isGenerating && betaActive && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-center text-muted-foreground", children: tLang("report.watermark_note", currentLanguage) }),
+            shouldShowAd && !isGenerating && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-center text-muted-foreground", children: "📺 A short ad will play before download" })
           ]
         }
       )

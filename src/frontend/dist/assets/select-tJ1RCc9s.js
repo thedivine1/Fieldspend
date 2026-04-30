@@ -1,5 +1,5 @@
-import { c as createLucideIcon, r as reactExports, f as React, j as jsxRuntimeExports, h as ReactDOM, R as React$1, i as reactDomExports } from "./index-DZsRQdG0.js";
-import { a as useLayoutEffect2, u as useComposedRefs, P as Primitive, c as composeEventHandlers, l as dispatchDiscreteCustomEvent, e as createContextScope, f as createSlot, m as useSize, b as useControllableState, n as usePrevious, h as cn } from "./index-B-QWpeOq.js";
+import { c as createLucideIcon, r as reactExports, R as React, j as jsxRuntimeExports, f as ReactDOM, h as React2, i as reactDomExports } from "./index-DRalea1i.js";
+import { g as useLayoutEffect2, u as useComposedRefs, i as Primitive, c as composeEventHandlers, l as dispatchDiscreteCustomEvent, b as createContextScope, k as createSlot, m as useSize, h as useControllableState, n as usePrevious, d as cn } from "./index-CtbOs_Tp.js";
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -1282,14 +1282,14 @@ function createCollection(name) {
   );
   const CollectionProvider = (props) => {
     const { scope, children } = props;
-    const ref = React$1.useRef(null);
-    const itemMap = React$1.useRef(/* @__PURE__ */ new Map()).current;
+    const ref = React2.useRef(null);
+    const itemMap = React2.useRef(/* @__PURE__ */ new Map()).current;
     return /* @__PURE__ */ jsxRuntimeExports.jsx(CollectionProviderImpl, { scope, itemMap, collectionRef: ref, children });
   };
   CollectionProvider.displayName = PROVIDER_NAME;
   const COLLECTION_SLOT_NAME = name + "CollectionSlot";
   const CollectionSlotImpl = createSlot(COLLECTION_SLOT_NAME);
-  const CollectionSlot = React$1.forwardRef(
+  const CollectionSlot = React2.forwardRef(
     (props, forwardedRef) => {
       const { scope, children } = props;
       const context = useCollectionContext(COLLECTION_SLOT_NAME, scope);
@@ -1301,13 +1301,13 @@ function createCollection(name) {
   const ITEM_SLOT_NAME = name + "CollectionItemSlot";
   const ITEM_DATA_ATTR = "data-radix-collection-item";
   const CollectionItemSlotImpl = createSlot(ITEM_SLOT_NAME);
-  const CollectionItemSlot = React$1.forwardRef(
+  const CollectionItemSlot = React2.forwardRef(
     (props, forwardedRef) => {
       const { scope, children, ...itemData } = props;
-      const ref = React$1.useRef(null);
+      const ref = React2.useRef(null);
       const composedRefs = useComposedRefs(forwardedRef, ref);
       const context = useCollectionContext(ITEM_SLOT_NAME, scope);
-      React$1.useEffect(() => {
+      React2.useEffect(() => {
         context.itemMap.set(ref, { ref, ...itemData });
         return () => void context.itemMap.delete(ref);
       });
@@ -1317,7 +1317,7 @@ function createCollection(name) {
   CollectionItemSlot.displayName = ITEM_SLOT_NAME;
   function useCollection2(scope) {
     const context = useCollectionContext(name + "CollectionConsumer", scope);
-    const getItems = React$1.useCallback(() => {
+    const getItems = React2.useCallback(() => {
       const collectionNode = context.collectionRef.current;
       if (!collectionNode) return [];
       const orderedNodes = Array.from(collectionNode.querySelectorAll(`[${ITEM_DATA_ATTR}]`));
@@ -4838,11 +4838,11 @@ export {
   Portal$1 as P,
   ReactRemoveScroll as R,
   Select as S,
-  useFocusGuards as a,
-  SelectTrigger as b,
-  SelectValue as c,
-  SelectContent as d,
-  SelectItem as e,
+  SelectTrigger as a,
+  SelectValue as b,
+  SelectContent as c,
+  SelectItem as d,
+  useFocusGuards as e,
   hideOthers as h,
   useId as u
 };
