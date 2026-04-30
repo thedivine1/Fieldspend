@@ -1,3 +1,4 @@
+import React from "react";
 import { InternetIdentityProvider } from "@caffeineai/core-infrastructure";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ReactDOM from "react-dom/client";
@@ -23,13 +24,13 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <InternetIdentityProvider>
       <App />
     </InternetIdentityProvider>
-  </QueryClientProvider>,
+  </QueryClientProvider>
 );
 
 // Register Service Worker (FINAL VERSION)
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker
-    .register("/sw.js")
+    .register("./sw.js")
     .then((reg) => {
       console.log("Service Worker registered", reg);
 
