@@ -1,4 +1,6 @@
-import { t } from "@/lib/i18n";
+// ─── PDF Report Generation ────────────────────────────────────────────────────
+// Uses jsPDF v4.x (default import). All errors are silent.
+
 import type { CategoryTotal, Receipt, UserProfile } from "@/types";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -30,47 +32,60 @@ const CATEGORY_COLORS: Record<string, [number, number, number]> = {
   other: [100, 100, 100],
 };
 
-// A4 in mm
+// A4 dimensions in mm
 const PAGE_W = 210;
 const PAGE_H = 297;
-const MARGIN = 10;
+const MARGIN = 12;
 const CONTENT_W = PAGE_W - MARGIN * 2;
-
-// Thumbnail grid: 3 per row, ~60mm wide, ~45mm tall, 5mm gap
-const THUMB_COLS = 3;
-const THUMB_GAP = 5;
-const THUMB_W = (CONTENT_W - THUMB_GAP * (THUMB_COLS - 1)) / THUMB_COLS; // ~56.67mm
-const THUMB_H = THUMB_W * 0.75; // 4:3 ratio ≈ 42.5mm
-
 const FOOTER_H = 10;
 const HEADER_H = 18;
+
+// Thumbnail grid: 3 per row
+const THUMB_COLS = 3;
+const THUMB_GAP = 4;
+const THUMB_W = (CONTENT_W - THUMB_GAP * (THUMB_COLS - 1)) / THUMB_COLS; // ≈58.67mm
+const THUMB_H = THUMB_W * 0.75; // 4:3 ≈44mm
+const LABEL_H = 5; // mm below each thumb for amount label
+const ROW_H = THUMB_H + LABEL_H + THUMB_GAP; // total height per thumbnail row
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatCurrency(amount: number): string {
-  return `₹${amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `₹${amount.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 }
 
 function formatDateLabel(dateStr: string): string {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("en-IN", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  try {
+    const d = new Date(`${dateStr}T00:00:00`);
+    return d.toLocaleDateString("en-IN", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return dateStr;
+  }
 }
 
-/** Compress a data URL to max 200px wide JPEG at quality 0.5 for thumbnail use. */
+/** Compress receipt image to max 150×150 JPEG at quality 0.4 for PDF thumbnail. */
 async function compressToThumbnail(dataUrl: string): Promise<string | null> {
   return new Promise((resolve) => {
     try {
+      if (!dataUrl || !dataUrl.startsWith("data:")) {
+        resolve(null);
+        return;
+      }
       const img = new Image();
       img.onload = () => {
         try {
-          const scale = Math.min(1, 200 / img.width);
-          const w = Math.round(img.width * scale);
-          const h = Math.round(img.height * scale);
+          const maxSize = 150;
+          const ratio = Math.min(maxSize / img.width, maxSize / img.height, 1);
+          const w = Math.max(1, Math.round(img.width * ratio));
+          const h = Math.max(1, Math.round(img.height * ratio));
           const canvas = document.createElement("canvas");
           canvas.width = w;
           canvas.height = h;
@@ -80,7 +95,7 @@ async function compressToThumbnail(dataUrl: string): Promise<string | null> {
             return;
           }
           ctx.drawImage(img, 0, 0, w, h);
-          resolve(canvas.toDataURL("image/jpeg", 0.5));
+          resolve(canvas.toDataURL("image/jpeg", 0.4));
         } catch {
           resolve(null);
         }
@@ -100,12 +115,13 @@ function buildCategoryBreakdown(receipts: Receipt[]): CategoryTotal[] {
     if (ex) {
       ex.total += r.amount ?? 0;
       ex.count += 1;
-    } else
+    } else {
       map.set(r.category, {
         category: r.category,
         total: r.amount ?? 0,
         count: 1,
       });
+    }
   }
   return Array.from(map.values()).sort((a, b) => b.total - a.total);
 }
@@ -121,26 +137,35 @@ function groupByDate(receipts: Receipt[]): Map<string, Receipt[]> {
   return map;
 }
 
+// ─── jsPDF type alias ─────────────────────────────────────────────────────────
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Doc = any;
+
 // ─── Watermark ────────────────────────────────────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function addWatermark(doc: any): void {
-  const w = doc.internal.pageSize.getWidth();
-  const h = doc.internal.pageSize.getHeight();
-  doc.setGState(doc.GState({ opacity: 0.1 }));
-  doc.setFontSize(44);
-  doc.setTextColor(180, 0, 0);
-  doc.setFont("helvetica", "bold");
-  doc.text("SAMPLE", w / 2, h / 2 - 18, { align: "center", angle: 45 });
-  doc.text("FREE VERSION", w / 2, h / 2 + 18, { align: "center", angle: 45 });
-  doc.setGState(doc.GState({ opacity: 1 }));
-  doc.setTextColor(0, 0, 0);
+function addWatermark(doc: Doc): void {
+  try {
+    const w = doc.internal.pageSize.getWidth();
+    const h = doc.internal.pageSize.getHeight();
+    // Save state via opacity GState
+    doc.saveGraphicsState?.();
+    doc.setGState(doc.GState({ opacity: 0.08 }));
+    doc.setFontSize(40);
+    doc.setTextColor(180, 0, 0);
+    doc.setFont("helvetica", "bold");
+    doc.text("SAMPLE", w / 2, h / 2 - 16, { align: "center", angle: 45 });
+    doc.text("FREE VERSION", w / 2, h / 2 + 16, { align: "center", angle: 45 });
+    doc.restoreGraphicsState?.();
+    doc.setGState(doc.GState({ opacity: 1 }));
+    doc.setTextColor(30, 30, 30);
+  } catch {
+    // watermark is decorative — skip silently
+  }
 }
 
-// ─── Page primitives ──────────────────────────────────────────────────────────
+// ─── Mini header (subsequent pages) ──────────────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function drawMiniHeader(doc: any, left: string, right: string): void {
+function drawMiniHeader(doc: Doc, left: string, right: string): void {
   doc.setFillColor(12, 90, 110);
   doc.rect(0, 0, PAGE_W, HEADER_H, "F");
   doc.setTextColor(255, 255, 255);
@@ -153,20 +178,19 @@ function drawMiniHeader(doc: any, left: string, right: string): void {
 
 // ─── Cover page ───────────────────────────────────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function drawCoverPage(
-  doc: any,
+  doc: Doc,
   profile: UserProfile,
   receipts: Receipt[],
   month: number,
   year: number,
 ): void {
   const monthName = MONTH_NAMES[month - 1];
-  const reportTitle = `${t("report.title")} — ${monthName} ${year}`;
+  const reportTitle = `Expense Report \u2014 ${monthName} ${year}`;
   const breakdown = buildCategoryBreakdown(receipts);
   const grandTotal = receipts.reduce((s, r) => s + (r.amount ?? 0), 0);
 
-  // Header band
+  // ── Header band ────────────────────────────────────────────────────────────
   doc.setFillColor(12, 90, 110);
   doc.rect(0, 0, PAGE_W, 42, "F");
   doc.setTextColor(255, 255, 255);
@@ -178,26 +202,30 @@ function drawCoverPage(
   doc.text(reportTitle, MARGIN, 29);
   if (profile.companyName)
     doc.text(profile.companyName, PAGE_W - MARGIN, 18, { align: "right" });
-  doc.text(profile.name, PAGE_W - MARGIN, 29, { align: "right" });
+  doc.text(profile.name || "—", PAGE_W - MARGIN, 29, { align: "right" });
 
   doc.setTextColor(30, 30, 30);
 
-  // Prepared date
+  // ── Prepared date ──────────────────────────────────────────────────────────
   doc.setFontSize(9);
   doc.setFont("helvetica", "italic");
   doc.text(
-    `Prepared: ${new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`,
+    `Prepared: ${new Date().toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })}`,
     MARGIN,
     51,
   );
 
-  // Grand total box
+  // ── Grand total box (use rect, NOT roundedRect) ────────────────────────────
   doc.setFillColor(240, 252, 250);
-  doc.roundedRect(MARGIN, 57, CONTENT_W, 22, 3, 3, "F");
+  doc.rect(MARGIN, 57, CONTENT_W, 22, "F");
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(60, 60, 60);
-  doc.text(t("report.total"), MARGIN + 7, 68);
+  doc.text("Grand Total", MARGIN + 7, 68);
   doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(12, 90, 110);
@@ -209,9 +237,9 @@ function drawCoverPage(
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(80, 80, 80);
-  doc.text(`Total ${t("report.receipts")}: ${receipts.length}`, MARGIN + 7, 75);
+  doc.text(`Total Receipts: ${receipts.length}`, MARGIN + 7, 75);
 
-  // Category breakdown table
+  // ── Category breakdown table ───────────────────────────────────────────────
   let y = 91;
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
@@ -264,6 +292,65 @@ function drawCoverPage(
   });
 }
 
+// ─── Thumbnail placement helper ───────────────────────────────────────────────
+
+function placeThumbnail(
+  doc: Doc,
+  thumb: string | null,
+  rcp: Receipt,
+  xPos: number,
+  yPos: number,
+): void {
+  if (thumb) {
+    try {
+      // Strip data URL prefix — pass raw base64 to addImage
+      const base64 = thumb.includes(",") ? thumb.split(",")[1] : thumb;
+      doc.addImage(
+        base64,
+        "JPEG",
+        xPos,
+        yPos,
+        THUMB_W,
+        THUMB_H,
+        undefined,
+        "FAST",
+      );
+    } catch {
+      // fallback: grey placeholder
+      doc.setFillColor(220, 220, 220);
+      doc.rect(xPos, yPos, THUMB_W, THUMB_H, "F");
+      doc.setTextColor(150, 150, 150);
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "normal");
+      doc.text("No image", xPos + THUMB_W / 2, yPos + THUMB_H / 2, {
+        align: "center",
+      });
+    }
+  } else {
+    doc.setFillColor(220, 220, 220);
+    doc.rect(xPos, yPos, THUMB_W, THUMB_H, "F");
+    doc.setTextColor(150, 150, 150);
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.text("No image", xPos + THUMB_W / 2, yPos + THUMB_H / 2, {
+      align: "center",
+    });
+  }
+
+  // Amount label below thumb
+  if (rcp.amount) {
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(12, 90, 110);
+    doc.text(
+      formatCurrency(rcp.amount),
+      xPos + THUMB_W / 2,
+      yPos + THUMB_H + 3.5,
+      { align: "center" },
+    );
+  }
+}
+
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 export async function generateExpenseReport(
@@ -273,68 +360,73 @@ export async function generateExpenseReport(
   year: number,
   isFreeUser: boolean,
 ): Promise<Blob> {
-  const { jsPDF } = await import("jspdf");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const doc: any = new jsPDF({
+  // Default import — avoids named-import failures in some bundler configs
+  const jsPDF = (await import("jspdf")).default;
+
+  const doc: Doc = new jsPDF({
     orientation: "portrait",
     unit: "mm",
     format: "a4",
   });
 
-  // ── Page 1: Cover ───────────────────────────────────────────────────────────
+  // ── Page 1: Cover ────────────────────────────────────────────────────────────
   drawCoverPage(doc, profile, receipts, month, year);
   if (isFreeUser) addWatermark(doc);
 
-  // ── Compress all receipt images up front ───────────────────────────────────
-  // Map receipt id → compressed thumbnail (null = skip)
-  const thumbMap = new Map<string, string | null>();
-  await Promise.all(
-    receipts.map(async (r) => {
-      if (!r.imageData) {
-        thumbMap.set(r.id, null);
-        return;
-      }
-      const thumb = await compressToThumbnail(r.imageData);
-      thumbMap.set(r.id, thumb);
-    }),
+  // ── Compress all thumbnails up front (Promise.allSettled — never throws) ────
+  const thumbResults = await Promise.allSettled(
+    receipts.map((r) =>
+      r.imageData ? compressToThumbnail(r.imageData) : Promise.resolve(null),
+    ),
   );
+  const thumbMap = new Map<string, string | null>();
+  receipts.forEach((r, i) => {
+    const result = thumbResults[i];
+    thumbMap.set(r.id, result.status === "fulfilled" ? result.value : null);
+  });
 
-  // ── Daily sections ─────────────────────────────────────────────────────────
+  // ── Daily sections ───────────────────────────────────────────────────────────
   const dayGroups = groupByDate(receipts);
-  const USABLE_H = PAGE_H - FOOTER_H; // exclude footer zone
+  const USABLE_H = PAGE_H - FOOTER_H - 2; // leave 2mm breathing room above footer
+  const DAY_HDR_H = 12; // height of the day section header band
 
-  // Track current y on the current page (start after cover → new page per day)
-  let currentY = PAGE_H; // force first day to start on a new page
+  // Helper: ensure there's enough vertical space; if not, add a new page
+  function ensureSpace(needed: number, currentY: number): number {
+    if (currentY + needed > USABLE_H) {
+      doc.addPage();
+      drawMiniHeader(
+        doc,
+        "Fieldspend \u2014 Daily Receipts",
+        `${MONTH_NAMES[month - 1]} ${year}`,
+      );
+      if (isFreeUser) addWatermark(doc);
+      return HEADER_H + 4;
+    }
+    return currentY;
+  }
+
+  // Start daily sections on a fresh page after the cover
+  doc.addPage();
+  drawMiniHeader(
+    doc,
+    "Fieldspend \u2014 Daily Receipts",
+    `${MONTH_NAMES[month - 1]} ${year}`,
+  );
+  if (isFreeUser) addWatermark(doc);
+  let currentY = HEADER_H + 4;
 
   for (const [dateStr, dayReceipts] of dayGroups) {
     const dayTotal = dayReceipts.reduce((s, r) => s + (r.amount ?? 0), 0);
     const dateLabel = formatDateLabel(dateStr);
 
-    // Day section header height: 12mm
-    const DAY_HEADER_H = 12;
-    // Row height = THUMB_H + 4mm label below each thumb + 2mm row gap
-    const ROW_H = THUMB_H + 6;
-    const rows = Math.ceil(dayReceipts.length / THUMB_COLS);
-    const sectionH = DAY_HEADER_H + rows * ROW_H + THUMB_GAP;
+    // Ensure there's room for at least the day header + one thumbnail row
+    currentY = ensureSpace(DAY_HDR_H + ROW_H, currentY);
 
-    // If the section doesn't fit, start a new page
-    // (also always start a new page if we're on the cover)
-    if (currentY + sectionH > USABLE_H) {
-      doc.addPage();
-      drawMiniHeader(
-        doc,
-        "Fieldspend — Daily Receipts",
-        `${MONTH_NAMES[month - 1]} ${year}`,
-      );
-      if (isFreeUser) addWatermark(doc);
-      currentY = HEADER_H + 4;
-    }
-
-    // ── Day section header ────────────────────────────────────────────────────
+    // ── Day section header ──────────────────────────────────────────────────
     doc.setFillColor(230, 245, 242);
-    doc.roundedRect(MARGIN, currentY, CONTENT_W, DAY_HEADER_H, 2, 2, "F");
+    doc.rect(MARGIN, currentY, CONTENT_W, DAY_HDR_H, "F");
     doc.setFillColor(12, 90, 110);
-    doc.rect(MARGIN, currentY, 3, DAY_HEADER_H, "F");
+    doc.rect(MARGIN, currentY, 3, DAY_HDR_H, "F");
     doc.setTextColor(12, 90, 110);
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
@@ -353,165 +445,59 @@ export async function generateExpenseReport(
     doc.text(formatCurrency(dayTotal), PAGE_W - MARGIN - 4, currentY + 8, {
       align: "right",
     });
-    currentY += DAY_HEADER_H + 3;
+    currentY += DAY_HDR_H + 3;
 
-    // ── Thumbnail grid ────────────────────────────────────────────────────────
+    // ── Thumbnail grid ──────────────────────────────────────────────────────
     for (let i = 0; i < dayReceipts.length; i++) {
       const col = i % THUMB_COLS;
-      const row = Math.floor(i / THUMB_COLS);
 
-      // Start a new page mid-section if we've run out of space
-      if (col === 0 && i > 0) {
-        const usedY = currentY + row * ROW_H;
-        if (usedY + ROW_H > USABLE_H) {
-          doc.addPage();
-          drawMiniHeader(
-            doc,
-            `${dateLabel} (cont.)`,
-            `${MONTH_NAMES[month - 1]} ${year}`,
-          );
-          if (isFreeUser) addWatermark(doc);
-          currentY = HEADER_H + 4;
-          // Reset row offset — we'll recalculate from the new page
-          // We need to re-draw remaining receipts from this row
-          // Re-slice: restart grid from current i
-          const remaining = dayReceipts.slice(i);
-          // Recurse the remaining as a mini-grid starting at currentY
-          for (let j = 0; j < remaining.length; j++) {
-            const c = j % THUMB_COLS;
-            const r2 = Math.floor(j / THUMB_COLS);
-            if (c === 0 && j > 0 && currentY + (r2 + 1) * ROW_H > USABLE_H) {
-              doc.addPage();
-              drawMiniHeader(
-                doc,
-                `${dateLabel} (cont.)`,
-                `${MONTH_NAMES[month - 1]} ${year}`,
-              );
-              if (isFreeUser) addWatermark(doc);
-              currentY = HEADER_H + 4;
-            }
-            const xPos = MARGIN + c * (THUMB_W + THUMB_GAP);
-            const yPos = currentY + Math.floor(j / THUMB_COLS) * ROW_H;
-            const rcp = remaining[j];
-            const thumb = thumbMap.get(rcp.id);
-            if (thumb) {
-              try {
-                doc.addImage(
-                  thumb,
-                  "JPEG",
-                  xPos,
-                  yPos,
-                  THUMB_W,
-                  THUMB_H,
-                  undefined,
-                  "FAST",
-                );
-              } catch {
-                /* skip */
-              }
-            } else {
-              doc.setFillColor(230, 230, 230);
-              doc.rect(xPos, yPos, THUMB_W, THUMB_H, "F");
-              doc.setTextColor(160, 160, 160);
-              doc.setFontSize(7);
-              doc.setFont("helvetica", "normal");
-              doc.text("No image", xPos + THUMB_W / 2, yPos + THUMB_H / 2, {
-                align: "center",
-              });
-            }
-            // Amount label below thumb
-            if (rcp.amount) {
-              doc.setFontSize(7);
-              doc.setFont("helvetica", "bold");
-              doc.setTextColor(12, 90, 110);
-              doc.text(
-                formatCurrency(rcp.amount),
-                xPos + THUMB_W / 2,
-                yPos + THUMB_H + 4,
-                { align: "center" },
-              );
-            }
-          }
-          const finalRows = Math.ceil(remaining.length / THUMB_COLS);
-          currentY += finalRows * ROW_H + THUMB_GAP;
-          break; // skip original loop continuation for this day — already handled
-        }
+      // Start a new row — check if a full row fits; if not, get a new page
+      if (col === 0) {
+        currentY = ensureSpace(ROW_H, currentY);
       }
 
       const xPos = MARGIN + col * (THUMB_W + THUMB_GAP);
-      const yPos = currentY + row * ROW_H;
-      const rcp = dayReceipts[i];
-      const thumb = thumbMap.get(rcp.id);
+      const yPos = currentY;
 
-      if (thumb) {
-        try {
-          doc.addImage(
-            thumb,
-            "JPEG",
-            xPos,
-            yPos,
-            THUMB_W,
-            THUMB_H,
-            undefined,
-            "FAST",
-          );
-        } catch {
-          /* skip */
-        }
-      } else {
-        doc.setFillColor(230, 230, 230);
-        doc.rect(xPos, yPos, THUMB_W, THUMB_H, "F");
-        doc.setTextColor(160, 160, 160);
-        doc.setFontSize(7);
-        doc.setFont("helvetica", "normal");
-        doc.text("No image", xPos + THUMB_W / 2, yPos + THUMB_H / 2, {
-          align: "center",
-        });
-      }
+      placeThumbnail(
+        doc,
+        thumbMap.get(dayReceipts[i].id) ?? null,
+        dayReceipts[i],
+        xPos,
+        yPos,
+      );
 
-      // Amount label below thumb
-      if (rcp.amount) {
-        doc.setFontSize(7);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(12, 90, 110);
-        doc.text(
-          formatCurrency(rcp.amount),
-          xPos + THUMB_W / 2,
-          yPos + THUMB_H + 4,
-          { align: "center" },
-        );
+      // After placing the last column in a row, advance Y
+      if (col === THUMB_COLS - 1 || i === dayReceipts.length - 1) {
+        currentY += ROW_H;
       }
     }
 
-    // Advance y past the last row (only if we didn't break early above)
-    const lastRow = Math.ceil(dayReceipts.length / THUMB_COLS);
-    // Check we haven't already advanced currentY in the break above
-    // (If break happened, currentY was already updated)
-    // Safe: add the section height only if currentY hasn't moved beyond this section
-    const expectedBottom = currentY + lastRow * ROW_H + THUMB_GAP;
-    if (expectedBottom > currentY) {
-      currentY = expectedBottom;
-    }
+    currentY += THUMB_GAP; // breathing space between day sections
   }
 
-  // ── Footer on all pages ────────────────────────────────────────────────────
+  // ── Footer on every page ─────────────────────────────────────────────────────
   const totalPages = doc.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
-    doc.setPage(i);
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
     doc.setFillColor(240, 245, 245);
     doc.rect(0, PAGE_H - FOOTER_H, PAGE_W, FOOTER_H, "F");
     doc.setTextColor(120, 120, 120);
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
     doc.text(
-      `Fieldspend — Generated ${new Date().toLocaleDateString("en-IN")}`,
+      `Fieldspend \u2014 Generated ${new Date().toLocaleDateString("en-IN")}`,
       MARGIN,
       PAGE_H - 3.5,
     );
-    doc.text(`Page ${i} of ${totalPages}`, PAGE_W - MARGIN, PAGE_H - 3.5, {
+    doc.text(`Page ${p} of ${totalPages}`, PAGE_W - MARGIN, PAGE_H - 3.5, {
       align: "right",
     });
   }
 
-  return doc.output("blob");
+  // ── Return blob ───────────────────────────────────────────────────────────────
+  return doc.output("blob") as Blob;
 }
+
+// Re-export compressToThumbnail for use in other modules if needed
+export { compressToThumbnail };
