@@ -361,7 +361,8 @@ export async function generateExpenseReport(
   isFreeUser: boolean,
 ): Promise<Blob> {
   // Default import — avoids named-import failures in some bundler configs
-  const jsPDF = (await import("jspdf")).default;
+  const jspdfModule = await import("jspdf");
+  const jsPDF = jspdfModule.jsPDF || jspdfModule.default;
 
   const doc: Doc = new jsPDF({
     orientation: "portrait",

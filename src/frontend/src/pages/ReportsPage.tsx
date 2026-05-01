@@ -361,8 +361,8 @@ export default function ReportsPage() {
       );
       setPdfBlob(blob);
       setShowPreview(true);
-    } catch {
-      // silent
+    } catch (err) {
+      console.error("PDF Generation failed:", err);
     } finally {
       setIsGenerating(false);
     }
