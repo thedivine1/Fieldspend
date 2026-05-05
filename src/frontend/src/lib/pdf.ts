@@ -2,6 +2,7 @@
 // Uses jsPDF v4.x (default import). All errors are silent.
 
 import type { CategoryTotal, Receipt, UserProfile } from "@/types";
+import { jsPDF } from "jspdf";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -360,9 +361,7 @@ export async function generateExpenseReport(
   year: number,
   isFreeUser: boolean,
 ): Promise<Blob> {
-  // Default import — avoids named-import failures in some bundler configs
-  const jspdfModule = await import("jspdf");
-  const jsPDF = jspdfModule.jsPDF || jspdfModule.default;
+  // We now use static import for jsPDF to prevent bundling/resolution errors on some platforms
 
   const doc: Doc = new jsPDF({
     orientation: "portrait",

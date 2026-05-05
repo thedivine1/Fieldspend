@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -361,8 +362,9 @@ export default function ReportsPage() {
       );
       setPdfBlob(blob);
       setShowPreview(true);
-    } catch (err) {
+    } catch (err: any) {
       console.error("PDF Generation failed:", err);
+      toast.error(`PDF Generation failed: ${err.message || "Unknown error"}`);
     } finally {
       setIsGenerating(false);
     }
