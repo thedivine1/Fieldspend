@@ -1,4 +1,4 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/OnboardingPage-3Y0suiVj.js","assets/index-COFaHO_8.js","assets/proxy-sPmYolkV.js","assets/GalleryPage-o9xlpMjT.js","assets/index-i7t4yTMw.js","assets/dialog-D0-wcGYn.js","assets/select-TiDxaxb4.js","assets/label-soMCdqAK.js","assets/textarea-CkKtWNN1.js","assets/UploadPage-DO0mjslP.js","assets/AdModal-DKG9pWSy.js","assets/premium-DdpwIwfL.js","assets/star-DjMzqdzP.js","assets/ReportsPage-CeAqD2C1.js","assets/separator-iCvOt6YE.js","assets/SettingsPage-CppAp5DJ.js"])))=>i.map(i=>d[i]);
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/OnboardingPage-lOCWXggV.js","assets/index-gqUTHy8h.js","assets/proxy-BtD8TJ32.js","assets/GalleryPage-CfUC_MHo.js","assets/index-CoZ8Qcz5.js","assets/dialog-BLGV2YbZ.js","assets/select-vWTgW5_L.js","assets/label-o7ztANPV.js","assets/textarea-PIngSpwY.js","assets/UploadPage-jLZEr_lc.js","assets/AdModal-DkVN2olK.js","assets/premium-C82dB_q9.js","assets/star-CFUM2w1V.js","assets/ReportsPage-CPyHdWl2.js","assets/separator-D8xqGXO5.js","assets/SettingsPage-BS1_4jUG.js"])))=>i.map(i=>d[i]);
 var __defProp = Object.defineProperty;
 var __typeError = (msg) => {
   throw TypeError(msg);
@@ -25296,11 +25296,11 @@ var $e = reactExports.forwardRef(function(e, t) {
     })) : null;
   }));
 });
-const OnboardingPage = reactExports.lazy(() => __vitePreload(() => import("./OnboardingPage-3Y0suiVj.js"), true ? __vite__mapDeps([0,1,2]) : void 0));
-const GalleryPage = reactExports.lazy(() => __vitePreload(() => import("./GalleryPage-o9xlpMjT.js"), true ? __vite__mapDeps([3,4,5,6,7,8,2]) : void 0));
-const UploadPage = reactExports.lazy(() => __vitePreload(() => import("./UploadPage-DO0mjslP.js"), true ? __vite__mapDeps([9,10,4,1,2,11,7,6,8,12]) : void 0));
-const ReportsPage = reactExports.lazy(() => __vitePreload(() => import("./ReportsPage-CeAqD2C1.js"), true ? __vite__mapDeps([13,10,4,1,2,11,5,6,14]) : void 0));
-const SettingsPage = reactExports.lazy(() => __vitePreload(() => import("./SettingsPage-CppAp5DJ.js"), true ? __vite__mapDeps([15,4,7,14,11,2,12,1]) : void 0));
+const OnboardingPage = reactExports.lazy(() => __vitePreload(() => import("./OnboardingPage-lOCWXggV.js"), true ? __vite__mapDeps([0,1,2]) : void 0));
+const GalleryPage = reactExports.lazy(() => __vitePreload(() => import("./GalleryPage-CfUC_MHo.js"), true ? __vite__mapDeps([3,4,5,6,7,8,2]) : void 0));
+const UploadPage = reactExports.lazy(() => __vitePreload(() => import("./UploadPage-jLZEr_lc.js"), true ? __vite__mapDeps([9,10,4,1,2,11,7,6,8,12]) : void 0));
+const ReportsPage = reactExports.lazy(() => __vitePreload(() => import("./ReportsPage-CPyHdWl2.js"), true ? __vite__mapDeps([13,10,4,1,2,11,5,6,14]) : void 0));
+const SettingsPage = reactExports.lazy(() => __vitePreload(() => import("./SettingsPage-BS1_4jUG.js"), true ? __vite__mapDeps([15,4,7,14,11,2,12,1]) : void 0));
 const queryClient$1 = new QueryClient();
 function RootComponent() {
   const { initStore, loadReceipts, loadProfile } = useAppStore();

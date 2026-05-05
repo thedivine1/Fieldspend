@@ -1,13 +1,13 @@
-import { c as createLucideIcon, r as reactExports, j as jsxRuntimeExports, _ as __vitePreload, u as useNavigate, a as useAppStore, g as getDailyCount, d as ue, t as tLang, I as Image$1, C as Camera, X } from "./index-NKFMDfSM.js";
-import { C as CircleAlert, A as AdModal } from "./AdModal-DKG9pWSy.js";
-import { P as Primitive, d as cn, B as Button, f as Badge } from "./index-i7t4yTMw.js";
-import { L as Label, I as Input } from "./label-soMCdqAK.js";
-import { S as Select, a as SelectTrigger, b as SelectValue, c as SelectContent, d as SelectItem } from "./select-TiDxaxb4.js";
-import { T as Textarea } from "./textarea-CkKtWNN1.js";
-import { i as isAdminUser, h as hasPremiumAccess, F as FREE_DAILY_LIMIT, S as Sparkles, C as CircleCheck, a as isBetaPeriodActive } from "./premium-DdpwIwfL.js";
-import { m as motion } from "./proxy-sPmYolkV.js";
-import { S as Star } from "./star-DjMzqdzP.js";
-import { A as AnimatePresence } from "./index-COFaHO_8.js";
+import { c as createLucideIcon, r as reactExports, j as jsxRuntimeExports, _ as __vitePreload, u as useNavigate, a as useAppStore, g as getDailyCount, d as ue, t as tLang, I as Image$1, C as Camera, X } from "./index-S9Cy_1gq.js";
+import { C as CircleAlert, A as AdModal } from "./AdModal-DkVN2olK.js";
+import { P as Primitive, d as cn, B as Button, f as Badge } from "./index-CoZ8Qcz5.js";
+import { L as Label, I as Input } from "./label-o7ztANPV.js";
+import { S as Select, a as SelectTrigger, b as SelectValue, c as SelectContent, d as SelectItem } from "./select-vWTgW5_L.js";
+import { T as Textarea } from "./textarea-PIngSpwY.js";
+import { i as isAdminUser, h as hasPremiumAccess, F as FREE_DAILY_LIMIT, S as Sparkles, C as CircleCheck, a as isBetaPeriodActive } from "./premium-C82dB_q9.js";
+import { m as motion } from "./proxy-BtD8TJ32.js";
+import { S as Star } from "./star-CFUM2w1V.js";
+import { A as AnimatePresence } from "./index-gqUTHy8h.js";
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -870,7 +870,7 @@ const CATEGORY_ICONS = {
   meal: "🍽️",
   other: "📋"
 };
-const MAX_QUEUE = 5;
+const MAX_QUEUE = 10;
 const TODAY = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
 function generateId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;

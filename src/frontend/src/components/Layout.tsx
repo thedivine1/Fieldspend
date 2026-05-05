@@ -26,25 +26,19 @@ interface NavItem {
 const navItems: NavItem[] = [
   {
     to: "/gallery",
-    icon: <ImageIcon size={24} />,
+    icon: <ImageIcon size={22} />,
     labelKey: "nav.gallery",
     ocid: "nav.gallery",
   },
   {
-    to: "/upload",
-    icon: <CameraIcon size={24} />,
-    labelKey: "nav.upload",
-    ocid: "nav.upload",
-  },
-  {
     to: "/reports",
-    icon: <FileTextIcon size={24} />,
+    icon: <FileTextIcon size={22} />,
     labelKey: "nav.reports",
     ocid: "nav.reports",
   },
   {
     to: "/settings",
-    icon: <SettingsIcon size={24} />,
+    icon: <SettingsIcon size={22} />,
     labelKey: "nav.settings",
     ocid: "nav.settings",
   },
@@ -158,7 +152,39 @@ export function Layout({ children }: LayoutProps) {
         data-ocid="bottom_nav"
       >
         <div className="flex items-end h-16 relative">
-          {navItems.map((item) => (
+          {/* Left nav items */}
+          {navItems.slice(0, 1).map((item) => (
+            <NavLink
+              key={item.to}
+              item={item}
+              isActive={location.pathname === item.to}
+            />
+          ))}
+
+          {/* Center upload button */}
+          <div className="flex-1 flex items-center justify-center">
+            <Link
+              to="/upload"
+              className="flex flex-col items-center gap-0.5 -mt-5"
+              data-ocid="nav.upload_button"
+            >
+              <span
+                className={`w-14 h-14 rounded-full flex items-center justify-center shadow-md transition-smooth ${
+                  location.pathname === "/upload"
+                    ? "bg-secondary"
+                    : "bg-primary hover:bg-primary/90"
+                }`}
+              >
+                <CameraIcon size={24} className="text-primary-foreground" />
+              </span>
+              <span className="text-[10px] font-medium text-muted-foreground mt-1">
+                {tLang("nav.upload", currentLanguage)}
+              </span>
+            </Link>
+          </div>
+
+          {/* Right nav items */}
+          {navItems.slice(1).map((item) => (
             <NavLink
               key={item.to}
               item={item}
@@ -179,38 +205,16 @@ function NavLink({
   isActive: boolean;
 }) {
   const { currentLanguage } = useAppStore();
-  
-  if (isActive) {
-    return (
-      <div className="flex-1 flex items-center justify-center h-full">
-        <Link
-          to={item.to}
-          className="flex flex-col items-center gap-0.5 -mt-5"
-          data-ocid={item.ocid}
-        >
-          <span className="w-14 h-14 rounded-full flex items-center justify-center shadow-md transition-smooth bg-primary hover:bg-primary/90 text-primary-foreground">
-             {item.icon}
-          </span>
-          <span className="text-[10px] font-medium text-primary mt-1">
-            {tLang(item.labelKey, currentLanguage)}
-          </span>
-        </Link>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex-1 flex items-center justify-center h-full pb-2">
-      <Link
-        to={item.to}
-        className="flex flex-col items-center justify-center gap-1 w-full text-muted-foreground hover:text-foreground transition-colors"
-        data-ocid={item.ocid}
-      >
-        <span>{item.icon}</span>
-        <span className="text-[10px] font-medium">
-          {tLang(item.labelKey, currentLanguage)}
-        </span>
-      </Link>
-    </div>
+    <Link
+      to={item.to}
+      className={`nav-item flex-1 h-full ${isActive ? "nav-item-active" : "nav-item-inactive"}`}
+      data-ocid={item.ocid}
+    >
+      <span>{item.icon}</span>
+      <span className="text-[10px]">
+        {tLang(item.labelKey, currentLanguage)}
+      </span>
+    </Link>
   );
 }

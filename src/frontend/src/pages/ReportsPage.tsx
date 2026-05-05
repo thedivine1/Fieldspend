@@ -38,7 +38,6 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -96,26 +95,49 @@ function PdfPreviewModal({
 }) {
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [canShare, setCanShare] = useState(false);
+  const objectUrlRef = useRef<string | null>(null);
   const prevBlobRef = useRef<Blob | null>(null);
 
   useEffect(() => {
-    if (!open) return;
-    if (prevBlobRef.current === blob && objectUrl) return;
+    if (!open) {
+      // Revoke and clear when dialog closes
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
+        setObjectUrl(null);
+      }
+      return;
+    }
+    // Only create a new object URL when the blob actually changes
+    if (prevBlobRef.current === blob && objectUrlRef.current) return;
+    // Revoke any previous URL first
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+    }
     prevBlobRef.current = blob;
     const url = URL.createObjectURL(blob);
+    objectUrlRef.current = url;
     setObjectUrl(url);
     setCanShare(typeof navigator.share === "function");
     return () => {
-      URL.revokeObjectURL(url);
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
+      }
     };
-  }, [open, blob, objectUrl]);
+  }, [open, blob]);
 
   function handleDownload() {
-    if (!objectUrl) return;
+    // Always create a fresh object URL for download to avoid stale revoked URLs
+    const freshUrl = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = objectUrl;
+    a.href = freshUrl;
     a.download = filename;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
+    // Revoke after a short delay to ensure the download starts
+    setTimeout(() => URL.revokeObjectURL(freshUrl), 5000);
   }
 
   async function handleShare() {
@@ -158,23 +180,17 @@ function PdfPreviewModal({
           </button>
         </DialogHeader>
 
-        {/* PDF iframe preview */}
+        {/* PDF preview — iframe is more reliable than <object> on mobile */}
         <div
           className="bg-muted/30 mx-4 rounded-xl overflow-hidden"
           style={{ height: "55vh" }}
         >
           {objectUrl ? (
-            <object
-              data={objectUrl}
-              type="application/pdf"
-              className="w-full h-full"
-              aria-label="PDF preview"
-            >
-              <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                PDF preview not available in this browser. Use the download
-                button below.
-              </div>
-            </object>
+            <iframe
+              src={objectUrl}
+              title="PDF preview"
+              className="w-full h-full border-0"
+            />
           ) : (
             <div className="flex items-center justify-center h-full">
               <span className="inline-block w-6 h-6 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
@@ -282,6 +298,8 @@ export default function ReportsPage() {
   } = useAppStore();
 
   const [isGenerating, setIsGenerating] = useState(false);
+  const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   // Ad gate
   const [showAd, setShowAd] = useState(false);
@@ -338,10 +356,12 @@ export default function ReportsPage() {
 
   function handleMonthChange(v: string) {
     setSelectedMonth(Number(v));
+    setPdfBlob(null);
   }
 
   function handleYearChange(v: string) {
     setSelectedYear(Number(v));
+    setPdfBlob(null);
   }
 
   async function runPdfGeneration() {
@@ -356,20 +376,29 @@ export default function ReportsPage() {
         selectedYear,
         isFreeUser,
       );
-      // Direct download — no preview modal
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = pdfFilename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      // Delay revocation so browser finishes saving
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
-      toast.success("PDF downloaded!");
-    } catch (err: any) {
-      console.error("PDF Generation failed:", err);
-      toast.error(`PDF Generation failed: ${err.message || "Unknown error"}`);
+      if (!blob) {
+        // Generation failed silently — fall back to direct download attempt
+        setIsGenerating(false);
+        return;
+      }
+      setPdfBlob(blob);
+      // On mobile, trigger direct download without showing preview modal
+      // to avoid iframe compatibility issues on older Android WebViews
+      const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = pdfFilename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+      } else {
+        setShowPreview(true);
+      }
+    } catch {
+      // silent
     } finally {
       setIsGenerating(false);
     }
@@ -404,7 +433,14 @@ export default function ReportsPage() {
         totalAds={1}
       />
 
-
+      {pdfBlob && (
+        <PdfPreviewModal
+          open={showPreview}
+          onClose={() => setShowPreview(false)}
+          blob={pdfBlob}
+          filename={pdfFilename}
+        />
+      )}
 
       <div className="px-4 py-5 space-y-5 pb-8" data-ocid="reports.page">
         {/* Heading */}
@@ -693,7 +729,18 @@ export default function ReportsPage() {
               )}
             </Button>
 
-
+            {/* Re-open preview button if blob exists */}
+            {pdfBlob && !isGenerating && (
+              <Button
+                variant="outline"
+                className="w-full h-10 rounded-xl gap-2 text-sm"
+                onClick={() => setShowPreview(true)}
+                data-ocid="reports.reopen_preview_button"
+              >
+                <Share2Icon size={15} />
+                View / Share Last Report
+              </Button>
+            )}
 
             {isFreeUser && !isGenerating && betaActive && (
               <p className="text-xs text-center text-muted-foreground">

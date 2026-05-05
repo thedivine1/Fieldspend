@@ -1,13 +1,13 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/jspdf.es.min-_j9THATd.js","assets/index-NKFMDfSM.js","assets/index-D0HYbBVU.css"])))=>i.map(i=>d[i]);
-import { c as createLucideIcon, _ as __vitePreload, a as useAppStore, r as reactExports, M as MONTH_KEYS, t as tLang, j as jsxRuntimeExports, b as Link, F as FileText, X } from "./index-NKFMDfSM.js";
-import { A as AdModal, C as CircleAlert } from "./AdModal-DKG9pWSy.js";
-import { B as Button, f as Badge } from "./index-i7t4yTMw.js";
-import { d as Dialog, e as DialogContent, f as DialogHeader, g as DialogTitle } from "./dialog-D0-wcGYn.js";
-import { S as Select, a as SelectTrigger, b as SelectValue, c as SelectContent, d as SelectItem } from "./select-TiDxaxb4.js";
-import { S as ShieldCheck, a as Separator, b as Share2 } from "./separator-iCvOt6YE.js";
-import { h as hasPremiumAccess, i as isAdminUser, S as Sparkles, C as CircleCheck, a as isBetaPeriodActive } from "./premium-DdpwIwfL.js";
-import { m as motion } from "./proxy-sPmYolkV.js";
-import "./index-COFaHO_8.js";
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/jspdf.es.min-BC3bsDyS.js","assets/index-S9Cy_1gq.js","assets/index-CT0Z5C-W.css"])))=>i.map(i=>d[i]);
+import { c as createLucideIcon, _ as __vitePreload, a as useAppStore, r as reactExports, M as MONTH_KEYS, t as tLang, j as jsxRuntimeExports, b as Link, F as FileText, X } from "./index-S9Cy_1gq.js";
+import { A as AdModal, C as CircleAlert } from "./AdModal-DkVN2olK.js";
+import { B as Button, f as Badge } from "./index-CoZ8Qcz5.js";
+import { d as Dialog, e as DialogContent, f as DialogHeader, g as DialogTitle } from "./dialog-BLGV2YbZ.js";
+import { S as Select, a as SelectTrigger, b as SelectValue, c as SelectContent, d as SelectItem } from "./select-vWTgW5_L.js";
+import { S as ShieldCheck, a as Separator, b as Share2 } from "./separator-D8xqGXO5.js";
+import { h as hasPremiumAccess, i as isAdminUser, S as Sparkles, C as CircleCheck, a as isBetaPeriodActive } from "./premium-C82dB_q9.js";
+import { m as motion } from "./proxy-BtD8TJ32.js";
+import "./index-gqUTHy8h.js";
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -98,10 +98,10 @@ async function compressToThumbnail(dataUrl) {
       const img = new Image();
       img.onload = () => {
         try {
-          const maxSize = 150;
-          const ratio = Math.min(maxSize / img.width, maxSize / img.height, 1);
-          const w = Math.max(1, Math.round(img.width * ratio));
-          const h = Math.max(1, Math.round(img.height * ratio));
+          const MAX_PX = 500;
+          const scale = Math.min(MAX_PX / Math.max(img.width, img.height), 1);
+          const w = Math.max(1, Math.round(img.width * scale));
+          const h = Math.max(1, Math.round(img.height * scale));
           const canvas = document.createElement("canvas");
           canvas.width = w;
           canvas.height = h;
@@ -110,8 +110,10 @@ async function compressToThumbnail(dataUrl) {
             resolve(null);
             return;
           }
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, w, h);
           ctx.drawImage(img, 0, 0, w, h);
-          resolve(canvas.toDataURL("image/jpeg", 0.4));
+          resolve(canvas.toDataURL("image/jpeg", 0.85));
         } catch {
           resolve(null);
         }
@@ -270,16 +272,15 @@ function drawCoverPage(doc, profile, receipts, month, year) {
 function placeThumbnail(doc, thumb, rcp, xPos, yPos) {
   if (thumb) {
     try {
-      const base64 = thumb.includes(",") ? thumb.split(",")[1] : thumb;
       doc.addImage(
-        base64,
+        thumb,
         "JPEG",
         xPos,
         yPos,
         THUMB_W,
         THUMB_H,
         void 0,
-        "FAST"
+        "NONE"
       );
     } catch {
       doc.setFillColor(220, 220, 220);
@@ -314,116 +315,125 @@ function placeThumbnail(doc, thumb, rcp, xPos, yPos) {
   }
 }
 async function generateExpenseReport(profile, receipts, month, year, isFreeUser) {
-  const jsPDF = (await __vitePreload(async () => {
-    const { default: __vite_default__ } = await import("./jspdf.es.min-_j9THATd.js").then((n) => n.j);
-    return { default: __vite_default__ };
-  }, true ? __vite__mapDeps([0,1,2]) : void 0)).default;
-  const doc = new jsPDF({
-    orientation: "portrait",
-    unit: "mm",
-    format: "a4"
-  });
-  drawCoverPage(doc, profile, receipts, month, year);
-  if (isFreeUser) addWatermark(doc);
-  const thumbResults = await Promise.allSettled(
-    receipts.map(
-      (r) => r.imageData ? compressToThumbnail(r.imageData) : Promise.resolve(null)
-    )
-  );
-  const thumbMap = /* @__PURE__ */ new Map();
-  receipts.forEach((r, i) => {
-    const result = thumbResults[i];
-    thumbMap.set(r.id, result.status === "fulfilled" ? result.value : null);
-  });
-  const dayGroups = groupByDate(receipts);
-  const USABLE_H = PAGE_H - FOOTER_H - 2;
-  const DAY_HDR_H = 12;
-  function ensureSpace(needed, currentY2) {
-    if (currentY2 + needed > USABLE_H) {
-      doc.addPage();
-      drawMiniHeader(
-        doc,
-        "Fieldspend — Daily Receipts",
-        `${MONTH_NAMES[month - 1]} ${year}`
-      );
-      if (isFreeUser) addWatermark(doc);
-      return HEADER_H + 4;
-    }
-    return currentY2;
-  }
-  doc.addPage();
-  drawMiniHeader(
-    doc,
-    "Fieldspend — Daily Receipts",
-    `${MONTH_NAMES[month - 1]} ${year}`
-  );
-  if (isFreeUser) addWatermark(doc);
-  let currentY = HEADER_H + 4;
-  for (const [dateStr, dayReceipts] of dayGroups) {
-    const dayTotal = dayReceipts.reduce((s, r) => s + (r.amount ?? 0), 0);
-    const dateLabel = formatDateLabel(dateStr);
-    currentY = ensureSpace(DAY_HDR_H + ROW_H, currentY);
-    doc.setFillColor(230, 245, 242);
-    doc.rect(MARGIN, currentY, CONTENT_W, DAY_HDR_H, "F");
-    doc.setFillColor(12, 90, 110);
-    doc.rect(MARGIN, currentY, 3, DAY_HDR_H, "F");
-    doc.setTextColor(12, 90, 110);
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-    doc.text(dateLabel, MARGIN + 6, currentY + 8);
-    doc.setTextColor(80, 80, 80);
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.text(
-      `${dayReceipts.length} receipt${dayReceipts.length !== 1 ? "s" : ""}`,
-      PAGE_W / 2,
-      currentY + 8,
-      { align: "center" }
-    );
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(12, 90, 110);
-    doc.text(formatCurrency$1(dayTotal), PAGE_W - MARGIN - 4, currentY + 8, {
-      align: "right"
-    });
-    currentY += DAY_HDR_H + 3;
-    for (let i = 0; i < dayReceipts.length; i++) {
-      const col = i % THUMB_COLS;
-      if (col === 0) {
-        currentY = ensureSpace(ROW_H, currentY);
+  try {
+    let ensureSpace = function(needed, currentY2) {
+      if (currentY2 + needed > USABLE_H) {
+        doc.addPage();
+        drawMiniHeader(
+          doc,
+          "Fieldspend — Daily Receipts",
+          `${MONTH_NAMES[month - 1]} ${year}`
+        );
+        if (isFreeUser) addWatermark(doc);
+        return HEADER_H + 4;
       }
-      const xPos = MARGIN + col * (THUMB_W + THUMB_GAP);
-      const yPos = currentY;
-      placeThumbnail(
-        doc,
-        thumbMap.get(dayReceipts[i].id) ?? null,
-        dayReceipts[i],
-        xPos,
-        yPos
-      );
-      if (col === THUMB_COLS - 1 || i === dayReceipts.length - 1) {
-        currentY += ROW_H;
-      }
-    }
-    currentY += THUMB_GAP;
-  }
-  const totalPages = doc.getNumberOfPages();
-  for (let p = 1; p <= totalPages; p++) {
-    doc.setPage(p);
-    doc.setFillColor(240, 245, 245);
-    doc.rect(0, PAGE_H - FOOTER_H, PAGE_W, FOOTER_H, "F");
-    doc.setTextColor(120, 120, 120);
-    doc.setFontSize(7);
-    doc.setFont("helvetica", "normal");
-    doc.text(
-      `Fieldspend — Generated ${(/* @__PURE__ */ new Date()).toLocaleDateString("en-IN")}`,
-      MARGIN,
-      PAGE_H - 3.5
-    );
-    doc.text(`Page ${p} of ${totalPages}`, PAGE_W - MARGIN, PAGE_H - 3.5, {
-      align: "right"
+      return currentY2;
+    };
+    const jsPDF = (await __vitePreload(async () => {
+      const { default: __vite_default__ } = await import("./jspdf.es.min-BC3bsDyS.js").then((n) => n.j);
+      return { default: __vite_default__ };
+    }, true ? __vite__mapDeps([0,1,2]) : void 0)).default;
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4"
     });
+    drawCoverPage(doc, profile, receipts, month, year);
+    if (isFreeUser) addWatermark(doc);
+    const thumbResults = await Promise.allSettled(
+      receipts.map(
+        (r) => r.imageData ? compressToThumbnail(r.imageData) : Promise.resolve(null)
+      )
+    );
+    const thumbMap = /* @__PURE__ */ new Map();
+    receipts.forEach((r, i) => {
+      const result = thumbResults[i];
+      thumbMap.set(r.id, result.status === "fulfilled" ? result.value : null);
+    });
+    const dayGroups = groupByDate(receipts);
+    const USABLE_H = PAGE_H - FOOTER_H - 2;
+    const DAY_HDR_H = 12;
+    doc.addPage();
+    drawMiniHeader(
+      doc,
+      "Fieldspend — Daily Receipts",
+      `${MONTH_NAMES[month - 1]} ${year}`
+    );
+    if (isFreeUser) addWatermark(doc);
+    let currentY = HEADER_H + 4;
+    for (const [dateStr, dayReceipts] of dayGroups) {
+      const dayTotal = dayReceipts.reduce((s, r) => s + (r.amount ?? 0), 0);
+      const dateLabel = formatDateLabel(dateStr);
+      currentY = ensureSpace(DAY_HDR_H + ROW_H, currentY);
+      doc.setFillColor(230, 245, 242);
+      doc.rect(MARGIN, currentY, CONTENT_W, DAY_HDR_H, "F");
+      doc.setFillColor(12, 90, 110);
+      doc.rect(MARGIN, currentY, 3, DAY_HDR_H, "F");
+      doc.setTextColor(12, 90, 110);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text(dateLabel, MARGIN + 6, currentY + 8);
+      doc.setTextColor(80, 80, 80);
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.text(
+        `${dayReceipts.length} receipt${dayReceipts.length !== 1 ? "s" : ""}`,
+        PAGE_W / 2,
+        currentY + 8,
+        { align: "center" }
+      );
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(12, 90, 110);
+      doc.text(formatCurrency$1(dayTotal), PAGE_W - MARGIN - 4, currentY + 8, {
+        align: "right"
+      });
+      currentY += DAY_HDR_H + 3;
+      for (let i = 0; i < dayReceipts.length; i++) {
+        const col = i % THUMB_COLS;
+        if (col === 0) {
+          currentY = ensureSpace(ROW_H, currentY);
+        }
+        const xPos = MARGIN + col * (THUMB_W + THUMB_GAP);
+        const yPos = currentY;
+        placeThumbnail(
+          doc,
+          thumbMap.get(dayReceipts[i].id) ?? null,
+          dayReceipts[i],
+          xPos,
+          yPos
+        );
+        if (col === THUMB_COLS - 1 || i === dayReceipts.length - 1) {
+          currentY += ROW_H;
+        }
+      }
+      currentY += THUMB_GAP;
+    }
+    const totalPages = doc.getNumberOfPages();
+    for (let p = 1; p <= totalPages; p++) {
+      doc.setPage(p);
+      doc.setFillColor(240, 245, 245);
+      doc.rect(0, PAGE_H - FOOTER_H, PAGE_W, FOOTER_H, "F");
+      doc.setTextColor(120, 120, 120);
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "normal");
+      doc.text(
+        `Fieldspend — Generated ${(/* @__PURE__ */ new Date()).toLocaleDateString("en-IN")}`,
+        MARGIN,
+        PAGE_H - 3.5
+      );
+      doc.text(`Page ${p} of ${totalPages}`, PAGE_W - MARGIN, PAGE_H - 3.5, {
+        align: "right"
+      });
+    }
+    try {
+      const arrayBuffer = doc.output("arraybuffer");
+      return new Blob([arrayBuffer], { type: "application/pdf" });
+    } catch {
+      return doc.output("blob");
+    }
+  } catch {
+    return null;
   }
-  return doc.output("blob");
 }
 const currentYear = (/* @__PURE__ */ new Date()).getFullYear();
 const YEARS = [currentYear, currentYear - 1, currentYear - 2];
@@ -464,24 +474,42 @@ function PdfPreviewModal({
 }) {
   const [objectUrl, setObjectUrl] = reactExports.useState(null);
   const [canShare, setCanShare] = reactExports.useState(false);
+  const objectUrlRef = reactExports.useRef(null);
   const prevBlobRef = reactExports.useRef(null);
   reactExports.useEffect(() => {
-    if (!open) return;
-    if (prevBlobRef.current === blob && objectUrl) return;
+    if (!open) {
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
+        setObjectUrl(null);
+      }
+      return;
+    }
+    if (prevBlobRef.current === blob && objectUrlRef.current) return;
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+    }
     prevBlobRef.current = blob;
     const url = URL.createObjectURL(blob);
+    objectUrlRef.current = url;
     setObjectUrl(url);
     setCanShare(typeof navigator.share === "function");
     return () => {
-      URL.revokeObjectURL(url);
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
+      }
     };
-  }, [open, blob, objectUrl]);
+  }, [open, blob]);
   function handleDownload() {
-    if (!objectUrl) return;
+    const freshUrl = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = objectUrl;
+    a.href = freshUrl;
     a.download = filename;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(freshUrl), 5e3);
   }
   async function handleShare() {
     if (!canShare) {
@@ -528,13 +556,11 @@ function PdfPreviewModal({
                 className: "bg-muted/30 mx-4 rounded-xl overflow-hidden",
                 style: { height: "55vh" },
                 children: objectUrl ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "object",
+                  "iframe",
                   {
-                    data: objectUrl,
-                    type: "application/pdf",
-                    className: "w-full h-full",
-                    "aria-label": "PDF preview",
-                    children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex items-center justify-center h-full text-sm text-muted-foreground", children: "PDF preview not available in this browser. Use the download button below." })
+                    src: objectUrl,
+                    title: "PDF preview",
+                    className: "w-full h-full border-0"
                   }
                 ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex items-center justify-center h-full", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "inline-block w-6 h-6 rounded-full border-2 border-primary/30 border-t-primary animate-spin" }) })
               }
@@ -701,8 +727,24 @@ function ReportsPage() {
         selectedYear,
         isFreeUser
       );
+      if (!blob) {
+        setIsGenerating(false);
+        return;
+      }
       setPdfBlob(blob);
-      setShowPreview(true);
+      const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = pdfFilename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 5e3);
+      } else {
+        setShowPreview(true);
+      }
     } catch {
     } finally {
       setIsGenerating(false);

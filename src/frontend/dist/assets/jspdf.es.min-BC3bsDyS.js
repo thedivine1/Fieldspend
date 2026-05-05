@@ -1,8 +1,8 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/index.es-DN3PRW1d.js","assets/index-NKFMDfSM.js","assets/index-D0HYbBVU.css"])))=>i.map(i=>d[i]);
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/index.es-Dw9d6pND.js","assets/index-S9Cy_1gq.js","assets/index-CT0Z5C-W.css"])))=>i.map(i=>d[i]);
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
-import { _ as __vitePreload } from "./index-NKFMDfSM.js";
+import { _ as __vitePreload } from "./index-S9Cy_1gq.js";
 function _typeof(o2) {
   "@babel/helpers - typeof";
   return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function(o3) {
@@ -4634,7 +4634,7 @@ function E(e) {
     if (-1 === Object.keys(xt2).indexOf(t2)) throw new Error("Invalid arguments passed to jsPDF.setDocumentProperty");
     return xt2[t2] = e2;
   };
-  var At2, St2, _t, Pt2, kt2, Ft2 = {}, It2 = {}, Ct2 = [], jt2 = {}, Ot2 = {}, Bt2 = {}, Mt2 = {}, qt2 = null, Et2 = 0, Rt2 = [], Dt2 = new j(y2), Tt2 = e.hotfixes || [], zt2 = {}, Ut2 = {}, Ht2 = [], Wt2 = function t2(e2, r2, n2, i2, a3, o2) {
+  var At2, St2, _t2, Pt2, kt2, Ft2 = {}, It2 = {}, Ct2 = [], jt2 = {}, Ot2 = {}, Bt2 = {}, Mt2 = {}, qt2 = null, Et2 = 0, Rt2 = [], Dt2 = new j(y2), Tt2 = e.hotfixes || [], zt2 = {}, Ut2 = {}, Ht2 = [], Wt2 = function t2(e2, r2, n2, i2, a3, o2) {
     if (!(this instanceof t2)) return new t2(e2, r2, n2, i2, a3, o2);
     isNaN(e2) && (e2 = 1), isNaN(r2) && (r2 = 0), isNaN(n2) && (n2 = 0), isNaN(i2) && (i2 = 1), isNaN(a3) && (a3 = 0), isNaN(o2) && (o2 = 0), this._matrix = [e2, r2, n2, i2, a3, o2];
   };
@@ -5574,13 +5574,13 @@ function E(e) {
       isNaN(t3) || (a3 = parseFloat(t3));
     } }), this;
   }, br = function() {
-    this.page = Et2, this.currentPage = $2, this.pages = ot2.slice(0), this.pagesContext = Rt2.slice(0), this.x = _t, this.y = Pt2, this.matrix = kt2, this.width = Nr($2), this.height = xr($2), this.outputDestination = ut2, this.id = "", this.objectNumber = -1;
+    this.page = Et2, this.currentPage = $2, this.pages = ot2.slice(0), this.pagesContext = Rt2.slice(0), this.x = _t2, this.y = Pt2, this.matrix = kt2, this.width = Nr($2), this.height = xr($2), this.outputDestination = ut2, this.id = "", this.objectNumber = -1;
   };
   br.prototype.restore = function() {
-    Et2 = this.page, $2 = this.currentPage, Rt2 = this.pagesContext, ot2 = this.pages, _t = this.x, Pt2 = this.y, kt2 = this.matrix, Lr($2, this.width), Ar($2, this.height), ut2 = this.outputDestination;
+    Et2 = this.page, $2 = this.currentPage, Rt2 = this.pagesContext, ot2 = this.pages, _t2 = this.x, Pt2 = this.y, kt2 = this.matrix, Lr($2, this.width), Ar($2, this.height), ut2 = this.outputDestination;
   };
   var yr = function(t2, e2, r2, n2, i2) {
-    Ht2.push(new br()), Et2 = $2 = 0, ot2 = [], _t = t2, Pt2 = e2, kt2 = i2, me2([r2, n2]);
+    Ht2.push(new br()), Et2 = $2 = 0, ot2 = [], _t2 = t2, Pt2 = e2, kt2 = i2, me2([r2, n2]);
   };
   for (var wr in y2.beginFormObject = function(t2, e2, r2, n2, i2) {
     return yr(t2, e2, r2, n2, i2), this;
@@ -6473,7 +6473,7 @@ var St = R.addField = function(t2) {
   return (e = t2).scope.internal.acroformPlugin.printedOut && (e.scope.internal.acroformPlugin.printedOut = false, e.scope.internal.acroformPlugin.acroFormDictionaryRoot = null), e.scope.internal.acroformPlugin.acroFormDictionaryRoot.Fields.push(e), t2.page = t2.scope.internal.getCurrentPageInfo().pageNumber, this;
 };
 R.AcroFormChoiceField = dt, R.AcroFormListBox = pt, R.AcroFormComboBox = gt, R.AcroFormEditBox = mt, R.AcroFormButton = vt, R.AcroFormPushButton = bt, R.AcroFormRadioButton = yt, R.AcroFormCheckBox = Nt, R.AcroFormTextField = Lt, R.AcroFormPasswordField = xt, R.AcroFormAppearance = At, R.AcroForm = { ChoiceField: dt, ListBox: pt, ComboBox: gt, EditBox: mt, Button: vt, PushButton: bt, RadioButton: yt, CheckBox: Nt, TextField: Lt, PasswordField: xt, Appearance: At }, E.AcroForm = { ChoiceField: dt, ListBox: pt, ComboBox: gt, EditBox: mt, Button: vt, PushButton: bt, RadioButton: yt, CheckBox: Nt, TextField: Lt, PasswordField: xt, Appearance: At };
-E.AcroForm;
+var _t = E.AcroForm;
 function Pt(t2) {
   return t2.reduce(function(t3, e, r) {
     return t3[e] = r, t3;
@@ -7900,7 +7900,7 @@ function ue(t2) {
       }
       t4.C = t4.Ma = r2;
     }
-    function _t(t4, r2, n2, i3, a3, o3, s3) {
+    function _t2(t4, r2, n2, i3, a3, o3, s3) {
       var u4 = t4.$ / i3, c4 = t4.$ % i3, l4 = t4.m, h4 = t4.s, f4 = n2 + t4.$, d4 = f4;
       a3 = n2 + i3 * a3;
       var p4 = n2 + i3 * o3, g4 = 280 + h4.ua, m4 = t4.Pb ? u4 : 16777216, v4 = 0 < h4.ua ? h4.Wa : null, b4 = h4.wc, y4 = f4 < p4 ? wt2(h4, c4, u4) : null;
@@ -8103,7 +8103,7 @@ function ue(t2) {
           s3.a = 1, c4 = 0;
           break t;
         }
-        c4 = (c4 = _t(s3, v4, 0, f4, p4, p4, null)) && !g4.h;
+        c4 = (c4 = _t2(s3, v4, 0, f4, p4, p4, null)) && !g4.h;
         break t;
       }
       return c4 ? (null != u4 ? u4[0] = v4 : (e(null == v4), e(n2)), s3.$ = 0, n2 || Pt2(m4)) : Pt2(m4), c4;
@@ -8603,7 +8603,7 @@ function ue(t2) {
                 break e;
               }
               !b4 || d4.h && w4 < N4 ? (b4 = 0, c4.a = d4.h ? 5 : 3) : c4.$ = w4, r2 = b4;
-            } else r2 = _t(c4, c4.V, c4.Ba, c4.c, c4.i, r2, Ct2);
+            } else r2 = _t2(c4, c4.V, c4.Ba, c4.c, c4.i, r2, Ct2);
             if (!r2) {
               o3 = 0;
               break t;
@@ -9037,7 +9037,7 @@ function ue(t2) {
                         }
                         u4.xb = 0;
                       }
-                      if (!_t(u4, u4.V, u4.Ba, u4.c, u4.i, s3.o, Lt2)) break r;
+                      if (!_t2(u4, u4.V, u4.Ba, u4.c, u4.i, s3.o, Lt2)) break r;
                       c4.Dc = u4.Ma, u4 = 1;
                       break e;
                     }
@@ -10762,7 +10762,7 @@ function(t2) {
   var h2 = l2.getContext("2d");
   h2.fillStyle = "#fff", h2.fillRect(0, 0, l2.width, l2.height);
   var f2 = { ignoreMouse: true, ignoreAnimation: true, ignoreDimensions: true }, d2 = this;
-  return (i.canvg ? Promise.resolve(i.canvg) : __vitePreload(() => import("./index.es-DN3PRW1d.js"), true ? __vite__mapDeps([0,1,2]) : void 0)).catch(function(t3) {
+  return (i.canvg ? Promise.resolve(i.canvg) : __vitePreload(() => import("./index.es-Dw9d6pND.js"), true ? __vite__mapDeps([0,1,2]) : void 0)).catch(function(t3) {
     return Promise.reject(new Error("Could not load canvg: " + t3));
   }).then(function(t3) {
     return t3.default ? t3.default : t3;
@@ -11471,6 +11471,7 @@ E.API.PDFObject = function() {
 }();
 const jspdf_es_min = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
+  AcroForm: _t,
   AcroFormAppearance: At,
   AcroFormButton: vt,
   AcroFormCheckBox: Nt,

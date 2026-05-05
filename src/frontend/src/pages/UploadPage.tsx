@@ -128,7 +128,7 @@ const CATEGORY_ICONS: Record<Category, string> = {
   other: "📋",
 };
 
-const MAX_QUEUE = 5;
+const MAX_QUEUE = 10;
 const TODAY = new Date().toISOString().split("T")[0];
 
 function generateId(): string {
