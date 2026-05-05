@@ -282,8 +282,6 @@ export default function ReportsPage() {
   } = useAppStore();
 
   const [isGenerating, setIsGenerating] = useState(false);
-  const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
 
   // Ad gate
   const [showAd, setShowAd] = useState(false);
@@ -340,12 +338,10 @@ export default function ReportsPage() {
 
   function handleMonthChange(v: string) {
     setSelectedMonth(Number(v));
-    setPdfBlob(null);
   }
 
   function handleYearChange(v: string) {
     setSelectedYear(Number(v));
-    setPdfBlob(null);
   }
 
   async function runPdfGeneration() {
@@ -360,8 +356,17 @@ export default function ReportsPage() {
         selectedYear,
         isFreeUser,
       );
-      setPdfBlob(blob);
-      setShowPreview(true);
+      // Direct download — no preview modal
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = pdfFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      // Delay revocation so browser finishes saving
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      toast.success("PDF downloaded!");
     } catch (err: any) {
       console.error("PDF Generation failed:", err);
       toast.error(`PDF Generation failed: ${err.message || "Unknown error"}`);
@@ -399,14 +404,7 @@ export default function ReportsPage() {
         totalAds={1}
       />
 
-      {pdfBlob && (
-        <PdfPreviewModal
-          open={showPreview}
-          onClose={() => setShowPreview(false)}
-          blob={pdfBlob}
-          filename={pdfFilename}
-        />
-      )}
+
 
       <div className="px-4 py-5 space-y-5 pb-8" data-ocid="reports.page">
         {/* Heading */}
@@ -695,18 +693,7 @@ export default function ReportsPage() {
               )}
             </Button>
 
-            {/* Re-open preview button if blob exists */}
-            {pdfBlob && !isGenerating && (
-              <Button
-                variant="outline"
-                className="w-full h-10 rounded-xl gap-2 text-sm"
-                onClick={() => setShowPreview(true)}
-                data-ocid="reports.reopen_preview_button"
-              >
-                <Share2Icon size={15} />
-                View / Share Last Report
-              </Button>
-            )}
+
 
             {isFreeUser && !isGenerating && betaActive && (
               <p className="text-xs text-center text-muted-foreground">
