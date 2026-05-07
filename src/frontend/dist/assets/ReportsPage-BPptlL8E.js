@@ -1,13 +1,13 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/jspdf.es.min-BC3bsDyS.js","assets/index-S9Cy_1gq.js","assets/index-CT0Z5C-W.css"])))=>i.map(i=>d[i]);
-import { c as createLucideIcon, _ as __vitePreload, a as useAppStore, r as reactExports, M as MONTH_KEYS, t as tLang, j as jsxRuntimeExports, b as Link, F as FileText, X } from "./index-S9Cy_1gq.js";
-import { A as AdModal, C as CircleAlert } from "./AdModal-DkVN2olK.js";
-import { B as Button, f as Badge } from "./index-CoZ8Qcz5.js";
-import { d as Dialog, e as DialogContent, f as DialogHeader, g as DialogTitle } from "./dialog-BLGV2YbZ.js";
-import { S as Select, a as SelectTrigger, b as SelectValue, c as SelectContent, d as SelectItem } from "./select-vWTgW5_L.js";
-import { S as ShieldCheck, a as Separator, b as Share2 } from "./separator-D8xqGXO5.js";
-import { h as hasPremiumAccess, i as isAdminUser, S as Sparkles, C as CircleCheck, a as isBetaPeriodActive } from "./premium-C82dB_q9.js";
-import { m as motion } from "./proxy-BtD8TJ32.js";
-import "./index-gqUTHy8h.js";
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/jspdf.es.min-DZZpMX55.js","assets/index-Q7Jk8N_s.js","assets/index-BAmPHKAn.css"])))=>i.map(i=>d[i]);
+import { c as createLucideIcon, _ as __vitePreload, a as useAppStore, r as reactExports, M as MONTH_KEYS, t as tLang, j as jsxRuntimeExports, b as Link, F as FileText, X } from "./index-Q7Jk8N_s.js";
+import { A as AdModal, C as CircleAlert } from "./AdModal-DYZNHtbg.js";
+import { B as Button, f as Badge } from "./index-C6_FkSE_.js";
+import { d as Dialog, e as DialogContent, f as DialogHeader, g as DialogTitle } from "./dialog-DREfONgc.js";
+import { S as Select, a as SelectTrigger, b as SelectValue, c as SelectContent, d as SelectItem } from "./select-9qOUQ768.js";
+import { S as ShieldCheck, a as Separator, b as Share2 } from "./separator-a8AwY8RS.js";
+import { h as hasPremiumAccess, i as isAdminUser, S as Sparkles, C as CircleCheck, a as isBetaPeriodActive, b as getBetaDaysLeft } from "./premium-Bn9eQttf.js";
+import { m as motion } from "./proxy-oEYfaByQ.js";
+import "./index-CmqUWI1H.js";
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -330,7 +330,7 @@ async function generateExpenseReport(profile, receipts, month, year, isFreeUser)
       return currentY2;
     };
     const jsPDF = (await __vitePreload(async () => {
-      const { default: __vite_default__ } = await import("./jspdf.es.min-BC3bsDyS.js").then((n) => n.j);
+      const { default: __vite_default__ } = await import("./jspdf.es.min-DZZpMX55.js").then((n) => n.j);
       return { default: __vite_default__ };
     }, true ? __vite__mapDeps([0,1,2]) : void 0)).default;
     const doc = new jsPDF({
@@ -774,7 +774,8 @@ function ReportsPage() {
         isOpen: showAd,
         onComplete: handleAdComplete,
         adNumber: 1,
-        totalAds: 1
+        totalAds: 1,
+        context: "report"
       }
     ),
     pdfBlob && /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -828,6 +829,51 @@ function ReportsPage() {
           /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: YEARS.map((y) => /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: String(y), children: y }, y)) })
         ] })
       ] }),
+      isFreeUser && betaActive && (() => {
+        const daysLeft = getBetaDaysLeft();
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          motion.div,
+          {
+            initial: { opacity: 0, y: -6 },
+            animate: { opacity: 1, y: 0 },
+            className: "flex items-center gap-3 bg-primary/10 border border-primary/25 rounded-xl px-4 py-3",
+            "data-ocid": "reports.beta_banner",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { size: 15, className: "text-primary shrink-0" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-sm text-primary font-medium flex-1", children: [
+                tLang("beta_ends_in", currentLanguage),
+                " ",
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-bold", children: daysLeft }),
+                " ",
+                tLang("ad.seconds", currentLanguage) !== "seconds" ? tLang("settings.beta_days_remaining", currentLanguage) : `day${daysLeft !== 1 ? "s" : ""}`
+              ] })
+            ]
+          }
+        );
+      })(),
+      isFreeUser && !betaActive && !isAdmin && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        motion.div,
+        {
+          initial: { opacity: 0, y: -6 },
+          animate: { opacity: 1, y: 0 },
+          className: "flex items-start gap-3 bg-destructive/8 border border-destructive/20 rounded-xl px-4 py-3",
+          "data-ocid": "reports.beta_ended_banner",
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              CircleAlert,
+              {
+                size: 15,
+                className: "text-destructive shrink-0 mt-0.5"
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-sm text-destructive flex-1", children: [
+              tLang("beta_has_ended", currentLanguage),
+              " ",
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Link, { to: "/settings", className: "underline font-semibold", children: tLang("action.upgrade", currentLanguage) })
+            ] })
+          ]
+        }
+      ),
       isFreeUser && betaActive && /* @__PURE__ */ jsxRuntimeExports.jsxs(
         motion.div,
         {

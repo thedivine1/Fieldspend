@@ -22,10 +22,11 @@ import {
   extractTextFromImage,
 } from "@/lib/ocr";
 import {
-  canUploadReceipt,
+  getAllowedUploadCount,
   hasPremiumAccess,
   isAdminUser,
   isBetaPeriodActive,
+  needsAdForUpload,
 } from "@/lib/premium";
 import { useAppStore } from "@/store/useAppStore";
 import type { Category, Receipt } from "@/types";
@@ -49,26 +50,39 @@ import { toast } from "sonner";
 
 // ─── Upload counter helpers ───────────────────────────────────────────────────
 
-const UPLOAD_COUNT_KEY = "fieldspend_upload_count";
+// Tracks TOTAL ever uploads (not daily) for post-beta ad gate calculation
+const TOTAL_UPLOAD_KEY = "fieldspend_total_uploads";
 const UPLOAD_DATE_KEY = "fieldspend_upload_date";
 
 function getTodayStr(): string {
   return new Date().toISOString().split("T")[0];
 }
 
+/** Get daily upload count — resets at midnight */
 function getUploadCount(): number {
   const storedDate = localStorage.getItem(UPLOAD_DATE_KEY);
   if (storedDate !== getTodayStr()) {
     localStorage.setItem(UPLOAD_DATE_KEY, getTodayStr());
-    localStorage.setItem(UPLOAD_COUNT_KEY, "0");
+    localStorage.setItem("fieldspend_upload_count", "0");
     return 0;
   }
-  return Number(localStorage.getItem(UPLOAD_COUNT_KEY) ?? "0");
+  return Number(localStorage.getItem("fieldspend_upload_count") ?? "0");
 }
 
 function incrementUploadCount(): number {
   const count = getUploadCount() + 1;
-  localStorage.setItem(UPLOAD_COUNT_KEY, String(count));
+  localStorage.setItem("fieldspend_upload_count", String(count));
+  return count;
+}
+
+/** Get total uploads ever — used for post-beta ad gate threshold */
+function getTotalUploads(): number {
+  return Number(localStorage.getItem(TOTAL_UPLOAD_KEY) ?? "0");
+}
+
+function incrementTotalUploads(): number {
+  const count = getTotalUploads() + 1;
+  localStorage.setItem(TOTAL_UPLOAD_KEY, String(count));
   return count;
 }
 
@@ -223,7 +237,8 @@ function QueueItemCard({
 
 export default function UploadPage() {
   const navigate = useNavigate();
-  const { addReceipt, userProfile, currentLanguage } = useAppStore();
+  const { addReceipt, userProfile, saveProfile, currentLanguage } =
+    useAppStore();
   const lang = currentLanguage;
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
@@ -234,10 +249,11 @@ export default function UploadPage() {
   const [dailyCount, setDailyCount] = useState<number>(0);
   const [limitChecked, setLimitChecked] = useState(false);
 
-  // Ad gate: show 2 ads every 5 uploads (post-beta free users only)
-  const [adGateQueue, setAdGateQueue] = useState<number>(0); // how many ads left to show
-  const [currentAd, setCurrentAd] = useState<number>(0); // 1 or 2
-  const [pendingSaveAfterAd, setPendingSaveAfterAd] = useState(false);
+  // Ad gate: show 2 ads when post-beta free user hits upload limit
+  const [showUploadAdGate, setShowUploadAdGate] = useState(false);
+  const [adGateQueue, setAdGateQueue] = useState<number>(0);
+  const [currentAd, setCurrentAd] = useState<number>(0);
+  const [pendingFileQueue, setPendingFileQueue] = useState<File[]>([]);
 
   useEffect(() => {
     getDailyCount(TODAY)
@@ -250,6 +266,7 @@ export default function UploadPage() {
 
   const isAdmin = userProfile ? isAdminUser(userProfile) : false;
   const isPremium = userProfile ? hasPremiumAccess(userProfile) : false;
+  const betaActive = isBetaPeriodActive();
   const limitReached =
     !isPremium && limitChecked && dailyCount >= FREE_DAILY_LIMIT;
   const canUpload =
@@ -259,7 +276,17 @@ export default function UploadPage() {
   const slotsLeft = Math.max(0, FREE_DAILY_LIMIT - dailyCount);
 
   // Ads apply only post-beta for free non-admin users
-  const shouldShowAds = !isBetaPeriodActive() && !isPremium && !isAdmin;
+  const shouldShowAds = !betaActive && !isPremium && !isAdmin;
+
+  // Compute how many uploads allowed (10 base + 5 per ad batch watched) — for display only
+  const _allowedUploads = userProfile
+    ? getAllowedUploadCount(userProfile)
+    : FREE_DAILY_LIMIT;
+  const totalUploaded = getTotalUploads();
+  const uploadAdNeeded =
+    userProfile && shouldShowAds
+      ? needsAdForUpload(userProfile, totalUploaded)
+      : false;
 
   const activeItem = queue[activeIndex] ?? null;
 
@@ -319,9 +346,18 @@ export default function UploadPage() {
   const enqueueFiles = useCallback(
     (files: File[]) => {
       if (!canUpload) {
-        toast.error(tLang("status.limit_reached", lang));
         return;
       }
+
+      // Post-beta: gate new files if upload limit reached
+      if (shouldShowAds && uploadAdNeeded) {
+        setPendingFileQueue(files);
+        setAdGateQueue(2);
+        setCurrentAd(1);
+        setShowUploadAdGate(true);
+        return;
+      }
+
       const remaining = MAX_QUEUE - queue.length;
       const toAdd = files
         .slice(0, remaining)
@@ -347,7 +383,7 @@ export default function UploadPage() {
       });
       for (const item of newItems) processFile(item.id, item.file);
     },
-    [canUpload, queue.length, processFile, lang],
+    [canUpload, queue.length, processFile, shouldShowAds, uploadAdNeeded],
   );
 
   const handleCameraChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -388,7 +424,6 @@ export default function UploadPage() {
         const imageData =
           item.imageDataUrl ??
           (await (async () => {
-            // Fallback: process the original file if imageDataUrl is missing
             try {
               return await processImage(item.file);
             } catch {
@@ -418,15 +453,9 @@ export default function UploadPage() {
           prev.map((q) => (q.id === item.id ? { ...q, status: "done" } : q)),
         );
         savedCount++;
-
-        // Track upload count for ad gate (post-beta free users only)
-        if (shouldShowAds) {
-          const newCount = incrementUploadCount();
-          if (newCount % 5 === 0) {
-            // Trigger 2-ad gate after this batch
-            setPendingSaveAfterAd(true);
-          }
-        }
+        // Track total uploads (cross-day, used for post-beta ad gate)
+        incrementTotalUploads();
+        incrementUploadCount();
       } catch {
         setQueue((prev) =>
           prev.map((q) => (q.id === item.id ? { ...q, status: "error" } : q)),
@@ -440,15 +469,7 @@ export default function UploadPage() {
           ? tLang("status.saved", lang)
           : `${savedCount} receipts saved!`,
       );
-
-      // If ad gate triggered, show 2 ads before navigating
-      if (shouldShowAds && pendingSaveAfterAd) {
-        setPendingSaveAfterAd(false);
-        setAdGateQueue(2);
-        setCurrentAd(1);
-      } else {
-        navigate({ to: "/gallery" });
-      }
+      navigate({ to: "/gallery" });
     }
   }
 
@@ -456,15 +477,57 @@ export default function UploadPage() {
     doSaveAll();
   }
 
-  // Ad 1 complete → show ad 2
+  // Ad completes → show next ad or proceed
   function handleAdComplete() {
+    // Increment adUnlockedUploads in profile after 2 ads watched
     const remaining = adGateQueue - 1;
     setAdGateQueue(remaining);
     if (remaining > 0) {
       setCurrentAd((prev) => prev + 1);
     } else {
+      // All ads watched — update profile counter and enqueue pending files
       setCurrentAd(0);
-      navigate({ to: "/gallery" });
+      setShowUploadAdGate(false);
+      if (userProfile) {
+        const updated = {
+          ...userProfile,
+          adWatchCount: (userProfile.adWatchCount ?? 0) + 2,
+          adUnlockedUploads: (userProfile.adUnlockedUploads ?? 0) + 1,
+          lastAdWatchTime: Date.now(),
+        };
+        saveProfile(updated);
+      }
+      // Now actually enqueue the pending files
+      if (pendingFileQueue.length > 0) {
+        const files = pendingFileQueue;
+        setPendingFileQueue([]);
+        const remaining2 = MAX_QUEUE - queue.length;
+        const toAdd = files
+          .slice(0, remaining2)
+          .filter((f) => f.type.startsWith("image/"));
+        if (toAdd.length > 0) {
+          const newItems: QueueItem[] = toAdd.map((file) => ({
+            id: generateId(),
+            file,
+            previewUrl: URL.createObjectURL(file),
+            imageDataUrl: null,
+            status: "pending" as QueueStatus,
+            date: TODAY,
+            category: "other" as Category,
+            amount: "",
+            notes: "",
+            ocrAttempted: false,
+            ocrFailed: false,
+          }));
+          setQueue((prev) => {
+            const updated = [...prev, ...newItems];
+            if (prev.length === 0) setActiveIndex(0);
+            return updated;
+          });
+          for (const item of newItems) processFile(item.id, item.file);
+          toast.success(tLang("ad_unlocked_message", lang));
+        }
+      }
     }
   }
 
@@ -640,12 +703,13 @@ export default function UploadPage() {
 
   return (
     <>
-      {/* Ad gate modal — 2 ads after every 5 uploads for post-beta free users */}
+      {/* Ad gate modal — 2 ads when post-beta free user hits upload limit */}
       <AdModal
-        isOpen={adGateQueue > 0}
+        isOpen={showUploadAdGate}
         onComplete={handleAdComplete}
         adNumber={currentAd}
         totalAds={2}
+        context="upload"
       />
 
       <div className="px-4 py-4 space-y-4" data-ocid="upload.page">

@@ -1,4 +1,4 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/OnboardingPage-lOCWXggV.js","assets/index-gqUTHy8h.js","assets/proxy-BtD8TJ32.js","assets/GalleryPage-CfUC_MHo.js","assets/index-CoZ8Qcz5.js","assets/dialog-BLGV2YbZ.js","assets/select-vWTgW5_L.js","assets/label-o7ztANPV.js","assets/textarea-PIngSpwY.js","assets/UploadPage-jLZEr_lc.js","assets/AdModal-DkVN2olK.js","assets/premium-C82dB_q9.js","assets/star-CFUM2w1V.js","assets/ReportsPage-CPyHdWl2.js","assets/separator-D8xqGXO5.js","assets/SettingsPage-BS1_4jUG.js"])))=>i.map(i=>d[i]);
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/OnboardingPage-BxuYRy_x.js","assets/index-CmqUWI1H.js","assets/proxy-oEYfaByQ.js","assets/GalleryPage-CF7JYXj-.js","assets/index-C6_FkSE_.js","assets/dialog-DREfONgc.js","assets/select-9qOUQ768.js","assets/label-Dvoh2DwD.js","assets/textarea-CJb5dntc.js","assets/UploadPage-Cb01Fug2.js","assets/AdModal-DYZNHtbg.js","assets/premium-Bn9eQttf.js","assets/star-DJIq9R3r.js","assets/ReportsPage-BPptlL8E.js","assets/separator-a8AwY8RS.js","assets/SettingsPage-fS0OxPuq.js"])))=>i.map(i=>d[i]);
 var __defProp = Object.defineProperty;
 var __typeError = (msg) => {
   throw TypeError(msg);
@@ -18634,6 +18634,16 @@ const translations = {
     "settings.notified": "We'll notify you when premium is available!",
     "settings.lang_set": "Language set to",
     "settings.app_link_copied": "App link copied to clipboard!",
+    // Payment / Upgrade
+    "upgrade.title": "Upgrade to Premium",
+    "upgrade.subtitle": "Unlock unlimited receipts, clean PDFs, zero ads",
+    "plan.monthly": "Monthly",
+    "plan.annual": "Annual",
+    "plan.savings": "Save ₹600/year vs monthly",
+    "btn.upgrade": "Pay Now with Razorpay",
+    "premium.active": "Premium Active",
+    "premium.expiry": "Valid until",
+    "payment.processing": "Processing payment…",
     // Ads
     "ad.advertisement": "Advertisement",
     "ad.ends_in": "Ad ends in",
@@ -18641,7 +18651,14 @@ const translations = {
     "ad.continue": "Continue",
     "ad.upgrade_now": "Upgrade to Premium",
     "ad.no_ads_premium": "Go Premium — No Ads, No Limits!",
-    "ad.of": "of"
+    "ad.of": "of",
+    ad_watch_title: "Unlock your feature — watch this short ad",
+    ad_countdown: "Ad completes in",
+    ad_claim_reward: "Claim Reward",
+    ad_unlocked_message: "5 more uploads unlocked!",
+    beta_ends_in: "Beta ends in",
+    beta_has_ended: "Beta period has ended — upgrade to continue",
+    upgrade_required: "Upgrade Required"
   },
   hi: {
     // App
@@ -18785,6 +18802,16 @@ const translations = {
     "settings.notified": "प्रीमियम उपलब्ध होने पर हम आपको सूचित करेंगे!",
     "settings.lang_set": "भाषा बदली गई",
     "settings.app_link_copied": "ऐप लिंक क्लिपबोर्ड पर कॉपी हुई!",
+    // Payment / Upgrade
+    "upgrade.title": "प्रीमियम में अपग्रेड करें",
+    "upgrade.subtitle": "असीमित रसीदें, साफ PDF, कोई विज्ञापन नहीं",
+    "plan.monthly": "मासिक",
+    "plan.annual": "वार्षिक",
+    "plan.savings": "मासिक की तुलना में ₹600/वर्ष की बचत",
+    "btn.upgrade": "Razorpay से भुगतान करें",
+    "premium.active": "प्रीमियम सक्रिय",
+    "premium.expiry": "वैध है तक",
+    "payment.processing": "भुगतान प्रक्रिया हो रही है…",
     // Ads
     "ad.advertisement": "विज्ञापन",
     "ad.ends_in": "विज्ञापन समाप्त होगा",
@@ -18792,7 +18819,14 @@ const translations = {
     "ad.continue": "जारी रखें",
     "ad.upgrade_now": "प्रीमियम में अपग्रेड करें",
     "ad.no_ads_premium": "प्रीमियम लें — कोई विज्ञापन नहीं, कोई सीमा नहीं!",
-    "ad.of": "में से"
+    "ad.of": "में से",
+    ad_watch_title: "अपना फ़ीचर अनलॉक करें — यह छोटा विज्ञापन देखें",
+    ad_countdown: "विज्ञापन समाप्त होता है",
+    ad_claim_reward: "इनाम लें",
+    ad_unlocked_message: "5 और अपलोड अनलॉक हुए!",
+    beta_ends_in: "बीटा समाप्त होगा",
+    beta_has_ended: "बीटा अवधि समाप्त — जारी रखने के लिए अपग्रेड करें",
+    upgrade_required: "अपग्रेड आवश्यक"
   },
   mr: {
     // App
@@ -18936,6 +18970,16 @@ const translations = {
     "settings.notified": "प्रीमियम उपलब्ध झाल्यावर आम्ही तुम्हाला सूचित करू!",
     "settings.lang_set": "भाषा बदलली",
     "settings.app_link_copied": "ॲप लिंक क्लिपबोर्डवर कॉपी केली!",
+    // Payment / Upgrade
+    "upgrade.title": "प्रीमियमवर अपग्रेड करा",
+    "upgrade.subtitle": "अमर्यादित पावत्या, स्वच्छ PDF, जाहिराती नाहीत",
+    "plan.monthly": "मासिक",
+    "plan.annual": "वार्षिक",
+    "plan.savings": "मासिकाच्या तुलनेत ₹600/वर्ष बचत",
+    "btn.upgrade": "Razorpay ने पेमेंट करा",
+    "premium.active": "प्रीमियम सक्रिय",
+    "premium.expiry": "वैध आहे पर्यंत",
+    "payment.processing": "पेमेंट प्रक्रिया होत आहे…",
     // Ads
     "ad.advertisement": "जाहिरात",
     "ad.ends_in": "जाहिरात संपेल",
@@ -18943,7 +18987,14 @@ const translations = {
     "ad.continue": "पुढे जा",
     "ad.upgrade_now": "प्रीमियमवर अपग्रेड करा",
     "ad.no_ads_premium": "प्रीमियम घ्या — जाहिराती नाहीत, मर्यादा नाहीत!",
-    "ad.of": "पैकी"
+    "ad.of": "पैकी",
+    ad_watch_title: "आपले फीचर अनलॉक करा — ही छोटी जाहिरात पहा",
+    ad_countdown: "जाहिरात संपते",
+    ad_claim_reward: "बक्षीस मिळवा",
+    ad_unlocked_message: "आणखी 5 अपलोड अनलॉक झाले!",
+    beta_ends_in: "बीटा संपतो",
+    beta_has_ended: "बीटा कालावधी संपली — पुढे चालू ठेवण्यासाठी अपग्रेड करा",
+    upgrade_required: "अपग्रेड आवश्यक"
   }
 };
 const MONTH_KEYS = [
@@ -25296,11 +25347,11 @@ var $e = reactExports.forwardRef(function(e, t) {
     })) : null;
   }));
 });
-const OnboardingPage = reactExports.lazy(() => __vitePreload(() => import("./OnboardingPage-lOCWXggV.js"), true ? __vite__mapDeps([0,1,2]) : void 0));
-const GalleryPage = reactExports.lazy(() => __vitePreload(() => import("./GalleryPage-CfUC_MHo.js"), true ? __vite__mapDeps([3,4,5,6,7,8,2]) : void 0));
-const UploadPage = reactExports.lazy(() => __vitePreload(() => import("./UploadPage-jLZEr_lc.js"), true ? __vite__mapDeps([9,10,4,1,2,11,7,6,8,12]) : void 0));
-const ReportsPage = reactExports.lazy(() => __vitePreload(() => import("./ReportsPage-CPyHdWl2.js"), true ? __vite__mapDeps([13,10,4,1,2,11,5,6,14]) : void 0));
-const SettingsPage = reactExports.lazy(() => __vitePreload(() => import("./SettingsPage-BS1_4jUG.js"), true ? __vite__mapDeps([15,4,7,14,11,2,12,1]) : void 0));
+const OnboardingPage = reactExports.lazy(() => __vitePreload(() => import("./OnboardingPage-BxuYRy_x.js"), true ? __vite__mapDeps([0,1,2]) : void 0));
+const GalleryPage = reactExports.lazy(() => __vitePreload(() => import("./GalleryPage-CF7JYXj-.js"), true ? __vite__mapDeps([3,4,5,6,7,8,2]) : void 0));
+const UploadPage = reactExports.lazy(() => __vitePreload(() => import("./UploadPage-Cb01Fug2.js"), true ? __vite__mapDeps([9,10,4,1,2,11,7,6,8,12]) : void 0));
+const ReportsPage = reactExports.lazy(() => __vitePreload(() => import("./ReportsPage-BPptlL8E.js"), true ? __vite__mapDeps([13,10,4,1,2,11,5,6,14]) : void 0));
+const SettingsPage = reactExports.lazy(() => __vitePreload(() => import("./SettingsPage-fS0OxPuq.js"), true ? __vite__mapDeps([15,4,7,14,11,2,12,1]) : void 0));
 const queryClient$1 = new QueryClient();
 function RootComponent() {
   const { initStore, loadReceipts, loadProfile } = useAppStore();

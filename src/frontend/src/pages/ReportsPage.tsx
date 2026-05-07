@@ -18,6 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { MONTH_KEYS, tLang } from "@/lib/i18n";
 import { generateExpenseReport } from "@/lib/pdf";
 import {
+  getBetaDaysLeft,
   hasPremiumAccess,
   isAdminUser,
   isBetaPeriodActive,
@@ -431,6 +432,7 @@ export default function ReportsPage() {
         onComplete={handleAdComplete}
         adNumber={1}
         totalAds={1}
+        context="report"
       />
 
       {pdfBlob && (
@@ -499,6 +501,51 @@ export default function ReportsPage() {
             </SelectContent>
           </Select>
         </div>
+
+        {/* Beta countdown banner — only during beta, only for free users */}
+        {isFreeUser &&
+          betaActive &&
+          (() => {
+            const daysLeft = getBetaDaysLeft();
+            return (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-3 bg-primary/10 border border-primary/25 rounded-xl px-4 py-3"
+                data-ocid="reports.beta_banner"
+              >
+                <SparklesIcon size={15} className="text-primary shrink-0" />
+                <p className="text-sm text-primary font-medium flex-1">
+                  {tLang("beta_ends_in", currentLanguage)}{" "}
+                  <span className="font-bold">{daysLeft}</span>{" "}
+                  {tLang("ad.seconds", currentLanguage) !== "seconds"
+                    ? tLang("settings.beta_days_remaining", currentLanguage)
+                    : `day${daysLeft !== 1 ? "s" : ""}`}
+                </p>
+              </motion.div>
+            );
+          })()}
+
+        {/* Post-beta ended message */}
+        {isFreeUser && !betaActive && !isAdmin && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-start gap-3 bg-destructive/8 border border-destructive/20 rounded-xl px-4 py-3"
+            data-ocid="reports.beta_ended_banner"
+          >
+            <AlertCircleIcon
+              size={15}
+              className="text-destructive shrink-0 mt-0.5"
+            />
+            <p className="text-sm text-destructive flex-1">
+              {tLang("beta_has_ended", currentLanguage)}{" "}
+              <Link to="/settings" className="underline font-semibold">
+                {tLang("action.upgrade", currentLanguage)}
+              </Link>
+            </p>
+          </motion.div>
+        )}
 
         {/* Watermark banner — free users during beta */}
         {isFreeUser && betaActive && (

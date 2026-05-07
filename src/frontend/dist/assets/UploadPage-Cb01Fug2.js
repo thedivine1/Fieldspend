@@ -1,13 +1,13 @@
-import { c as createLucideIcon, r as reactExports, j as jsxRuntimeExports, _ as __vitePreload, u as useNavigate, a as useAppStore, g as getDailyCount, d as ue, t as tLang, I as Image$1, C as Camera, X } from "./index-S9Cy_1gq.js";
-import { C as CircleAlert, A as AdModal } from "./AdModal-DkVN2olK.js";
-import { P as Primitive, d as cn, B as Button, f as Badge } from "./index-CoZ8Qcz5.js";
-import { L as Label, I as Input } from "./label-o7ztANPV.js";
-import { S as Select, a as SelectTrigger, b as SelectValue, c as SelectContent, d as SelectItem } from "./select-vWTgW5_L.js";
-import { T as Textarea } from "./textarea-PIngSpwY.js";
-import { i as isAdminUser, h as hasPremiumAccess, F as FREE_DAILY_LIMIT, S as Sparkles, C as CircleCheck, a as isBetaPeriodActive } from "./premium-C82dB_q9.js";
-import { m as motion } from "./proxy-BtD8TJ32.js";
-import { S as Star } from "./star-CFUM2w1V.js";
-import { A as AnimatePresence } from "./index-gqUTHy8h.js";
+import { c as createLucideIcon, r as reactExports, j as jsxRuntimeExports, _ as __vitePreload, u as useNavigate, a as useAppStore, g as getDailyCount, t as tLang, I as Image$1, C as Camera, d as ue, X } from "./index-Q7Jk8N_s.js";
+import { C as CircleAlert, A as AdModal } from "./AdModal-DYZNHtbg.js";
+import { P as Primitive, d as cn, B as Button, f as Badge } from "./index-C6_FkSE_.js";
+import { L as Label, I as Input } from "./label-Dvoh2DwD.js";
+import { S as Select, a as SelectTrigger, b as SelectValue, c as SelectContent, d as SelectItem } from "./select-9qOUQ768.js";
+import { T as Textarea } from "./textarea-CJb5dntc.js";
+import { i as isAdminUser, h as hasPremiumAccess, g as getAllowedUploadCount, F as FREE_DAILY_LIMIT, n as needsAdForUpload, S as Sparkles, C as CircleCheck, a as isBetaPeriodActive } from "./premium-Bn9eQttf.js";
+import { m as motion } from "./proxy-oEYfaByQ.js";
+import { S as Star } from "./star-DJIq9R3r.js";
+import { A as AnimatePresence } from "./index-CmqUWI1H.js";
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -818,7 +818,7 @@ function detectAmount(text) {
   }
   return null;
 }
-const UPLOAD_COUNT_KEY = "fieldspend_upload_count";
+const TOTAL_UPLOAD_KEY = "fieldspend_total_uploads";
 const UPLOAD_DATE_KEY = "fieldspend_upload_date";
 function getTodayStr() {
   return (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
@@ -827,14 +827,22 @@ function getUploadCount() {
   const storedDate = localStorage.getItem(UPLOAD_DATE_KEY);
   if (storedDate !== getTodayStr()) {
     localStorage.setItem(UPLOAD_DATE_KEY, getTodayStr());
-    localStorage.setItem(UPLOAD_COUNT_KEY, "0");
+    localStorage.setItem("fieldspend_upload_count", "0");
     return 0;
   }
-  return Number(localStorage.getItem(UPLOAD_COUNT_KEY) ?? "0");
+  return Number(localStorage.getItem("fieldspend_upload_count") ?? "0");
 }
 function incrementUploadCount() {
   const count = getUploadCount() + 1;
-  localStorage.setItem(UPLOAD_COUNT_KEY, String(count));
+  localStorage.setItem("fieldspend_upload_count", String(count));
+  return count;
+}
+function getTotalUploads() {
+  return Number(localStorage.getItem(TOTAL_UPLOAD_KEY) ?? "0");
+}
+function incrementTotalUploads() {
+  const count = getTotalUploads() + 1;
+  localStorage.setItem(TOTAL_UPLOAD_KEY, String(count));
   return count;
 }
 const CATEGORIES = [
@@ -942,7 +950,7 @@ function QueueItemCard({
 }
 function UploadPage() {
   const navigate = useNavigate();
-  const { addReceipt, userProfile, currentLanguage } = useAppStore();
+  const { addReceipt, userProfile, saveProfile, currentLanguage } = useAppStore();
   const lang = currentLanguage;
   const cameraRef = reactExports.useRef(null);
   const galleryRef = reactExports.useRef(null);
@@ -951,9 +959,10 @@ function UploadPage() {
   const [isSaving, setIsSaving] = reactExports.useState(false);
   const [dailyCount, setDailyCount] = reactExports.useState(0);
   const [limitChecked, setLimitChecked] = reactExports.useState(false);
+  const [showUploadAdGate, setShowUploadAdGate] = reactExports.useState(false);
   const [adGateQueue, setAdGateQueue] = reactExports.useState(0);
   const [currentAd, setCurrentAd] = reactExports.useState(0);
-  const [pendingSaveAfterAd, setPendingSaveAfterAd] = reactExports.useState(false);
+  const [pendingFileQueue, setPendingFileQueue] = reactExports.useState([]);
   reactExports.useEffect(() => {
     getDailyCount(TODAY).then((count) => {
       setDailyCount(count);
@@ -962,10 +971,14 @@ function UploadPage() {
   }, []);
   const isAdmin = userProfile ? isAdminUser(userProfile) : false;
   const isPremium = userProfile ? hasPremiumAccess(userProfile) : false;
+  const betaActive = isBetaPeriodActive();
   const limitReached = !isPremium && limitChecked && dailyCount >= FREE_DAILY_LIMIT;
   const canUpload = isPremium || !limitChecked || limitChecked && dailyCount < FREE_DAILY_LIMIT;
   const slotsLeft = Math.max(0, FREE_DAILY_LIMIT - dailyCount);
-  const shouldShowAds = !isBetaPeriodActive() && !isPremium && !isAdmin;
+  const shouldShowAds = !betaActive && !isPremium && !isAdmin;
+  userProfile ? getAllowedUploadCount(userProfile) : FREE_DAILY_LIMIT;
+  const totalUploaded = getTotalUploads();
+  const uploadAdNeeded = userProfile && shouldShowAds ? needsAdForUpload(userProfile, totalUploaded) : false;
   const activeItem = queue[activeIndex] ?? null;
   const processFile = reactExports.useCallback(async (itemId, file) => {
     setQueue(
@@ -1010,7 +1023,13 @@ function UploadPage() {
   const enqueueFiles = reactExports.useCallback(
     (files) => {
       if (!canUpload) {
-        ue.error(tLang("status.limit_reached", lang));
+        return;
+      }
+      if (shouldShowAds && uploadAdNeeded) {
+        setPendingFileQueue(files);
+        setAdGateQueue(2);
+        setCurrentAd(1);
+        setShowUploadAdGate(true);
         return;
       }
       const remaining = MAX_QUEUE - queue.length;
@@ -1036,7 +1055,7 @@ function UploadPage() {
       });
       for (const item of newItems) processFile(item.id, item.file);
     },
-    [canUpload, queue.length, processFile, lang]
+    [canUpload, queue.length, processFile, shouldShowAds, uploadAdNeeded]
   );
   const handleCameraChange = (e) => {
     var _a;
@@ -1099,12 +1118,8 @@ function UploadPage() {
           (prev) => prev.map((q) => q.id === item.id ? { ...q, status: "done" } : q)
         );
         savedCount++;
-        if (shouldShowAds) {
-          const newCount = incrementUploadCount();
-          if (newCount % 5 === 0) {
-            setPendingSaveAfterAd(true);
-          }
-        }
+        incrementTotalUploads();
+        incrementUploadCount();
       } catch {
         setQueue(
           (prev) => prev.map((q) => q.id === item.id ? { ...q, status: "error" } : q)
@@ -1116,13 +1131,7 @@ function UploadPage() {
       ue.success(
         savedCount === 1 ? tLang("status.saved", lang) : `${savedCount} receipts saved!`
       );
-      if (shouldShowAds && pendingSaveAfterAd) {
-        setPendingSaveAfterAd(false);
-        setAdGateQueue(2);
-        setCurrentAd(1);
-      } else {
-        navigate({ to: "/gallery" });
-      }
+      navigate({ to: "/gallery" });
     }
   }
   function handleSaveAll() {
@@ -1135,7 +1144,44 @@ function UploadPage() {
       setCurrentAd((prev) => prev + 1);
     } else {
       setCurrentAd(0);
-      navigate({ to: "/gallery" });
+      setShowUploadAdGate(false);
+      if (userProfile) {
+        const updated = {
+          ...userProfile,
+          adWatchCount: (userProfile.adWatchCount ?? 0) + 2,
+          adUnlockedUploads: (userProfile.adUnlockedUploads ?? 0) + 1,
+          lastAdWatchTime: Date.now()
+        };
+        saveProfile(updated);
+      }
+      if (pendingFileQueue.length > 0) {
+        const files = pendingFileQueue;
+        setPendingFileQueue([]);
+        const remaining2 = MAX_QUEUE - queue.length;
+        const toAdd = files.slice(0, remaining2).filter((f) => f.type.startsWith("image/"));
+        if (toAdd.length > 0) {
+          const newItems = toAdd.map((file) => ({
+            id: generateId(),
+            file,
+            previewUrl: URL.createObjectURL(file),
+            imageDataUrl: null,
+            status: "pending",
+            date: TODAY,
+            category: "other",
+            amount: "",
+            notes: "",
+            ocrAttempted: false,
+            ocrFailed: false
+          }));
+          setQueue((prev) => {
+            const updated = [...prev, ...newItems];
+            if (prev.length === 0) setActiveIndex(0);
+            return updated;
+          });
+          for (const item of newItems) processFile(item.id, item.file);
+          ue.success(tLang("ad_unlocked_message", lang));
+        }
+      }
     }
   }
   if (limitChecked && limitReached) {
@@ -1336,10 +1382,11 @@ function UploadPage() {
     /* @__PURE__ */ jsxRuntimeExports.jsx(
       AdModal,
       {
-        isOpen: adGateQueue > 0,
+        isOpen: showUploadAdGate,
         onComplete: handleAdComplete,
         adNumber: currentAd,
-        totalAds: 2
+        totalAds: 2,
+        context: "upload"
       }
     ),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "px-4 py-4 space-y-4", "data-ocid": "upload.page", children: [

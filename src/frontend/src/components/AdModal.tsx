@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { tLang } from "@/lib/i18n";
 import { useAppStore } from "@/store/useAppStore";
 import { useNavigate } from "@tanstack/react-router";
-import { SparklesIcon, XIcon } from "lucide-react";
+import { GiftIcon, SparklesIcon, ZapIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 
@@ -11,34 +11,39 @@ interface AdModalProps {
   onComplete: () => void;
   adNumber?: number;
   totalAds?: number;
+  /** Context hint shown in the ad — 'upload' or 'report' */
+  context?: "upload" | "report";
 }
 
 const AD_DURATION = 5; // seconds
+const RADIUS = 28;
+const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 export default function AdModal({
   isOpen,
   onComplete,
   adNumber = 1,
   totalAds = 1,
+  context = "upload",
 }: AdModalProps) {
   const { currentLanguage } = useAppStore();
   const lang = currentLanguage;
   const navigate = useNavigate();
   const [secondsLeft, setSecondsLeft] = useState(AD_DURATION);
-  const [canSkip, setCanSkip] = useState(false);
+  const [canClaim, setCanClaim] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Reset and start countdown whenever modal opens
   useEffect(() => {
     if (!isOpen) return;
     setSecondsLeft(AD_DURATION);
-    setCanSkip(false);
+    setCanClaim(false);
 
     intervalRef.current = setInterval(() => {
       setSecondsLeft((prev) => {
         if (prev <= 1) {
           clearInterval(intervalRef.current!);
-          setCanSkip(true);
+          setCanClaim(true);
           return 0;
         }
         return prev - 1;
@@ -50,122 +55,186 @@ export default function AdModal({
     };
   }, [isOpen]);
 
+  // Fraction of timer remaining (1 → 0)
+  const progress = secondsLeft / AD_DURATION;
+  const dashOffset = CIRCUMFERENCE * progress;
+
+  const unlockText =
+    context === "upload"
+      ? tLang("ad_unlocked_message", lang)
+      : tLang("ad.continue", lang);
+
   if (!isOpen) return null;
 
   return (
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+          className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           data-ocid="ad.modal"
         >
           {/* Backdrop */}
-          <div className="absolute inset-0 bg-foreground/60 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-foreground/70 backdrop-blur-sm" />
 
-          {/* Ad Card */}
+          {/* Ad Card — bottom-sheet on mobile, centered on desktop */}
           <motion.div
-            className="relative bg-card border border-border rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden z-10"
-            initial={{ scale: 0.9, y: 24 }}
-            animate={{ scale: 1, y: 0 }}
-            exit={{ scale: 0.9, y: 24 }}
+            className="relative bg-card border border-border rounded-t-3xl sm:rounded-2xl w-full sm:max-w-sm shadow-2xl overflow-hidden z-10"
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={{ type: "spring", damping: 26, stiffness: 300 }}
           >
-            {/* Top bar */}
-            <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-muted/40">
+            {/* Handle bar (mobile) */}
+            <div className="flex justify-center pt-3 pb-1 sm:hidden">
+              <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+            </div>
+
+            {/* Top label */}
+            <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30">
               <span className="text-xs text-muted-foreground font-medium tracking-wider uppercase">
                 {tLang("ad.advertisement", lang)}
               </span>
               {totalAds > 1 && (
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs font-medium text-muted-foreground">
                   {adNumber} {tLang("ad.of", lang)} {totalAds}
                 </span>
               )}
             </div>
 
-            {/* Ad creative */}
-            <div className="relative bg-gradient-to-br from-primary/20 via-secondary/15 to-accent/10 px-6 py-8 text-center space-y-3">
-              {/* Brand mark */}
+            {/* Ad creative area */}
+            <div className="px-5 pt-5 pb-4 text-center space-y-3 bg-gradient-to-br from-primary/15 via-secondary/10 to-accent/5">
+              {/* Brand icon */}
               <div className="flex justify-center">
                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg">
-                  <SparklesIcon size={28} className="text-primary-foreground" />
+                  <SparklesIcon size={26} className="text-primary-foreground" />
                 </div>
               </div>
 
+              {/* Watch title */}
               <div>
-                <p className="font-display font-bold text-xl text-foreground">
-                  Fieldspend
+                <p className="font-display font-bold text-base text-foreground">
+                  {tLang("ad_watch_title", lang)}
                 </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Expense tracking for field sales pros
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Fieldspend · Expense tracking for field sales pros
                 </p>
               </div>
 
-              {/* CTA message */}
-              <div className="bg-card border border-primary/20 rounded-xl px-4 py-3 mt-2">
+              {/* Upgrade nudge */}
+              <div className="bg-card border border-primary/20 rounded-xl px-4 py-2.5">
                 <p className="text-sm font-semibold text-primary">
                   {tLang("ad.no_ads_premium", lang)}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   ₹49/month · Unlimited receipts · No watermark
                 </p>
               </div>
             </div>
 
-            {/* Countdown + action */}
-            <div className="px-4 py-3 border-t border-border bg-background space-y-2.5">
-              {/* Progress bar */}
-              <div className="h-1 bg-muted rounded-full overflow-hidden">
-                <motion.div
-                  className="h-full bg-primary rounded-full"
-                  initial={{ width: "100%" }}
-                  animate={{
-                    width: canSkip
-                      ? "0%"
-                      : `${(secondsLeft / AD_DURATION) * 100}%`,
-                  }}
-                  transition={{ duration: 1, ease: "linear" }}
-                />
+            {/* Countdown + CTA */}
+            <div className="px-5 py-4 space-y-3">
+              {/* Animated countdown ring */}
+              <div className="flex flex-col items-center gap-1">
+                <div className="relative w-16 h-16">
+                  <svg
+                    className="-rotate-90 w-full h-full"
+                    viewBox="0 0 72 72"
+                    aria-hidden="true"
+                  >
+                    {/* Track */}
+                    <circle
+                      cx="36"
+                      cy="36"
+                      r={RADIUS}
+                      fill="none"
+                      strokeWidth="4"
+                      className="stroke-muted"
+                    />
+                    {/* Progress */}
+                    <motion.circle
+                      cx="36"
+                      cy="36"
+                      r={RADIUS}
+                      fill="none"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                      className="stroke-primary"
+                      strokeDasharray={CIRCUMFERENCE}
+                      animate={{ strokeDashoffset: dashOffset }}
+                      transition={{ duration: 1, ease: "linear" }}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    {canClaim ? (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 350,
+                          damping: 18,
+                        }}
+                      >
+                        <GiftIcon size={22} className="text-secondary" />
+                      </motion.div>
+                    ) : (
+                      <span className="text-lg font-bold font-mono text-foreground">
+                        {secondsLeft}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <p className="text-xs text-muted-foreground">
+                  {canClaim
+                    ? unlockText
+                    : `${tLang("ad_countdown", lang)} ${secondsLeft}s`}
+                </p>
               </div>
 
-              <div className="flex items-center justify-between gap-3">
-                {!canSkip ? (
-                  <p className="text-xs text-muted-foreground">
-                    {tLang("ad.ends_in", lang)} {secondsLeft}{" "}
-                    {tLang("ad.seconds", lang)}
-                  </p>
-                ) : (
-                  <p className="text-xs text-secondary font-medium">✓ Done</p>
-                )}
+              {/* Action buttons */}
+              <div className="flex gap-2.5">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="flex-1 text-xs text-muted-foreground h-10"
+                  onClick={() => navigate({ to: "/settings" })}
+                  data-ocid="ad.upgrade_button"
+                >
+                  <ZapIcon size={13} className="mr-1 text-secondary" />
+                  {tLang("ad.upgrade_now", lang)}
+                </Button>
 
-                <div className="flex items-center gap-2">
+                <motion.div
+                  className="flex-1"
+                  animate={canClaim ? { scale: [1, 1.04, 1] } : {}}
+                  transition={{
+                    repeat: canClaim ? Number.POSITIVE_INFINITY : 0,
+                    duration: 1.4,
+                  }}
+                >
                   <Button
                     size="sm"
-                    variant="ghost"
-                    className="text-xs text-muted-foreground h-8 px-3"
-                    onClick={() => navigate({ to: "/settings" })}
-                    data-ocid="ad.upgrade_button"
-                  >
-                    {tLang("ad.upgrade_now", lang)}
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="h-8 px-4 text-xs gap-1"
-                    disabled={!canSkip}
+                    className="w-full h-10 text-sm font-semibold gap-1.5"
+                    disabled={!canClaim}
                     onClick={onComplete}
-                    data-ocid="ad.continue_button"
+                    data-ocid="ad.claim_reward_button"
                   >
-                    {canSkip ? (
+                    {canClaim ? (
                       <>
-                        <XIcon size={12} />
-                        {tLang("ad.continue", lang)}
+                        <GiftIcon size={14} />
+                        {tLang("ad_claim_reward", lang)}
                       </>
                     ) : (
-                      `${secondsLeft}s`
+                      <span className="text-xs opacity-60">
+                        {tLang("ad_countdown", lang)} {secondsLeft}s
+                      </span>
                     )}
                   </Button>
-                </div>
+                </motion.div>
               </div>
             </div>
           </motion.div>

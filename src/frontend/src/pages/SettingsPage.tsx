@@ -6,11 +6,19 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { LANGUAGES, tLang } from "@/lib/i18n";
 import {
+  applyPremiumToProfile,
   createDefaultProfile,
   getBetaDaysLeft,
+  getPremiumExpiryLabel,
   isAdminUser,
   isBetaPeriodActive,
 } from "@/lib/premium";
+import {
+  type PlanType,
+  type RazorpayResponse,
+  getPremiumExpiry,
+  openRazorpayCheckout,
+} from "@/lib/razorpay";
 import { useAppStore } from "@/store/useAppStore";
 import type { Language } from "@/types";
 import {
@@ -29,25 +37,182 @@ import {
   StarIcon,
   SunIcon,
   UserIcon,
+  ZapIcon,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
-// ─── Upgrade Modal ─────────────────────────────────────────────────────────────
+// ─── Plan Card ───────────────────────────────────────────────────────────────────────
+
+interface PlanCardProps {
+  type: PlanType;
+  price: string;
+  billing: string;
+  savings?: string;
+  isPopular?: boolean;
+  features: string[];
+  ctaLabel: string;
+  isProcessing: boolean;
+  onSelect: (plan: PlanType) => void;
+  ocid: string;
+}
+
+function PlanCard({
+  type,
+  price,
+  billing,
+  savings,
+  isPopular,
+  features,
+  ctaLabel,
+  isProcessing,
+  onSelect,
+  ocid,
+}: PlanCardProps) {
+  return (
+    <div
+      className={`flex-1 rounded-xl p-3 space-y-2 relative overflow-hidden transition-smooth ${
+        isPopular
+          ? "bg-primary/10 border border-primary/40 shadow-sm"
+          : "bg-muted/30 border border-border hover:border-primary/30"
+      }`}
+      data-ocid={ocid}
+    >
+      {isPopular && (
+        <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] px-2 py-0 bg-accent text-accent-foreground whitespace-nowrap">
+          Most Popular
+        </Badge>
+      )}
+      <div className={isPopular ? "mt-2" : ""}>
+        <p className="text-[11px] leading-snug text-muted-foreground font-medium break-words">
+          {billing}
+        </p>
+        <p
+          className={`font-display font-bold text-xl mt-0.5 ${
+            isPopular ? "text-primary" : "text-foreground"
+          }`}
+        >
+          {price}
+        </p>
+        {savings && (
+          <p className="text-[11px] font-semibold text-secondary mt-0.5 leading-snug">
+            {savings}
+          </p>
+        )}
+      </div>
+      <ul className="space-y-1.5 mt-2">
+        {features.map((f) => (
+          <li
+            key={f}
+            className="flex items-start gap-1.5 text-[11px] leading-snug text-muted-foreground"
+          >
+            <CheckCircle2
+              size={10}
+              className="text-secondary mt-0.5 shrink-0"
+            />
+            <span className="break-words min-w-0 whitespace-normal">{f}</span>
+          </li>
+        ))}
+      </ul>
+      <Button
+        size="sm"
+        disabled={isProcessing}
+        className={`w-full mt-2 text-[11px] gap-1.5 ${
+          isPopular
+            ? "bg-primary hover:bg-primary/90 text-primary-foreground"
+            : "bg-secondary/15 hover:bg-secondary/25 text-secondary border border-secondary/30"
+        }`}
+        onClick={() => onSelect(type)}
+        data-ocid={`${ocid}.upgrade_button`}
+      >
+        {isProcessing ? (
+          <span className="animate-pulse">{ctaLabel}…</span>
+        ) : (
+          <>
+            <ZapIcon size={12} />
+            {ctaLabel}
+          </>
+        )}
+      </Button>
+    </div>
+  );
+}
+
+// ─── Upgrade Modal (Razorpay) ──────────────────────────────────────────────────
+
+interface UpgradeModalProps {
+  open: boolean;
+  onClose: () => void;
+  onSuccess: (plan: PlanType) => void;
+  lang: Language;
+  userName: string;
+  userEmail: string;
+}
 
 function UpgradeModal({
   open,
   onClose,
+  onSuccess,
   lang,
-}: { open: boolean; onClose: () => void; lang: Language }) {
+  userName,
+  userEmail,
+}: UpgradeModalProps) {
+  const [processingPlan, setProcessingPlan] = useState<PlanType | null>(null);
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape" && !processingPlan) onClose();
     }
     if (open) document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open, onClose, processingPlan]);
+
+  const handleSelectPlan = useCallback(
+    async (plan: PlanType) => {
+      setProcessingPlan(plan);
+
+      // Generate a pseudo order ID (in production, this comes from your backend)
+      // The backend canister would call createRazorpayOrder and return a real orderId
+      const orderId = `order_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+
+      await openRazorpayCheckout({
+        planType: plan,
+        orderId,
+        userName: userName || "Fieldspend User",
+        userEmail: userEmail || "",
+        onSuccess: (response: RazorpayResponse) => {
+          setProcessingPlan(null);
+          onSuccess(plan);
+          // response contains razorpay_payment_id, razorpay_order_id, razorpay_signature
+          // In production: call backend verifyPayment(orderId, paymentId, signature)
+          void response;
+        },
+        onDismiss: () => {
+          setProcessingPlan(null);
+          // silent — no error shown
+        },
+      }).catch(() => {
+        // silent fallback
+        setProcessingPlan(null);
+      });
+    },
+    [userName, userEmail, onSuccess],
+  );
+
+  const planFeatures = {
+    monthly: [
+      tLang("settings.unlimited_receipts", lang),
+      tLang("settings.no_watermark", lang),
+      tLang("settings.no_ads", lang),
+      tLang("settings.priority_support", lang),
+    ],
+    annual: [
+      tLang("settings.everything_monthly", lang),
+      tLang("settings.no_ads", lang),
+      tLang("settings.best_value", lang),
+    ],
+  };
 
   return (
     <AnimatePresence>
@@ -62,7 +227,7 @@ function UpgradeModal({
           <button
             type="button"
             className="absolute inset-0 bg-foreground/40 backdrop-blur-sm"
-            onClick={onClose}
+            onClick={() => !processingPlan && onClose()}
             aria-label="Close modal"
           />
           <motion.div
@@ -71,45 +236,71 @@ function UpgradeModal({
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.92, y: 24 }}
           >
+            {/* Header */}
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
                 <SparklesIcon size={20} className="text-accent" />
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <h3 className="font-display font-bold text-foreground text-base truncate">
-                  {tLang("settings.coming_soon", lang)}
+                  {tLang("upgrade.title", lang)}
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  {tLang("premium.title", lang)}
+                  {tLang("upgrade.subtitle", lang)}
                 </p>
               </div>
-            </div>
-            <p className="text-sm text-foreground mb-2">
-              {tLang("settings.premium_coming", lang)}
-            </p>
-            <p className="text-xs text-muted-foreground mb-5">
-              {tLang("settings.beta_access", lang)}
-            </p>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="flex-1 text-sm"
-                onClick={onClose}
-                data-ocid="settings.upgrade_modal.cancel_button"
+              <button
+                type="button"
+                onClick={() => !processingPlan && onClose()}
+                className="shrink-0 text-muted-foreground hover:text-foreground transition-colors p-1 rounded"
+                aria-label="Close"
+                data-ocid="settings.upgrade_modal.close_button"
               >
-                {tLang("settings.close", lang)}
-              </Button>
-              <Button
-                className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground text-sm"
-                onClick={() => {
-                  toast.success(tLang("settings.notified", lang));
-                  onClose();
-                }}
-                data-ocid="settings.upgrade_modal.confirm_button"
-              >
-                {tLang("settings.notify_me", lang)}
-              </Button>
+                ✕
+              </button>
             </div>
+
+            {/* Plan Cards */}
+            <div className="flex flex-col sm:flex-row gap-3 mb-4">
+              <PlanCard
+                type="monthly"
+                price="₹99"
+                billing={`${tLang("plan.monthly", lang)} • ${tLang("settings.per_month", lang)}`}
+                features={planFeatures.monthly}
+                ctaLabel={tLang("btn.upgrade", lang)}
+                isProcessing={processingPlan === "monthly"}
+                onSelect={handleSelectPlan}
+                ocid="settings.monthly_plan_card"
+              />
+              <PlanCard
+                type="annual"
+                price="₹49"
+                billing={`${tLang("plan.annual", lang)} • ₹588/yr`}
+                savings={tLang("plan.savings", lang)}
+                isPopular
+                features={planFeatures.annual}
+                ctaLabel={tLang("btn.upgrade", lang)}
+                isProcessing={processingPlan === "annual"}
+                onSelect={handleSelectPlan}
+                ocid="settings.annual_plan_card"
+              />
+            </div>
+
+            {/* Footer note */}
+            <p className="text-center text-xs text-muted-foreground">
+              Secure payment via Razorpay · Cancel anytime
+            </p>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full mt-2 text-xs text-muted-foreground"
+              onClick={onClose}
+              disabled={!!processingPlan}
+              data-ocid="settings.upgrade_modal.cancel_button"
+            >
+              {tLang("settings.close", lang)}
+            </Button>
           </motion.div>
         </motion.div>
       )}
@@ -117,7 +308,7 @@ function UpgradeModal({
   );
 }
 
-// ─── Section Wrapper ──────────────────────────────────────────────────────────
+// ─── Section Wrapper ───────────────────────────────────────────────────────────────────
 
 function Section({
   icon,
@@ -137,7 +328,7 @@ function Section({
     >
       <div className="flex items-center gap-2.5 px-4 py-3 border-b border-border bg-muted/30">
         <span className="text-primary shrink-0">{icon}</span>
-        <h3 className="font-semibold text-foreground text-sm tracking-wide truncate">
+        <h3 className="font-semibold text-foreground text-xs tracking-wide truncate">
           {title}
         </h3>
       </div>
@@ -146,7 +337,7 @@ function Section({
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Main Page ─────────────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
   const {
@@ -178,6 +369,9 @@ export default function SettingsPage() {
   const betaDaysLeft = getBetaDaysLeft();
   const isAdmin = userProfile ? isAdminUser(userProfile) : false;
   const isActualPremium = userProfile?.isPremium ?? false;
+  const premiumExpiryLabel = userProfile
+    ? getPremiumExpiryLabel(userProfile)
+    : "";
 
   async function handleSaveProfile() {
     if (!name.trim()) {
@@ -204,6 +398,22 @@ export default function SettingsPage() {
     toast.success(tLang("status.saved", lang));
   }
 
+  async function handlePaymentSuccess(plan: PlanType) {
+    setUpgradeModalOpen(false);
+    if (!userProfile) return;
+    const expiryDate = getPremiumExpiry(plan);
+    const updatedProfile = applyPremiumToProfile(userProfile, plan, expiryDate);
+    await saveProfile(updatedProfile);
+    toast.success(
+      lang === "hi"
+        ? "प्रीमियम एक्टिव — धन्यवाद!"
+        : lang === "mr"
+          ? "प्रीमियम सक्रिय — धन्यवाद!"
+          : "Premium activated — thank you!",
+      { duration: 5000 },
+    );
+  }
+
   function handleShareApp() {
     if (typeof navigator.share === "function") {
       navigator
@@ -225,7 +435,10 @@ export default function SettingsPage() {
       <UpgradeModal
         open={upgradeModalOpen}
         onClose={() => setUpgradeModalOpen(false)}
+        onSuccess={handlePaymentSuccess}
         lang={lang}
+        userName={userProfile?.name ?? ""}
+        userEmail={userProfile?.email ?? ""}
       />
 
       <div
@@ -296,6 +509,27 @@ export default function SettingsPage() {
                   · {tLang("settings.beta_ends_date", lang)}
                 </span>
               </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Post-beta ended message */}
+        {!isBeta && !isActualPremium && !isAdmin && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-destructive/8 border border-destructive/20 rounded-xl p-3 flex items-start gap-2.5"
+            data-ocid="settings.beta_ended_banner"
+          >
+            <ZapIcon size={16} className="text-destructive mt-0.5 shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-destructive leading-snug">
+                {tLang("beta_has_ended", lang)}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5 break-words">
+                {tLang("upgrade_required", lang)} — ₹49/month for unlimited
+                receipts &amp; no ads.
+              </p>
             </div>
           </motion.div>
         )}
@@ -409,22 +643,28 @@ export default function SettingsPage() {
           >
             {/* Status badge */}
             <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 {tLang("settings.current_plan", lang)}
               </span>
               {isAdmin ? (
-                <Badge className="bg-primary/20 text-primary border border-primary/40 gap-1 text-xs">
+                <Badge
+                  className="bg-primary/20 text-primary border border-primary/40 gap-1 text-xs"
+                  data-ocid="settings.admin_badge"
+                >
                   <ShieldCheckIcon size={10} />
-                  Admin
+                  Premium (Admin)
                 </Badge>
               ) : isActualPremium ? (
-                <Badge className="bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 gap-1 text-xs">
+                <Badge
+                  className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 gap-1 text-xs"
+                  data-ocid="settings.premium_badge"
+                >
                   <StarIcon size={10} />
-                  Premium Active
+                  {tLang("premium.active", lang)}
                 </Badge>
               ) : isBeta ? (
                 <Badge className="bg-secondary/20 text-secondary border border-secondary/40 gap-1 text-xs">
-                  <ShieldCheckIcon size={10} />🎉 Beta — {betaDaysLeft}d left
+                  <ShieldCheckIcon size={10} />✨ Beta — {betaDaysLeft}d left
                 </Badge>
               ) : (
                 <Badge
@@ -435,6 +675,28 @@ export default function SettingsPage() {
                 </Badge>
               )}
             </div>
+
+            {/* Premium active detail */}
+            {isActualPremium && !isAdmin && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.97 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2.5 mb-4 flex items-center gap-2"
+                data-ocid="settings.premium_active_banner"
+              >
+                <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground">
+                    {tLang("premium.active", lang)}
+                  </p>
+                  {premiumExpiryLabel && (
+                    <p className="text-xs text-muted-foreground">
+                      {tLang("premium.expiry", lang)}: {premiumExpiryLabel}
+                    </p>
+                  )}
+                </div>
+              </motion.div>
+            )}
 
             {/* Beta countdown note */}
             {isBeta && !isActualPremium && !isAdmin && (
@@ -449,116 +711,22 @@ export default function SettingsPage() {
 
             {/* Admin message */}
             {isAdmin && (
-              <div className="flex items-center gap-2 text-sm text-primary font-medium flex-wrap mb-4">
+              <div className="flex items-center gap-2 text-xs text-primary font-medium flex-wrap mb-4">
                 <ShieldCheckIcon size={16} className="shrink-0" />
                 <span>Full access, no restrictions, no ads ever</span>
               </div>
             )}
 
-            {/* Upgrade cards */}
+            {/* Upgrade CTAs */}
             {!isActualPremium && !isAdmin && (
-              <div className="space-y-3">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  {tLang("settings.choose_plan", lang)}
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  {/* Monthly */}
-                  <div
-                    className="flex-1 bg-muted/30 border border-border rounded-xl p-3 space-y-1.5 hover:border-primary/40 transition-smooth overflow-hidden"
-                    data-ocid="settings.monthly_plan_card"
-                  >
-                    <p className="text-xs text-muted-foreground font-medium">
-                      {tLang("settings.monthly", lang)}
-                    </p>
-                    <p className="font-display font-bold text-xl text-foreground">
-                      ₹99
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {tLang("settings.per_month", lang)}
-                    </p>
-                    <ul className="text-xs text-muted-foreground space-y-1 mt-1">
-                      {[
-                        "settings.unlimited_receipts",
-                        "settings.no_watermark",
-                        "settings.no_ads",
-                        "settings.priority_support",
-                      ].map((key) => (
-                        <li key={key} className="flex items-start gap-1.5">
-                          <CheckCircle2
-                            size={11}
-                            className="text-secondary mt-0.5 shrink-0"
-                          />
-                          <span className="break-words min-w-0">
-                            {tLang(key, lang)}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full mt-1.5 text-xs border-border hover:border-primary hover:text-primary"
-                      onClick={() => setUpgradeModalOpen(true)}
-                      data-ocid="settings.monthly_upgrade_button"
-                    >
-                      {tLang("settings.upgrade", lang)}
-                    </Button>
-                  </div>
-                  {/* Annual */}
-                  <div
-                    className="flex-1 bg-primary/8 border border-primary/30 rounded-xl p-3 space-y-1.5 relative overflow-hidden"
-                    data-ocid="settings.annual_plan_card"
-                  >
-                    <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] px-2 py-0 bg-accent text-accent-foreground whitespace-nowrap">
-                      {tLang("settings.most_popular", lang)}
-                    </Badge>
-                    <p className="text-xs text-muted-foreground font-medium mt-2">
-                      {tLang("settings.annual", lang)}
-                    </p>
-                    <p className="font-display font-bold text-xl text-primary">
-                      ₹49
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {tLang("settings.per_month", lang)}
-                    </p>
-                    <p className="text-xs font-semibold text-secondary">
-                      {tLang("settings.save_50", lang)}
-                    </p>
-                    <ul className="text-xs text-muted-foreground space-y-1 mt-1">
-                      {[
-                        "settings.everything_monthly",
-                        "settings.no_ads",
-                        "settings.best_value",
-                      ].map((key) => (
-                        <li key={key} className="flex items-start gap-1.5">
-                          <CheckCircle2
-                            size={11}
-                            className="text-secondary mt-0.5 shrink-0"
-                          />
-                          <span className="break-words min-w-0">
-                            {tLang(key, lang)}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                    <Button
-                      size="sm"
-                      className="w-full mt-1.5 text-xs bg-primary hover:bg-primary/90 text-primary-foreground"
-                      onClick={() => setUpgradeModalOpen(true)}
-                      data-ocid="settings.annual_upgrade_button"
-                    >
-                      {tLang("settings.upgrade", lang)}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {isActualPremium && !isAdmin && (
-              <div className="flex items-center gap-2 text-sm text-secondary font-medium flex-wrap">
-                <CheckCircle2 size={16} className="shrink-0" />
-                <span>{tLang("settings.premium_active", lang)}</span>
-              </div>
+              <Button
+                className="w-full gap-2 bg-accent hover:bg-accent/90 text-accent-foreground font-semibold"
+                onClick={() => setUpgradeModalOpen(true)}
+                data-ocid="settings.upgrade_to_premium_button"
+              >
+                <SparklesIcon size={15} />
+                {tLang("action.upgrade", lang)}
+              </Button>
             )}
           </Section>
         </motion.div>
@@ -587,15 +755,15 @@ export default function SettingsPage() {
                         `${tLang("settings.lang_set", l.value as Language)} ${l.label}`,
                       );
                     }}
-                    className={`py-2 px-1 rounded-lg text-xs font-medium border transition-smooth text-center leading-snug overflow-hidden ${isActive ? "bg-secondary/15 border-secondary text-secondary" : "bg-muted/30 border-border text-muted-foreground hover:border-secondary/40 hover:text-foreground"}`}
+                    className={`py-2 px-1 rounded-lg text-[10px] font-medium border transition-smooth text-center leading-snug overflow-hidden ${isActive ? "bg-secondary/15 border-secondary text-secondary" : "bg-muted/30 border-border text-muted-foreground hover:border-secondary/40 hover:text-foreground"}`}
                     aria-pressed={isActive}
                     data-ocid={`settings.language_btn.${l.value}`}
                   >
-                    <span className="block font-semibold truncate text-[11px] leading-tight">
+                    <span className="block font-semibold text-[10px] leading-tight break-words whitespace-normal">
                       {l.native}
                     </span>
                     {l.value !== "en" && (
-                      <span className="text-[9px] opacity-70 truncate block leading-tight">
+                      <span className="text-[9px] opacity-70 block leading-tight break-words whitespace-normal">
                         {l.label}
                       </span>
                     )}

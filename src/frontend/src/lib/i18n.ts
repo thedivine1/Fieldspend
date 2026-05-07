@@ -166,6 +166,17 @@ const translations: Record<Language, Record<string, string>> = {
     "settings.lang_set": "Language set to",
     "settings.app_link_copied": "App link copied to clipboard!",
 
+    // Payment / Upgrade
+    "upgrade.title": "Upgrade to Premium",
+    "upgrade.subtitle": "Unlock unlimited receipts, clean PDFs, zero ads",
+    "plan.monthly": "Monthly",
+    "plan.annual": "Annual",
+    "plan.savings": "Save ₹600/year vs monthly",
+    "btn.upgrade": "Pay Now with Razorpay",
+    "premium.active": "Premium Active",
+    "premium.expiry": "Valid until",
+    "payment.processing": "Processing payment…",
+
     // Ads
     "ad.advertisement": "Advertisement",
     "ad.ends_in": "Ad ends in",
@@ -174,6 +185,13 @@ const translations: Record<Language, Record<string, string>> = {
     "ad.upgrade_now": "Upgrade to Premium",
     "ad.no_ads_premium": "Go Premium — No Ads, No Limits!",
     "ad.of": "of",
+    ad_watch_title: "Unlock your feature — watch this short ad",
+    ad_countdown: "Ad completes in",
+    ad_claim_reward: "Claim Reward",
+    ad_unlocked_message: "5 more uploads unlocked!",
+    beta_ends_in: "Beta ends in",
+    beta_has_ended: "Beta period has ended — upgrade to continue",
+    upgrade_required: "Upgrade Required",
   },
 
   hi: {
@@ -335,6 +353,17 @@ const translations: Record<Language, Record<string, string>> = {
     "settings.lang_set": "भाषा बदली गई",
     "settings.app_link_copied": "ऐप लिंक क्लिपबोर्ड पर कॉपी हुई!",
 
+    // Payment / Upgrade
+    "upgrade.title": "प्रीमियम में अपग्रेड करें",
+    "upgrade.subtitle": "असीमित रसीदें, साफ PDF, कोई विज्ञापन नहीं",
+    "plan.monthly": "मासिक",
+    "plan.annual": "वार्षिक",
+    "plan.savings": "मासिक की तुलना में ₹600/वर्ष की बचत",
+    "btn.upgrade": "Razorpay से भुगतान करें",
+    "premium.active": "प्रीमियम सक्रिय",
+    "premium.expiry": "वैध है तक",
+    "payment.processing": "भुगतान प्रक्रिया हो रही है…",
+
     // Ads
     "ad.advertisement": "विज्ञापन",
     "ad.ends_in": "विज्ञापन समाप्त होगा",
@@ -343,6 +372,13 @@ const translations: Record<Language, Record<string, string>> = {
     "ad.upgrade_now": "प्रीमियम में अपग्रेड करें",
     "ad.no_ads_premium": "प्रीमियम लें — कोई विज्ञापन नहीं, कोई सीमा नहीं!",
     "ad.of": "में से",
+    ad_watch_title: "अपना फ़ीचर अनलॉक करें — यह छोटा विज्ञापन देखें",
+    ad_countdown: "विज्ञापन समाप्त होता है",
+    ad_claim_reward: "इनाम लें",
+    ad_unlocked_message: "5 और अपलोड अनलॉक हुए!",
+    beta_ends_in: "बीटा समाप्त होगा",
+    beta_has_ended: "बीटा अवधि समाप्त — जारी रखने के लिए अपग्रेड करें",
+    upgrade_required: "अपग्रेड आवश्यक",
   },
 
   mr: {
@@ -506,6 +542,17 @@ const translations: Record<Language, Record<string, string>> = {
     "settings.lang_set": "भाषा बदलली",
     "settings.app_link_copied": "ॲप लिंक क्लिपबोर्डवर कॉपी केली!",
 
+    // Payment / Upgrade
+    "upgrade.title": "प्रीमियमवर अपग्रेड करा",
+    "upgrade.subtitle": "अमर्यादित पावत्या, स्वच्छ PDF, जाहिराती नाहीत",
+    "plan.monthly": "मासिक",
+    "plan.annual": "वार्षिक",
+    "plan.savings": "मासिकाच्या तुलनेत ₹600/वर्ष बचत",
+    "btn.upgrade": "Razorpay ने पेमेंट करा",
+    "premium.active": "प्रीमियम सक्रिय",
+    "premium.expiry": "वैध आहे पर्यंत",
+    "payment.processing": "पेमेंट प्रक्रिया होत आहे…",
+
     // Ads
     "ad.advertisement": "जाहिरात",
     "ad.ends_in": "जाहिरात संपेल",
@@ -514,6 +561,13 @@ const translations: Record<Language, Record<string, string>> = {
     "ad.upgrade_now": "प्रीमियमवर अपग्रेड करा",
     "ad.no_ads_premium": "प्रीमियम घ्या — जाहिराती नाहीत, मर्यादा नाहीत!",
     "ad.of": "पैकी",
+    ad_watch_title: "आपले फीचर अनलॉक करा — ही छोटी जाहिरात पहा",
+    ad_countdown: "जाहिरात संपते",
+    ad_claim_reward: "बक्षीस मिळवा",
+    ad_unlocked_message: "आणखी 5 अपलोड अनलॉक झाले!",
+    beta_ends_in: "बीटा संपतो",
+    beta_has_ended: "बीटा कालावधी संपली — पुढे चालू ठेवण्यासाठी अपग्रेड करा",
+    upgrade_required: "अपग्रेड आवश्यक",
   },
 };
 

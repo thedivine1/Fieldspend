@@ -43,6 +43,8 @@ export interface Receipt {
   createdAt: Timestamp;
 }
 
+export type PremiumPlan = "monthly" | "annual";
+
 export interface UserProfile {
   userId: UserId;
   name: string;
@@ -50,9 +52,15 @@ export interface UserProfile {
   companyName?: string;
   preferredLanguage: Language;
   isPremium: boolean;
+  premiumPlan?: PremiumPlan;
+  premiumExpiryDate?: Timestamp;
   betaExpiryDate: Timestamp;
   dailyUploadCount: number;
   lastUploadDate: string; // YYYY-MM-DD
+  // Ad gate counters (post-beta free users)
+  adWatchCount: number; // total ads ever watched
+  adUnlockedUploads: number; // total 5-upload batches unlocked via ads
+  lastAdWatchTime?: Timestamp; // when last ad was watched
 }
 
 export interface CategoryTotal {

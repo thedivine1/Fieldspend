@@ -20,6 +20,16 @@ type Nat__490723111 = Nat__920180692;
 type Nat__920180692 = Nat;
 type Node__46230540<K, V> =
   {#internal : Internal__8484328<K, V>; #leaf : Leaf__809889148<K, V>};
+type PlanType__579223912 = {#annual; #monthly};
+type PremiumStatus__105324230 =
+  {
+    email : Text;
+    isPremium : Bool;
+    orderId : ?Text;
+    planType : ?PlanType__579223912;
+    premiumExpiryDate : ?Timestamp__131386122;
+    updatedAt : Timestamp__131386122
+  };
 type Receipt__712921088 =
   {
     amount : ?Float;
@@ -30,6 +40,7 @@ type Receipt__712921088 =
     imageData : Text;
     notes : ?Text
   };
+type Timestamp__131386122 = Timestamp__301639476;
 type Timestamp__301639476 = Int;
 type Timestamp__520310395 = Timestamp__301639476;
 type UserId__158757552 = Principal;
@@ -47,6 +58,11 @@ type UserProfile__920993780 =
   };
 type UserReceiptList__353449196 = List__415060402<Receipt__712921088>;
 actor {
+  stable premiumStore :
+    {
+      var root : Node__46230540<Text, PremiumStatus__105324230>;
+      var size : Nat__490723111
+    };
   stable profiles :
     {
       var root : Node__46230540<UserId__536827905, UserProfile__920993780>;
@@ -56,5 +72,7 @@ actor {
     {
       var root : Node__46230540<UserId__536827905, UserReceiptList__353449196>;
       var size : Nat__490723111
-    }
+    };
+  stable rzKeyId : Text;
+  stable rzKeySecret : Text
 };

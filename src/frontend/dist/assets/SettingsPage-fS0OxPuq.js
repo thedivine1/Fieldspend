@@ -1,11 +1,11 @@
-import { c as createLucideIcon, r as reactExports, j as jsxRuntimeExports, a as useAppStore, t as tLang, L as LANGUAGES, d as ue, i as Moon, S as Sun } from "./index-S9Cy_1gq.js";
-import { u as useComposedRefs, h as useControllableState, i as Primitive, c as composeEventHandlers, n as usePrevious, m as useSize, b as createContextScope, d as cn, f as Badge, B as Button } from "./index-CoZ8Qcz5.js";
-import { L as Label, I as Input } from "./label-o7ztANPV.js";
-import { S as ShieldCheck, a as Separator, b as Share2 } from "./separator-D8xqGXO5.js";
-import { i as isAdminUser, C as CircleCheck, a as isBetaPeriodActive, g as getBetaDaysLeft, c as createDefaultProfile, S as Sparkles } from "./premium-C82dB_q9.js";
-import { m as motion } from "./proxy-BtD8TJ32.js";
-import { S as Star } from "./star-CFUM2w1V.js";
-import { A as AnimatePresence } from "./index-gqUTHy8h.js";
+import { c as createLucideIcon, r as reactExports, j as jsxRuntimeExports, a as useAppStore, t as tLang, L as LANGUAGES, d as ue, i as Moon, S as Sun } from "./index-Q7Jk8N_s.js";
+import { u as useComposedRefs, h as useControllableState, i as Primitive, c as composeEventHandlers, n as usePrevious, m as useSize, b as createContextScope, d as cn, f as Badge, B as Button } from "./index-C6_FkSE_.js";
+import { L as Label, I as Input } from "./label-Dvoh2DwD.js";
+import { S as ShieldCheck, a as Separator, b as Share2 } from "./separator-a8AwY8RS.js";
+import { i as isAdminUser, c as getPremiumExpiryLabel, Z as Zap, C as CircleCheck, S as Sparkles, a as isBetaPeriodActive, b as getBetaDaysLeft, d as createDefaultProfile, e as applyPremiumToProfile } from "./premium-Bn9eQttf.js";
+import { m as motion } from "./proxy-oEYfaByQ.js";
+import { S as Star } from "./star-DJIq9R3r.js";
+import { A as AnimatePresence } from "./index-CmqUWI1H.js";
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -286,18 +286,179 @@ function Switch({
     }
   );
 }
+const RZP_KEY_ID = "rzp_test_SZoaM8DEsMr4rV";
+let scriptPromise = null;
+function loadRazorpayScript() {
+  if (scriptPromise) return scriptPromise;
+  scriptPromise = new Promise((resolve, reject) => {
+    if (window.Razorpay) {
+      resolve();
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("razorpay_load_failed"));
+    document.body.appendChild(script);
+  });
+  return scriptPromise;
+}
+async function openRazorpayCheckout(params) {
+  await loadRazorpayScript();
+  const { planType, orderId, userName, userEmail, onSuccess, onDismiss } = params;
+  const isAnnual = planType === "annual";
+  const amountPaise = isAnnual ? 58800 : 9900;
+  const description = isAnnual ? "Fieldspend Premium — Annual (₹588/year)" : "Fieldspend Premium — Monthly (₹99/month)";
+  const options = {
+    key: RZP_KEY_ID,
+    amount: amountPaise,
+    currency: "INR",
+    name: "Fieldspend",
+    description,
+    order_id: orderId,
+    prefill: { name: userName, email: userEmail },
+    theme: { color: "#2563eb" },
+    handler: onSuccess,
+    modal: { ondismiss: onDismiss }
+  };
+  const rzp = new window.Razorpay(options);
+  rzp.open();
+}
+function getPremiumExpiry(planType) {
+  const now = /* @__PURE__ */ new Date();
+  if (planType === "annual") {
+    return new Date(
+      now.getFullYear() + 1,
+      now.getMonth(),
+      now.getDate()
+    ).getTime();
+  }
+  return new Date(
+    now.getFullYear(),
+    now.getMonth() + 1,
+    now.getDate()
+  ).getTime();
+}
+function PlanCard({
+  type,
+  price,
+  billing,
+  savings,
+  isPopular,
+  features,
+  ctaLabel,
+  isProcessing,
+  onSelect,
+  ocid
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "div",
+    {
+      className: `flex-1 rounded-xl p-3 space-y-2 relative overflow-hidden transition-smooth ${isPopular ? "bg-primary/10 border border-primary/40 shadow-sm" : "bg-muted/30 border border-border hover:border-primary/30"}`,
+      "data-ocid": ocid,
+      children: [
+        isPopular && /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { className: "absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] px-2 py-0 bg-accent text-accent-foreground whitespace-nowrap", children: "Most Popular" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: isPopular ? "mt-2" : "", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] leading-snug text-muted-foreground font-medium break-words", children: billing }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "p",
+            {
+              className: `font-display font-bold text-xl mt-0.5 ${isPopular ? "text-primary" : "text-foreground"}`,
+              children: price
+            }
+          ),
+          savings && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] font-semibold text-secondary mt-0.5 leading-snug", children: savings })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { className: "space-y-1.5 mt-2", children: features.map((f) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "li",
+          {
+            className: "flex items-start gap-1.5 text-[11px] leading-snug text-muted-foreground",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                CircleCheck,
+                {
+                  size: 10,
+                  className: "text-secondary mt-0.5 shrink-0"
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "break-words min-w-0 whitespace-normal", children: f })
+            ]
+          },
+          f
+        )) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Button,
+          {
+            size: "sm",
+            disabled: isProcessing,
+            className: `w-full mt-2 text-[11px] gap-1.5 ${isPopular ? "bg-primary hover:bg-primary/90 text-primary-foreground" : "bg-secondary/15 hover:bg-secondary/25 text-secondary border border-secondary/30"}`,
+            onClick: () => onSelect(type),
+            "data-ocid": `${ocid}.upgrade_button`,
+            children: isProcessing ? /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "animate-pulse", children: [
+              ctaLabel,
+              "…"
+            ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Zap, { size: 12 }),
+              ctaLabel
+            ] })
+          }
+        )
+      ]
+    }
+  );
+}
 function UpgradeModal({
   open,
   onClose,
-  lang
+  onSuccess,
+  lang,
+  userName,
+  userEmail
 }) {
+  const [processingPlan, setProcessingPlan] = reactExports.useState(null);
   reactExports.useEffect(() => {
     function onKey(e) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape" && !processingPlan) onClose();
     }
     if (open) document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open, onClose, processingPlan]);
+  const handleSelectPlan = reactExports.useCallback(
+    async (plan) => {
+      setProcessingPlan(plan);
+      const orderId = `order_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+      await openRazorpayCheckout({
+        planType: plan,
+        orderId,
+        userName: userName || "Fieldspend User",
+        userEmail: userEmail || "",
+        onSuccess: (response) => {
+          setProcessingPlan(null);
+          onSuccess(plan);
+        },
+        onDismiss: () => {
+          setProcessingPlan(null);
+        }
+      }).catch(() => {
+        setProcessingPlan(null);
+      });
+    },
+    [userName, userEmail, onSuccess]
+  );
+  const planFeatures = {
+    monthly: [
+      tLang("settings.unlimited_receipts", lang),
+      tLang("settings.no_watermark", lang),
+      tLang("settings.no_ads", lang),
+      tLang("settings.priority_support", lang)
+    ],
+    annual: [
+      tLang("settings.everything_monthly", lang),
+      tLang("settings.no_ads", lang),
+      tLang("settings.best_value", lang)
+    ]
+  };
   return /* @__PURE__ */ jsxRuntimeExports.jsx(AnimatePresence, { children: open && /* @__PURE__ */ jsxRuntimeExports.jsxs(
     motion.div,
     {
@@ -312,7 +473,7 @@ function UpgradeModal({
           {
             type: "button",
             className: "absolute inset-0 bg-foreground/40 backdrop-blur-sm",
-            onClick: onClose,
+            onClick: () => !processingPlan && onClose(),
             "aria-label": "Close modal"
           }
         ),
@@ -326,37 +487,65 @@ function UpgradeModal({
             children: [
               /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3 mb-4", children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center shrink-0", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { size: 20, className: "text-accent" }) }),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "font-display font-bold text-foreground text-base truncate", children: tLang("settings.coming_soon", lang) }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: tLang("premium.title", lang) })
-                ] })
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-foreground mb-2", children: tLang("settings.premium_coming", lang) }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground mb-5", children: tLang("settings.beta_access", lang) }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0 flex-1", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "font-display font-bold text-foreground text-base truncate", children: tLang("upgrade.title", lang) }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: tLang("upgrade.subtitle", lang) })
+                ] }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  Button,
+                  "button",
                   {
-                    variant: "outline",
-                    className: "flex-1 text-sm",
-                    onClick: onClose,
-                    "data-ocid": "settings.upgrade_modal.cancel_button",
-                    children: tLang("settings.close", lang)
+                    type: "button",
+                    onClick: () => !processingPlan && onClose(),
+                    className: "shrink-0 text-muted-foreground hover:text-foreground transition-colors p-1 rounded",
+                    "aria-label": "Close",
+                    "data-ocid": "settings.upgrade_modal.close_button",
+                    children: "✕"
+                  }
+                )
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col sm:flex-row gap-3 mb-4", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  PlanCard,
+                  {
+                    type: "monthly",
+                    price: "₹99",
+                    billing: `${tLang("plan.monthly", lang)} • ${tLang("settings.per_month", lang)}`,
+                    features: planFeatures.monthly,
+                    ctaLabel: tLang("btn.upgrade", lang),
+                    isProcessing: processingPlan === "monthly",
+                    onSelect: handleSelectPlan,
+                    ocid: "settings.monthly_plan_card"
                   }
                 ),
                 /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  Button,
+                  PlanCard,
                   {
-                    className: "flex-1 bg-accent hover:bg-accent/90 text-accent-foreground text-sm",
-                    onClick: () => {
-                      ue.success(tLang("settings.notified", lang));
-                      onClose();
-                    },
-                    "data-ocid": "settings.upgrade_modal.confirm_button",
-                    children: tLang("settings.notify_me", lang)
+                    type: "annual",
+                    price: "₹49",
+                    billing: `${tLang("plan.annual", lang)} • ₹588/yr`,
+                    savings: tLang("plan.savings", lang),
+                    isPopular: true,
+                    features: planFeatures.annual,
+                    ctaLabel: tLang("btn.upgrade", lang),
+                    isProcessing: processingPlan === "annual",
+                    onSelect: handleSelectPlan,
+                    ocid: "settings.annual_plan_card"
                   }
                 )
-              ] })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-center text-xs text-muted-foreground", children: "Secure payment via Razorpay · Cancel anytime" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                Button,
+                {
+                  variant: "ghost",
+                  size: "sm",
+                  className: "w-full mt-2 text-xs text-muted-foreground",
+                  onClick: onClose,
+                  disabled: !!processingPlan,
+                  "data-ocid": "settings.upgrade_modal.cancel_button",
+                  children: tLang("settings.close", lang)
+                }
+              )
             ]
           }
         )
@@ -378,7 +567,7 @@ function Section({
       children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2.5 px-4 py-3 border-b border-border bg-muted/30", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-primary shrink-0", children: icon }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "font-semibold text-foreground text-sm tracking-wide truncate", children: title })
+          /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "font-semibold text-foreground text-xs tracking-wide truncate", children: title })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-4 overflow-hidden", children })
       ]
@@ -412,6 +601,7 @@ function SettingsPage() {
   const betaDaysLeft = getBetaDaysLeft();
   const isAdmin = userProfile ? isAdminUser(userProfile) : false;
   const isActualPremium = (userProfile == null ? void 0 : userProfile.isPremium) ?? false;
+  const premiumExpiryLabel = userProfile ? getPremiumExpiryLabel(userProfile) : "";
   async function handleSaveProfile() {
     if (!name.trim()) {
       setNameError(tLang("settings.name_required", lang));
@@ -434,6 +624,17 @@ function SettingsPage() {
     setIsSaving(false);
     ue.success(tLang("status.saved", lang));
   }
+  async function handlePaymentSuccess(plan) {
+    setUpgradeModalOpen(false);
+    if (!userProfile) return;
+    const expiryDate = getPremiumExpiry(plan);
+    const updatedProfile = applyPremiumToProfile(userProfile, plan, expiryDate);
+    await saveProfile(updatedProfile);
+    ue.success(
+      lang === "hi" ? "प्रीमियम एक्टिव — धन्यवाद!" : lang === "mr" ? "प्रीमियम सक्रिय — धन्यवाद!" : "Premium activated — thank you!",
+      { duration: 5e3 }
+    );
+  }
   function handleShareApp() {
     if (typeof navigator.share === "function") {
       navigator.share({
@@ -451,7 +652,10 @@ function SettingsPage() {
       {
         open: upgradeModalOpen,
         onClose: () => setUpgradeModalOpen(false),
-        lang
+        onSuccess: handlePaymentSuccess,
+        lang,
+        userName: (userProfile == null ? void 0 : userProfile.name) ?? "",
+        userEmail: (userProfile == null ? void 0 : userProfile.email) ?? ""
       }
     ),
     /* @__PURE__ */ jsxRuntimeExports.jsxs(
@@ -525,6 +729,25 @@ function SettingsPage() {
                       "· ",
                       tLang("settings.beta_ends_date", lang)
                     ] })
+                  ] })
+                ] })
+              ]
+            }
+          ),
+          !isBeta && !isActualPremium && !isAdmin && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            motion.div,
+            {
+              initial: { opacity: 0, y: -6 },
+              animate: { opacity: 1, y: 0 },
+              className: "bg-destructive/8 border border-destructive/20 rounded-xl p-3 flex items-start gap-2.5",
+              "data-ocid": "settings.beta_ended_banner",
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(Zap, { size: 16, className: "text-destructive mt-0.5 shrink-0" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0 flex-1", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm font-semibold text-destructive leading-snug", children: tLang("beta_has_ended", lang) }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground mt-0.5 break-words", children: [
+                    tLang("upgrade_required", lang),
+                    " — ₹49/month for unlimited receipts & no ads."
                   ] })
                 ] })
               ]
@@ -650,16 +873,30 @@ function SettingsPage() {
                   ocid: "settings.account_section",
                   children: [
                     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between gap-2 mb-4 flex-wrap", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm text-muted-foreground", children: tLang("settings.current_plan", lang) }),
-                      isAdmin ? /* @__PURE__ */ jsxRuntimeExports.jsxs(Badge, { className: "bg-primary/20 text-primary border border-primary/40 gap-1 text-xs", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: tLang("settings.current_plan", lang) }),
+                      isAdmin ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                        Badge,
+                        {
+                          className: "bg-primary/20 text-primary border border-primary/40 gap-1 text-xs",
+                          "data-ocid": "settings.admin_badge",
+                          children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldCheck, { size: 10 }),
+                            "Premium (Admin)"
+                          ]
+                        }
+                      ) : isActualPremium ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                        Badge,
+                        {
+                          className: "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 gap-1 text-xs",
+                          "data-ocid": "settings.premium_badge",
+                          children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(Star, { size: 10 }),
+                            tLang("premium.active", lang)
+                          ]
+                        }
+                      ) : isBeta ? /* @__PURE__ */ jsxRuntimeExports.jsxs(Badge, { className: "bg-secondary/20 text-secondary border border-secondary/40 gap-1 text-xs", children: [
                         /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldCheck, { size: 10 }),
-                        "Admin"
-                      ] }) : isActualPremium ? /* @__PURE__ */ jsxRuntimeExports.jsxs(Badge, { className: "bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 gap-1 text-xs", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(Star, { size: 10 }),
-                        "Premium Active"
-                      ] }) : isBeta ? /* @__PURE__ */ jsxRuntimeExports.jsxs(Badge, { className: "bg-secondary/20 text-secondary border border-secondary/40 gap-1 text-xs", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldCheck, { size: 10 }),
-                        "🎉 Beta — ",
+                        "✨ Beta — ",
                         betaDaysLeft,
                         "d left"
                       ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -671,6 +908,26 @@ function SettingsPage() {
                         }
                       )
                     ] }),
+                    isActualPremium && !isAdmin && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      motion.div,
+                      {
+                        initial: { opacity: 0, scale: 0.97 },
+                        animate: { opacity: 1, scale: 1 },
+                        className: "bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2.5 mb-4 flex items-center gap-2",
+                        "data-ocid": "settings.premium_active_banner",
+                        children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheck, { size: 14, className: "text-emerald-500 shrink-0" }),
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm font-medium text-foreground", children: tLang("premium.active", lang) }),
+                            premiumExpiryLabel && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground", children: [
+                              tLang("premium.expiry", lang),
+                              ": ",
+                              premiumExpiryLabel
+                            ] })
+                          ] })
+                        ]
+                      }
+                    ),
                     isBeta && !isActualPremium && !isAdmin && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2 mb-4 flex items-center gap-2", children: [
                       /* @__PURE__ */ jsxRuntimeExports.jsx(Clock, { size: 12, className: "text-amber-500 shrink-0" }),
                       /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
@@ -681,95 +938,22 @@ function SettingsPage() {
                         tLang("settings.days_remaining", lang)
                       ] })
                     ] }),
-                    isAdmin && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 text-sm text-primary font-medium flex-wrap mb-4", children: [
+                    isAdmin && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 text-xs text-primary font-medium flex-wrap mb-4", children: [
                       /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldCheck, { size: 16, className: "shrink-0" }),
                       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Full access, no restrictions, no ads ever" })
                     ] }),
-                    !isActualPremium && !isAdmin && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-3", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs font-medium text-muted-foreground uppercase tracking-wider", children: tLang("settings.choose_plan", lang) }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col sm:flex-row gap-3", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                          "div",
-                          {
-                            className: "flex-1 bg-muted/30 border border-border rounded-xl p-3 space-y-1.5 hover:border-primary/40 transition-smooth overflow-hidden",
-                            "data-ocid": "settings.monthly_plan_card",
-                            children: [
-                              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-medium", children: tLang("settings.monthly", lang) }),
-                              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display font-bold text-xl text-foreground", children: "₹99" }),
-                              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: tLang("settings.per_month", lang) }),
-                              /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { className: "text-xs text-muted-foreground space-y-1 mt-1", children: [
-                                "settings.unlimited_receipts",
-                                "settings.no_watermark",
-                                "settings.no_ads",
-                                "settings.priority_support"
-                              ].map((key) => /* @__PURE__ */ jsxRuntimeExports.jsxs("li", { className: "flex items-start gap-1.5", children: [
-                                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                                  CircleCheck,
-                                  {
-                                    size: 11,
-                                    className: "text-secondary mt-0.5 shrink-0"
-                                  }
-                                ),
-                                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "break-words min-w-0", children: tLang(key, lang) })
-                              ] }, key)) }),
-                              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                                Button,
-                                {
-                                  size: "sm",
-                                  variant: "outline",
-                                  className: "w-full mt-1.5 text-xs border-border hover:border-primary hover:text-primary",
-                                  onClick: () => setUpgradeModalOpen(true),
-                                  "data-ocid": "settings.monthly_upgrade_button",
-                                  children: tLang("settings.upgrade", lang)
-                                }
-                              )
-                            ]
-                          }
-                        ),
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                          "div",
-                          {
-                            className: "flex-1 bg-primary/8 border border-primary/30 rounded-xl p-3 space-y-1.5 relative overflow-hidden",
-                            "data-ocid": "settings.annual_plan_card",
-                            children: [
-                              /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { className: "absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] px-2 py-0 bg-accent text-accent-foreground whitespace-nowrap", children: tLang("settings.most_popular", lang) }),
-                              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-medium mt-2", children: tLang("settings.annual", lang) }),
-                              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display font-bold text-xl text-primary", children: "₹49" }),
-                              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: tLang("settings.per_month", lang) }),
-                              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs font-semibold text-secondary", children: tLang("settings.save_50", lang) }),
-                              /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { className: "text-xs text-muted-foreground space-y-1 mt-1", children: [
-                                "settings.everything_monthly",
-                                "settings.no_ads",
-                                "settings.best_value"
-                              ].map((key) => /* @__PURE__ */ jsxRuntimeExports.jsxs("li", { className: "flex items-start gap-1.5", children: [
-                                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                                  CircleCheck,
-                                  {
-                                    size: 11,
-                                    className: "text-secondary mt-0.5 shrink-0"
-                                  }
-                                ),
-                                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "break-words min-w-0", children: tLang(key, lang) })
-                              ] }, key)) }),
-                              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                                Button,
-                                {
-                                  size: "sm",
-                                  className: "w-full mt-1.5 text-xs bg-primary hover:bg-primary/90 text-primary-foreground",
-                                  onClick: () => setUpgradeModalOpen(true),
-                                  "data-ocid": "settings.annual_upgrade_button",
-                                  children: tLang("settings.upgrade", lang)
-                                }
-                              )
-                            ]
-                          }
-                        )
-                      ] })
-                    ] }),
-                    isActualPremium && !isAdmin && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 text-sm text-secondary font-medium flex-wrap", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheck, { size: 16, className: "shrink-0" }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: tLang("settings.premium_active", lang) })
-                    ] })
+                    !isActualPremium && !isAdmin && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      Button,
+                      {
+                        className: "w-full gap-2 bg-accent hover:bg-accent/90 text-accent-foreground font-semibold",
+                        onClick: () => setUpgradeModalOpen(true),
+                        "data-ocid": "settings.upgrade_to_premium_button",
+                        children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { size: 15 }),
+                          tLang("action.upgrade", lang)
+                        ]
+                      }
+                    )
                   ]
                 }
               )
@@ -799,12 +983,12 @@ function SettingsPage() {
                             `${tLang("settings.lang_set", l.value)} ${l.label}`
                           );
                         },
-                        className: `py-2 px-1 rounded-lg text-xs font-medium border transition-smooth text-center leading-snug overflow-hidden ${isActive ? "bg-secondary/15 border-secondary text-secondary" : "bg-muted/30 border-border text-muted-foreground hover:border-secondary/40 hover:text-foreground"}`,
+                        className: `py-2 px-1 rounded-lg text-[10px] font-medium border transition-smooth text-center leading-snug overflow-hidden ${isActive ? "bg-secondary/15 border-secondary text-secondary" : "bg-muted/30 border-border text-muted-foreground hover:border-secondary/40 hover:text-foreground"}`,
                         "aria-pressed": isActive,
                         "data-ocid": `settings.language_btn.${l.value}`,
                         children: [
-                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "block font-semibold truncate text-[11px] leading-tight", children: l.native }),
-                          l.value !== "en" && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[9px] opacity-70 truncate block leading-tight", children: l.label })
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "block font-semibold text-[10px] leading-tight break-words whitespace-normal", children: l.native }),
+                          l.value !== "en" && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[9px] opacity-70 block leading-tight break-words whitespace-normal", children: l.label })
                         ]
                       },
                       l.value
