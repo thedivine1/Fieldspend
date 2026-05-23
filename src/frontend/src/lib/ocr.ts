@@ -680,13 +680,59 @@ export function detectAmount(text: string): number | null {
   return candidates[0].amount;
 }
 
+// ─── AI Extraction Module (Primary Parser) ────────────────────────────────────
+
+const GEMINI_API_KEY = "AIzaSyD_TvG8r4N6_VKJZuALvqWYCH35MJyGQos";
+
+async function parseTextWithAI(
+  rawText: string,
+): Promise<{ date?: string; amount?: number; category?: Category } | null> {
+  const prompt = `You are an expense receipt parser. Read this raw OCR text from any receipt or payment screenshot from anywhere in the world. Identify the origin of the bill. Extract exactly three fields: 1) Date in YYYY-MM-DD format — ignore timestamps, extract date only. 2) Amount — the total fare or total bill amount paid, not surge or base fare separately. 3) Category — map to: auto, cab, train, metro, flight, hotel, meal, fuel, or other. Return strictly valid JSON only: {"date": "YYYY-MM-DD", "amount": 123.45, "category": "auto"}. If any field cannot be determined, return null for that field.
+
+Raw OCR Text:
+"""
+${rawText}
+"""`;
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            response_mime_type: "application/json",
+          },
+        }),
+      },
+    );
+
+    if (!response.ok) return null;
+    const json = await response.json();
+    const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) return null;
+
+    const parsed = JSON.parse(text);
+    return {
+      date: parsed.date || undefined,
+      amount: parsed.amount ? Number(parsed.amount) : undefined,
+      category: parsed.category || undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
 // ─── Main Export: extractOCRData ──────────────────────────────────────────────
 
 /**
  * Primary entry point for OCR processing.
  * Accepts a base64 data URL or File.
- * Runs Tesseract.js (offline) first, falls back to OCR.Space silently.
- * All errors are caught — returns {} on failure.
+ * 1. Runs OCR.Space (or offline Tesseract.js fallback) to extract raw text.
+ * 2. Uses AI (Gemini Flash) to parse unstructured text intelligently.
+ * 3. Falls back to Regex if AI is offline or fails.
  */
 export async function extractOCRData(
   imageData: string | File,
@@ -695,10 +741,26 @@ export async function extractOCRData(
     const res = await extractTextFromImage(imageData);
     if (!res.text.trim()) return {};
 
-    const date = detectDate(res.text) ?? undefined;
-    const amount = detectAmount(res.text) ?? undefined;
-    const category = detectCategory(res.text) ?? undefined;
     const orientation = res.orientation;
+
+    // Primary: AI parser for robust extraction
+    const aiData = await parseTextWithAI(res.text);
+    if (aiData) {
+      // Validate AI amount is a valid number, otherwise let regex try
+      if (aiData.amount && !Number.isNaN(aiData.amount)) {
+        return {
+          date: aiData.date,
+          amount: aiData.amount,
+          category: aiData.category as Category,
+          orientation,
+        };
+      }
+    }
+
+    // Fallback: Regex extraction
+    const date = aiData?.date ?? detectDate(res.text) ?? undefined;
+    const amount = detectAmount(res.text) ?? undefined;
+    const category = (aiData?.category as Category) ?? detectCategory(res.text) ?? undefined;
 
     return { date, amount, category, orientation };
   } catch {
