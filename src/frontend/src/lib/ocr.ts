@@ -362,8 +362,8 @@ export function detectDate(text: string): string | null {
     if (mo && isValidDMY(d, mo, y)) return toISO(d, mo, y);
   }
 
-  // --- Pattern 2: DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY ---
-  const dmyRe = /\b(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})\b/g;
+  // --- Pattern 2: DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY (with optional spaces) ---
+  const dmyRe = /\b(\d{1,2})\s*[\/.\-]\s*(\d{1,2})\s*[\/.\-]\s*(\d{4})\b/g;
   for (const m of normalised.matchAll(dmyRe)) {
     const d = Number.parseInt(m[1]);
     const mo = Number.parseInt(m[2]);
@@ -372,7 +372,7 @@ export function detectDate(text: string): string | null {
   }
 
   // --- Pattern 3: YYYY-MM-DD (ISO or space separated) ---
-  const isoRe = /\b(\d{4})[-\s\/.](\d{2})[-\s\/.](\d{2})\b/g;
+  const isoRe = /\b(\d{4})\s*[-\/.]\s*(\d{2})\s*[-\/.]\s*(\d{2})\b/g;
   for (const m of normalised.matchAll(isoRe)) {
     const y = Number.parseInt(m[1]);
     const mo = Number.parseInt(m[2]);
@@ -401,7 +401,7 @@ export function detectDate(text: string): string | null {
   }
 
   // --- Pattern 6: DD/MM/YY (2-digit year) ---
-  const dmyShortRe = /\b(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2})\b/g;
+  const dmyShortRe = /\b(\d{1,2})\s*[\/.\-]\s*(\d{1,2})\s*[\/.\-]\s*(\d{2})\b/g;
   for (const m of normalised.matchAll(dmyShortRe)) {
     const d = Number.parseInt(m[1]);
     const mo = Number.parseInt(m[2]);
@@ -497,6 +497,10 @@ const CATEGORY_KEYWORDS: Record<Exclude<Category, "other">, string[]> = {
     "platform",
     "station",
     "rail",
+    "uts",
+    "atvm",
+    "journey",
+    "jrny",
   ],
   // flight / airline
   flight: [
@@ -587,7 +591,8 @@ export function detectCategory(text: string): Category | null {
   for (const cat of orderedCategories) {
     const keywords = CATEGORY_KEYWORDS[cat];
     for (const kw of keywords) {
-      if (lower.includes(kw.toLowerCase())) return cat;
+      const re = new RegExp(`\\b${kw}\\b`, "i");
+      if (re.test(text)) return cat;
     }
   }
 
