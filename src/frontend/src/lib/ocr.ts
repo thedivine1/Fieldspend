@@ -358,7 +358,7 @@ export function detectDate(text: string): string | null {
 
   // --- Pattern 1: Railway short year DD-MMM-YY e.g. 12-May-26 ---
   const railwayRe =
-    /\b(\d{1,2})[\-](jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\-](\d{2})(?!\d)/gi;
+    /\b(\d{1,2})[\-](jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\-](\d{2})/gi;
   for (const m of normalised.matchAll(railwayRe)) {
     const d = Number.parseInt(m[1]);
     const mo = ENGLISH_MONTHS[m[2].toLowerCase()];
@@ -376,7 +376,7 @@ export function detectDate(text: string): string | null {
   }
 
   // --- Pattern 3: YYYY-MM-DD (ISO or space separated) ---
-  const isoRe = /\b(\d{4})\s*[-\/.]\s*(\d{2})\s*[-\/.]\s*(\d{2})(?!\d)/g;
+  const isoRe = /\b(\d{4})\s*[-\/.]\s*(\d{2})\s*[-\/.]\s*(\d{2})/g;
   for (const m of normalised.matchAll(isoRe)) {
     const y = Number.parseInt(m[1]);
     const mo = Number.parseInt(m[2]);
@@ -405,7 +405,7 @@ export function detectDate(text: string): string | null {
   }
 
   // --- Pattern 6: DD/MM/YY (2-digit year) ---
-  const dmyShortRe = /\b(\d{1,2})\s*[\/.\-]\s*(\d{1,2})\s*[\/.\-]\s*(\d{2})(?!\d)/g;
+  const dmyShortRe = /\b(\d{1,2})\s*[\/.\-]\s*(\d{1,2})\s*[\/.\-]\s*(\d{2})/g;
   for (const m of normalised.matchAll(dmyShortRe)) {
     const d = Number.parseInt(m[1]);
     const mo = Number.parseInt(m[2]);
