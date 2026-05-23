@@ -1,5 +1,6 @@
 // ─── Image Processing Pipeline ────────────────────────────────────────────────
-// Full pipeline: EXIF read → rotate → edge detect/crop → resize → compress
+// Full pipeline: portrait check → edge detect/crop → resize → compress
+// Post-OCR orientation correction via rotateImageByDegrees.
 // All steps are silent — any failure falls back gracefully.
 
 // ─── Enforce Portrait ──────────────────────────────────────────────────────────
@@ -37,6 +38,59 @@ function enforcePortrait(img: HTMLImageElement): HTMLCanvasElement {
   }
 
   return canvas;
+}
+
+// ─── Post-OCR Orientation Correction ─────────────────────────────────────────
+
+/**
+ * Rotates a JPEG data URL by the given degrees (0, 90, 180, 270).
+ *
+ * OCR.space `TextOrientation` tells us the angle the text is rotated AWAY
+ * from normal reading. To correct the image, we rotate by the SAME amount
+ * so the text reads upright.
+ *
+ * Examples:
+ *   "0"   → text already upright — no rotation needed
+ *   "90"  → text rotated 90° CW  → rotate image 90° CW to correct
+ *   "180" → text is upside-down  → rotate image 180° to correct
+ *   "270" → text rotated 90° CCW → rotate image 270° CW (= 90° CCW) to correct
+ */
+export function rotateImageByDegrees(
+  dataUrl: string,
+  degrees: 0 | 90 | 180 | 270,
+): Promise<string> {
+  return new Promise((resolve) => {
+    if (degrees === 0) {
+      resolve(dataUrl);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      const w = img.naturalWidth;
+      const h = img.naturalHeight;
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve(dataUrl);
+        return;
+      }
+
+      if (degrees === 90 || degrees === 270) {
+        canvas.width = h;
+        canvas.height = w;
+      } else {
+        canvas.width = w;
+        canvas.height = h;
+      }
+
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate((degrees * Math.PI) / 180);
+      ctx.drawImage(img, -w / 2, -h / 2, w, h);
+      resolve(canvas.toDataURL("image/jpeg", 0.92));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
 }
 
 // ─── Edge Detection & Receipt Crop ────────────────────────────────────────────

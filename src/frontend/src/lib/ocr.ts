@@ -124,7 +124,7 @@ const OCR_SPACE_KEY = "K85312013688957";
 const OCR_SPACE_KEY_FALLBACK = "helloworld";
 
 interface OcrSpaceResult {
-  ParsedResults?: Array<{ ParsedText?: string }>;
+  ParsedResults?: Array<{ ParsedText?: string; TextOrientation?: string }>;
   IsErroredOnProcessing?: boolean;
 }
 
@@ -176,7 +176,7 @@ async function compressForOcr(dataUrl: string): Promise<string> {
 async function extractWithOcrSpace(
   source: File | string,
   apiKey = OCR_SPACE_KEY,
-): Promise<string> {
+): Promise<{ text: string; orientation: string }> {
   // Build data URL from File if needed
   let dataUrl: string;
 
@@ -197,7 +197,7 @@ async function extractWithOcrSpace(
   // 1 024 KB free-tier limit. This also speeds up the request significantly.
   const smallDataUrl = await compressForOcr(dataUrl);
 
-  const tryEngine = async (engine: number): Promise<string> => {
+  const tryEngine = async (engine: number): Promise<{ text: string; orientation: string }> => {
     const body = new FormData();
     body.append("base64Image", smallDataUrl);
     body.append("apikey", apiKey);
@@ -229,53 +229,57 @@ async function extractWithOcrSpace(
     if (json.IsErroredOnProcessing)
       throw new Error("OCR.Space processing error");
 
-    return json.ParsedResults?.[0]?.ParsedText ?? "";
+    return {
+      text: json.ParsedResults?.[0]?.ParsedText ?? "",
+      orientation: json.ParsedResults?.[0]?.TextOrientation || "0",
+    };
   };
 
   // *** KEY FIX: Engine 1 first — it works on the free plan.
   // Engine 2 is tried as a second pass (it may work if the key has credits).
-  let text = "";
+  let result = { text: "", orientation: "0" };
   try {
-    text = await tryEngine(1);
+    result = await tryEngine(1);
   } catch {
     // silent
   }
 
   // Engine 2 as a second attempt if Engine 1 returned nothing
-  if (!text.trim()) {
+  if (!result.text.trim()) {
     try {
-      text = await tryEngine(2);
+      result = await tryEngine(2);
     } catch {
       // silent
     }
   }
 
   // If quota exceeded on primary key, retry with public demo key
-  if (!text.trim() && apiKey === OCR_SPACE_KEY) {
+  if (!result.text.trim() && apiKey === OCR_SPACE_KEY) {
     return extractWithOcrSpace(source, OCR_SPACE_KEY_FALLBACK);
   }
 
-  return text;
+  return result;
 }
 
 // ─── Text Extraction (Primary: OCR.Space → Fallback: Tesseract.js) ──────────
 
 export async function extractTextFromImage(
   source: File | string,
-): Promise<string> {
+): Promise<{ text: string; orientation: string }> {
   // OCR.Space is primary — better accuracy on Indian receipts, mixed scripts
   try {
-    const text = await extractWithOcrSpace(source);
-    if (text.trim()) return text;
+    const res = await extractWithOcrSpace(source);
+    if (res.text.trim()) return res;
   } catch {
     // silent — try fallback
   }
 
   // Tesseract.js as offline fallback
   try {
-    return await extractWithTesseract(source);
+    const text = await extractWithTesseract(source);
+    return { text, orientation: "0" };
   } catch {
-    return "";
+    return { text: "", orientation: "0" };
   }
 }
 
@@ -660,16 +664,17 @@ export function detectAmount(text: string): number | null {
  */
 export async function extractOCRData(
   imageData: string | File,
-): Promise<{ date?: string; amount?: number; category?: Category }> {
+): Promise<{ date?: string; amount?: number; category?: Category; orientation?: string }> {
   try {
-    const text = await extractTextFromImage(imageData);
-    if (!text.trim()) return {};
+    const res = await extractTextFromImage(imageData);
+    if (!res.text.trim()) return {};
 
-    const date = detectDate(text) ?? undefined;
-    const amount = detectAmount(text) ?? undefined;
-    const category = detectCategory(text) ?? undefined;
+    const date = detectDate(res.text) ?? undefined;
+    const amount = detectAmount(res.text) ?? undefined;
+    const category = detectCategory(res.text) ?? undefined;
+    const orientation = res.orientation;
 
-    return { date, amount, category };
+    return { date, amount, category, orientation };
   } catch {
     return {};
   }

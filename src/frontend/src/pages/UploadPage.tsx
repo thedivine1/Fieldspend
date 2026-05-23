@@ -12,12 +12,9 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { addReceipt as dbAddReceipt } from "@/lib/db";
 import { tLang } from "@/lib/i18n";
-import { processImage } from "@/lib/imageProcessing";
+import { processImage, rotateImageByDegrees } from "@/lib/imageProcessing";
 import {
-  detectAmount,
-  detectCategory,
-  detectDate,
-  extractTextFromImage,
+  extractOCRData,
   prewarmOcrWorker,
 } from "@/lib/ocr";
 import { compressToThumbnail } from "@/lib/pdf";
@@ -410,7 +407,7 @@ export default function UploadPage() {
 
       try {
         // Step 2 — process image (auto-crop, resize, compress)
-        const processedDataUrl = await processImage(file);
+        let processedDataUrl = await processImage(file);
         setQueue((prev) =>
           prev.map((q) =>
             q.id === itemId
@@ -423,15 +420,32 @@ export default function UploadPage() {
           ),
         );
 
-        // Step 3 — OCR extraction
-        const text = await extractTextFromImage(processedDataUrl);
-        const detectedDate = detectDate(text);
-        const detectedCategory = detectCategory(text);
-        const detectedAmount = detectAmount(text);
+        // Step 3 — OCR extraction (returns text + orientation from OCR.space)
+        const { date: detectedDate, amount: detectedAmount, category: detectedCategory, orientation } =
+          await extractOCRData(processedDataUrl);
+
+        // Step 4 — If OCR detected a non-zero orientation, rotate the image to correct it
+        if (orientation && orientation !== "0") {
+          const deg = Number.parseInt(orientation) as 0 | 90 | 180 | 270;
+          if (deg === 90 || deg === 180 || deg === 270) {
+            processedDataUrl = await rotateImageByDegrees(processedDataUrl, deg);
+            setQueue((prev) =>
+              prev.map((q) =>
+                q.id === itemId
+                  ? {
+                      ...q,
+                      previewUrl: processedDataUrl,
+                      imageDataUrl: processedDataUrl,
+                    }
+                  : q,
+              ),
+            );
+          }
+        }
 
         const anyDetected = detectedDate || detectedCategory || detectedAmount != null;
 
-        // Step 4 — populate fields and mark OCR done
+        // Step 5 — populate fields and mark OCR done
         setQueue((prev) =>
           prev.map((q) =>
             q.id === itemId
@@ -449,7 +463,7 @@ export default function UploadPage() {
           ),
         );
 
-        // Step 5 — auto-save this receipt immediately after OCR fills it
+        // Step 6 — auto-save this receipt immediately after OCR fills it
         // (fire-and-forget so it doesn't block other receipts)
         saveOneReceipt(itemId);
       } catch {
