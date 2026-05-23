@@ -565,7 +565,7 @@ const slides = [
     IllustrationComponent: OrganizeIllustration,
     titleKey: "onboard.step2.title",
     descKey: "onboard.step2.desc",
-    accentClass: "from-secondary/20 via-secondary/8 to-transparent",
+    accentClass: "from-primary/20 via-primary/8 to-transparent",
     showLangSelector: false,
   },
   {
@@ -573,7 +573,7 @@ const slides = [
     IllustrationComponent: ExportIllustration,
     titleKey: "onboard.step3.title",
     descKey: "onboard.step3.desc",
-    accentClass: "from-accent/20 via-accent/8 to-transparent",
+    accentClass: "from-primary/20 via-primary/8 to-transparent",
     showLangSelector: false,
   },
 ] as const;
