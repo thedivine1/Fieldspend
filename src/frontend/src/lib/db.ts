@@ -2,7 +2,7 @@ import type { ExpenseId, Receipt, UserProfile } from "@/types";
 import { type IDBPDatabase, openDB as idbOpen } from "idb";
 
 const DB_NAME = "fieldspend";
-const DB_VERSION = 1;
+const DB_VERSION = 2; // bumped for drafts store
 
 type AppDB = {
   receipts: {
@@ -13,6 +13,11 @@ type AppDB = {
   profile: {
     key: string;
     value: UserProfile;
+  };
+  drafts: {
+    key: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    value: { id: string; data: any; savedAt: string };
   };
 };
 
@@ -31,10 +36,51 @@ export async function openDB(): Promise<IDBPDatabase<AppDB>> {
       if (!db.objectStoreNames.contains("profile")) {
         db.createObjectStore("profile", { keyPath: "userId" });
       }
+      if (!db.objectStoreNames.contains("drafts")) {
+        db.createObjectStore("drafts", { keyPath: "id" });
+      }
     },
   });
   return _db;
 }
+
+// ─── Draft helpers (IndexedDB-backed — survives Back navigation & tab close) ───
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function saveDraftIDB(draftId: string, data: any): Promise<void> {
+  try {
+    const db = await openDB();
+    await db.put("drafts", {
+      id: draftId,
+      data,
+      savedAt: new Date().toISOString(),
+    });
+  } catch {
+    /* silent — IndexedDB unavailable */
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function loadDraftIDB(draftId: string): Promise<any> {
+  try {
+    const db = await openDB();
+    const record = await db.get("drafts", draftId);
+    return record?.data ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function clearDraftIDB(draftId: string): Promise<void> {
+  try {
+    const db = await openDB();
+    await db.delete("drafts", draftId);
+  } catch {
+    /* silent */
+  }
+}
+
+// ─── Receipt helpers ────────────────────────────────────────────────────
 
 export async function getReceipts(): Promise<Receipt[]> {
   const db = await openDB();

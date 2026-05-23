@@ -1,4 +1,3 @@
-import AdModal from "@/components/AdModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,23 +16,15 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { MONTH_KEYS, tLang } from "@/lib/i18n";
 import { generateExpenseReport } from "@/lib/pdf";
-import {
-  getBetaDaysLeft,
-  hasPremiumAccess,
-  isAdminUser,
-  isBetaPeriodActive,
-} from "@/lib/premium";
+import { isAdminUser } from "@/lib/premium";
 import { useAppStore } from "@/store/useAppStore";
 import type { CategoryTotal } from "@/types";
 import { Link } from "@tanstack/react-router";
 import {
   AlertCircleIcon,
-  CheckCircle2Icon,
   DownloadIcon,
   FileTextIcon,
   Share2Icon,
-  ShieldCheckIcon,
-  SparklesIcon,
   UploadIcon,
   XIcon,
 } from "lucide-react";
@@ -83,16 +74,22 @@ function getPeriodEndDate(month: number, year: number): string {
 
 // ─── PDF Preview Modal ────────────────────────────────────────────────────────
 
+// Detect iOS Safari / WKWebView (used for download fallback)
+const isIOS =
+  /iPad|iPhone|iPod/.test(navigator.userAgent) && !("MSStream" in window);
+
 function PdfPreviewModal({
   open,
   onClose,
   blob,
   filename,
+  lang,
 }: {
   open: boolean;
   onClose: () => void;
   blob: Blob;
   filename: string;
+  lang: import("@/types").Language;
 }) {
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [canShare, setCanShare] = useState(false);
@@ -101,7 +98,6 @@ function PdfPreviewModal({
 
   useEffect(() => {
     if (!open) {
-      // Revoke and clear when dialog closes
       if (objectUrlRef.current) {
         URL.revokeObjectURL(objectUrlRef.current);
         objectUrlRef.current = null;
@@ -109,9 +105,7 @@ function PdfPreviewModal({
       }
       return;
     }
-    // Only create a new object URL when the blob actually changes
     if (prevBlobRef.current === blob && objectUrlRef.current) return;
-    // Revoke any previous URL first
     if (objectUrlRef.current) {
       URL.revokeObjectURL(objectUrlRef.current);
     }
@@ -128,30 +122,40 @@ function PdfPreviewModal({
     };
   }, [open, blob]);
 
-  function handleDownload() {
-    // Always create a fresh object URL for download to avoid stale revoked URLs
-    const freshUrl = URL.createObjectURL(blob);
+  async function handleDownload() {
+    // Universal blob download — works in Chrome, Android TWA, and iOS WKWebView
+    // showSaveFilePicker is NOT used — it fails in Bubblewrap TWA and iOS WKWebView
+    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = freshUrl;
+    a.href = url;
     a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    // Revoke after a short delay to ensure the download starts
-    setTimeout(() => URL.revokeObjectURL(freshUrl), 5000);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    // iOS fallback: if <a download> is blocked (older iOS < 13), open in new tab
+    if (isIOS) {
+      setTimeout(() => {
+        try {
+          window.open(url, "_blank");
+        } catch {
+          /* silent */
+        }
+      }, 500);
+    }
   }
 
   async function handleShare() {
     if (!canShare) {
-      handleDownload();
+      await handleDownload();
       return;
     }
     const file = new File([blob], filename, { type: "application/pdf" });
     try {
       await navigator.share({ files: [file], title: filename });
     } catch {
-      // user cancelled or share unsupported — fall back to download silently
-      handleDownload();
+      // user cancelled or share unsupported — fall back silently
+      await handleDownload();
     }
   }
 
@@ -200,14 +204,17 @@ function PdfPreviewModal({
         </div>
 
         {/* Action buttons */}
-        <div className="flex gap-3 px-4 py-4">
+        <div className="flex gap-3 px-4 pt-3 pb-4">
           <Button
-            className="flex-1 gap-2 h-11 rounded-xl"
+            className="flex-1 gap-2 h-11 rounded-xl flex-col py-1.5"
+            style={{ height: "auto", minHeight: "44px" }}
             onClick={handleDownload}
             data-ocid="pdf_preview.download_button"
           >
-            <DownloadIcon size={16} />
-            Download PDF
+            <span className="flex items-center gap-2">
+              <DownloadIcon size={16} />
+              {tLang("action.download_report", lang)}
+            </span>
           </Button>
           {canShare && (
             <Button
@@ -217,7 +224,7 @@ function PdfPreviewModal({
               data-ocid="pdf_preview.share_button"
             >
               <Share2Icon size={16} />
-              Share
+              {tLang("action.share", lang)}
             </Button>
           )}
         </div>
@@ -302,9 +309,8 @@ export default function ReportsPage() {
   const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
   const [showPreview, setShowPreview] = useState(false);
 
-  // Ad gate
-  const [showAd, setShowAd] = useState(false);
-  const [pendingPdf, setPendingPdf] = useState(false);
+  const isAdmin = userProfile ? isAdminUser(userProfile) : false;
+  void isAdmin;
 
   const monthNames = useMemo(
     () => MONTH_KEYS.map((key) => tLang(key, currentLanguage)),
@@ -345,12 +351,6 @@ export default function ReportsPage() {
     [filteredReceipts],
   );
 
-  const isPremium = userProfile ? hasPremiumAccess(userProfile) : false;
-  const isAdmin = userProfile ? isAdminUser(userProfile) : false;
-  const isFreeUser = !isPremium;
-  const betaActive = isBetaPeriodActive();
-  const shouldShowAd = !betaActive && isFreeUser && !isAdmin;
-
   const monthName = monthNames[selectedMonth - 1];
   const reportTitle = `${monthName} ${selectedYear}`;
   const pdfFilename = `Expense_Report_${getPeriodEndDate(selectedMonth, selectedYear)}.pdf`;
@@ -375,7 +375,7 @@ export default function ReportsPage() {
         filteredReceipts,
         selectedMonth,
         selectedYear,
-        isFreeUser,
+        false, // no watermark — open access
       );
       if (!blob) {
         // Generation failed silently — fall back to direct download attempt
@@ -406,20 +406,7 @@ export default function ReportsPage() {
   }
 
   function handleGenerate() {
-    if (shouldShowAd) {
-      setPendingPdf(true);
-      setShowAd(true);
-    } else {
-      runPdfGeneration();
-    }
-  }
-
-  function handleAdComplete() {
-    setShowAd(false);
-    if (pendingPdf) {
-      setPendingPdf(false);
-      runPdfGeneration();
-    }
+    runPdfGeneration();
   }
 
   const hasNoProfile = !userProfile || !userProfile.name;
@@ -427,42 +414,25 @@ export default function ReportsPage() {
 
   return (
     <>
-      <AdModal
-        isOpen={showAd}
-        onComplete={handleAdComplete}
-        adNumber={1}
-        totalAds={1}
-        context="report"
-      />
-
       {pdfBlob && (
         <PdfPreviewModal
           open={showPreview}
           onClose={() => setShowPreview(false)}
           blob={pdfBlob}
           filename={pdfFilename}
+          lang={currentLanguage}
         />
       )}
 
       <div className="px-4 py-5 space-y-5 pb-8" data-ocid="reports.page">
         {/* Heading */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="font-display font-bold text-xl text-foreground">
-              {tLang("report.title", currentLanguage)}
-            </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {tLang("report.month", currentLanguage)}
-            </p>
-          </div>
-          {isPremium && (
-            <div className="flex items-center gap-1 bg-secondary/10 border border-secondary/20 rounded-full px-3 py-1">
-              <ShieldCheckIcon size={13} className="text-secondary" />
-              <span className="text-xs font-semibold text-secondary">
-                Premium
-              </span>
-            </div>
-          )}
+        <div>
+          <h2 className="font-display font-bold text-xl text-foreground">
+            {tLang("report.title", currentLanguage)}
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {tLang("report.month", currentLanguage)}
+          </p>
         </div>
 
         {/* Month / Year Selector */}
@@ -501,122 +471,6 @@ export default function ReportsPage() {
             </SelectContent>
           </Select>
         </div>
-
-        {/* Beta countdown banner — only during beta, only for free users */}
-        {isFreeUser &&
-          betaActive &&
-          (() => {
-            const daysLeft = getBetaDaysLeft();
-            return (
-              <motion.div
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-3 bg-primary/10 border border-primary/25 rounded-xl px-4 py-3"
-                data-ocid="reports.beta_banner"
-              >
-                <SparklesIcon size={15} className="text-primary shrink-0" />
-                <p className="text-sm text-primary font-medium flex-1">
-                  {tLang("beta_ends_in", currentLanguage)}{" "}
-                  <span className="font-bold">{daysLeft}</span>{" "}
-                  {tLang("ad.seconds", currentLanguage) !== "seconds"
-                    ? tLang("settings.beta_days_remaining", currentLanguage)
-                    : `day${daysLeft !== 1 ? "s" : ""}`}
-                </p>
-              </motion.div>
-            );
-          })()}
-
-        {/* Post-beta ended message */}
-        {isFreeUser && !betaActive && !isAdmin && (
-          <motion.div
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-start gap-3 bg-destructive/8 border border-destructive/20 rounded-xl px-4 py-3"
-            data-ocid="reports.beta_ended_banner"
-          >
-            <AlertCircleIcon
-              size={15}
-              className="text-destructive shrink-0 mt-0.5"
-            />
-            <p className="text-sm text-destructive flex-1">
-              {tLang("beta_has_ended", currentLanguage)}{" "}
-              <Link to="/settings" className="underline font-semibold">
-                {tLang("action.upgrade", currentLanguage)}
-              </Link>
-            </p>
-          </motion.div>
-        )}
-
-        {/* Watermark banner — free users during beta */}
-        {isFreeUser && betaActive && (
-          <motion.div
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3"
-            data-ocid="reports.watermark_banner"
-          >
-            <AlertCircleIcon
-              size={16}
-              className="text-amber-500 shrink-0 mt-0.5"
-            />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
-                {tLang("report.watermark_note", currentLanguage)}
-              </p>
-            </div>
-            <Link to="/settings">
-              <Button
-                size="sm"
-                variant="outline"
-                className="shrink-0 text-xs border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
-                data-ocid="reports.upgrade_button"
-              >
-                <SparklesIcon size={12} className="mr-1" />
-                {tLang("report.upgrade", currentLanguage)}
-              </Button>
-            </Link>
-          </motion.div>
-        )}
-
-        {/* Post-beta ad notice */}
-        {shouldShowAd && (
-          <motion.div
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-start gap-3 bg-muted/40 border border-border rounded-xl px-4 py-3"
-            data-ocid="reports.ad_notice"
-          >
-            <AlertCircleIcon
-              size={16}
-              className="text-muted-foreground shrink-0 mt-0.5"
-            />
-            <p className="text-sm text-muted-foreground flex-1">
-              A short ad plays before PDF download.{" "}
-              <Link
-                to="/settings"
-                className="underline text-primary font-medium"
-              >
-                Upgrade
-              </Link>{" "}
-              to remove ads.
-            </p>
-          </motion.div>
-        )}
-
-        {/* Premium badge */}
-        {isPremium && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.97 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex items-center gap-2 bg-secondary/8 border border-secondary/20 rounded-xl px-4 py-2.5"
-            data-ocid="reports.premium_badge"
-          >
-            <CheckCircle2Icon size={15} className="text-secondary shrink-0" />
-            <p className="text-sm font-medium text-secondary">
-              Clean PDF — {tLang("settings.no_watermark", currentLanguage)}
-            </p>
-          </motion.div>
-        )}
 
         {/* Profile missing notice */}
         {hasNoProfile && (
@@ -789,14 +643,9 @@ export default function ReportsPage() {
               </Button>
             )}
 
-            {isFreeUser && !isGenerating && betaActive && (
+            {!isGenerating && (
               <p className="text-xs text-center text-muted-foreground">
-                {tLang("report.watermark_note", currentLanguage)}
-              </p>
-            )}
-            {shouldShowAd && !isGenerating && (
-              <p className="text-xs text-center text-muted-foreground">
-                📺 A short ad will play before download
+                PDF includes all receipts as thumbnails
               </p>
             )}
           </motion.div>

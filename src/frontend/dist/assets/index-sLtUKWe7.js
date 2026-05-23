@@ -1,4 +1,4 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/OnboardingPage-BxuYRy_x.js","assets/index-CmqUWI1H.js","assets/proxy-oEYfaByQ.js","assets/GalleryPage-CF7JYXj-.js","assets/index-C6_FkSE_.js","assets/dialog-DREfONgc.js","assets/select-9qOUQ768.js","assets/label-Dvoh2DwD.js","assets/textarea-CJb5dntc.js","assets/UploadPage-Cb01Fug2.js","assets/AdModal-DYZNHtbg.js","assets/premium-Bn9eQttf.js","assets/star-DJIq9R3r.js","assets/ReportsPage-BPptlL8E.js","assets/separator-a8AwY8RS.js","assets/SettingsPage-fS0OxPuq.js"])))=>i.map(i=>d[i]);
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/OnboardingPage-3YCpB5UT.js","assets/index-OcH-pJzN.js","assets/proxy-DD_kan0r.js","assets/GalleryPage-rut37rBm.js","assets/index-CEbyqI8d.js","assets/dialog-eyf2N99O.js","assets/select-d716xdjI.js","assets/label-NC-BDMHE.js","assets/textarea-C5UDe0OM.js","assets/UploadPage-BB8wlGzp.js","assets/circle-check-BnbIXqjx.js","assets/ReportsPage-D5okYZkY.js","assets/premium-Cz-afQUj.js","assets/SettingsPage-tEXjsUWC.js"])))=>i.map(i=>d[i]);
 var __defProp = Object.defineProperty;
 var __typeError = (msg) => {
   throw TypeError(msg);
@@ -18522,6 +18522,9 @@ const translations = {
     "action.share": "Share",
     "action.download": "Download PDF",
     "action.upgrade": "Upgrade to Premium",
+    "action.save_to_device": "Save to Device",
+    "action.choose_save_location": "(choose save location)",
+    "action.download_report": "Download Report",
     // Upload
     "upload.camera": "Camera",
     "upload.gallery": "Gallery",
@@ -18658,7 +18661,11 @@ const translations = {
     ad_unlocked_message: "5 more uploads unlocked!",
     beta_ends_in: "Beta ends in",
     beta_has_ended: "Beta period has ended — upgrade to continue",
-    upgrade_required: "Upgrade Required"
+    upgrade_required: "Upgrade Required",
+    // Draft restore
+    draftRestored: "Draft restored",
+    draftDiscard: "Discard",
+    draftReceipts: "{count} receipt(s) waiting"
   },
   hi: {
     // App
@@ -18690,6 +18697,9 @@ const translations = {
     "action.share": "शेयर करें",
     "action.download": "PDF डाउनलोड करें",
     "action.upgrade": "प्रीमियम में अपग्रेड करें",
+    "action.save_to_device": "डिवाइस पर सहेजें",
+    "action.choose_save_location": "(सहेजने की जगह चुनें)",
+    "action.download_report": "रिपोर्ट डाउनलोड करें",
     // Upload
     "upload.camera": "कैमरा",
     "upload.gallery": "गैलरी",
@@ -18826,7 +18836,11 @@ const translations = {
     ad_unlocked_message: "5 और अपलोड अनलॉक हुए!",
     beta_ends_in: "बीटा समाप्त होगा",
     beta_has_ended: "बीटा अवधि समाप्त — जारी रखने के लिए अपग्रेड करें",
-    upgrade_required: "अपग्रेड आवश्यक"
+    upgrade_required: "अपग्रेड आवश्यक",
+    // Draft restore
+    draftRestored: "ड्राफ्ट वापस लाया गया",
+    draftDiscard: "हटाएं",
+    draftReceipts: "{count} रसीद(ें) तैयार"
   },
   mr: {
     // App
@@ -18858,6 +18872,9 @@ const translations = {
     "action.share": "शेअर करा",
     "action.download": "PDF डाउनलोड करा",
     "action.upgrade": "प्रीमियमवर अपग्रेड करा",
+    "action.save_to_device": "डिव्हाइसवर जतन करा",
+    "action.choose_save_location": "(जतन करण्याची जागा निवडा)",
+    "action.download_report": "अहवाल डाउनलोड करा",
     // Upload
     "upload.camera": "कॅमेरा",
     "upload.gallery": "गॅलरी",
@@ -18994,7 +19011,11 @@ const translations = {
     ad_unlocked_message: "आणखी 5 अपलोड अनलॉक झाले!",
     beta_ends_in: "बीटा संपतो",
     beta_has_ended: "बीटा कालावधी संपली — पुढे चालू ठेवण्यासाठी अपग्रेड करा",
-    upgrade_required: "अपग्रेड आवश्यक"
+    upgrade_required: "अपग्रेड आवश्यक",
+    // Draft restore
+    draftRestored: "मसुदा पुनर्संचयित झाला",
+    draftDiscard: "हटवा",
+    draftReceipts: "{count} पावती(त्या) तयार"
   }
 };
 const MONTH_KEYS = [
@@ -19261,7 +19282,7 @@ replaceTraps((oldTraps) => ({
   }
 }));
 const DB_NAME = "fieldspend";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 let _db = null;
 async function openDB() {
   if (_db) return _db;
@@ -19275,6 +19296,9 @@ async function openDB() {
       }
       if (!db.objectStoreNames.contains("profile")) {
         db.createObjectStore("profile", { keyPath: "userId" });
+      }
+      if (!db.objectStoreNames.contains("drafts")) {
+        db.createObjectStore("drafts", { keyPath: "id" });
       }
     }
   });
@@ -19295,12 +19319,6 @@ async function updateReceipt(receipt) {
 async function deleteReceipt(id) {
   const db = await openDB();
   await db.delete("receipts", id);
-}
-async function getDailyCount(dateStr) {
-  const db = await openDB();
-  const index2 = db.transaction("receipts").store.index("by-date");
-  const keys = await index2.getAllKeys(dateStr);
-  return keys.length;
 }
 async function getProfile() {
   const db = await openDB();
@@ -25347,11 +25365,11 @@ var $e = reactExports.forwardRef(function(e, t) {
     })) : null;
   }));
 });
-const OnboardingPage = reactExports.lazy(() => __vitePreload(() => import("./OnboardingPage-BxuYRy_x.js"), true ? __vite__mapDeps([0,1,2]) : void 0));
-const GalleryPage = reactExports.lazy(() => __vitePreload(() => import("./GalleryPage-CF7JYXj-.js"), true ? __vite__mapDeps([3,4,5,6,7,8,2]) : void 0));
-const UploadPage = reactExports.lazy(() => __vitePreload(() => import("./UploadPage-Cb01Fug2.js"), true ? __vite__mapDeps([9,10,4,1,2,11,7,6,8,12]) : void 0));
-const ReportsPage = reactExports.lazy(() => __vitePreload(() => import("./ReportsPage-BPptlL8E.js"), true ? __vite__mapDeps([13,10,4,1,2,11,5,6,14]) : void 0));
-const SettingsPage = reactExports.lazy(() => __vitePreload(() => import("./SettingsPage-fS0OxPuq.js"), true ? __vite__mapDeps([15,4,7,14,11,2,12,1]) : void 0));
+const OnboardingPage = reactExports.lazy(() => __vitePreload(() => import("./OnboardingPage-3YCpB5UT.js"), true ? __vite__mapDeps([0,1,2]) : void 0));
+const GalleryPage = reactExports.lazy(() => __vitePreload(() => import("./GalleryPage-rut37rBm.js"), true ? __vite__mapDeps([3,4,5,6,7,8,2]) : void 0));
+const UploadPage = reactExports.lazy(() => __vitePreload(() => import("./UploadPage-BB8wlGzp.js"), true ? __vite__mapDeps([9,4,7,6,8,2,1,10]) : void 0));
+const ReportsPage = reactExports.lazy(() => __vitePreload(() => import("./ReportsPage-D5okYZkY.js"), true ? __vite__mapDeps([11,4,5,6,12,2]) : void 0));
+const SettingsPage = reactExports.lazy(() => __vitePreload(() => import("./SettingsPage-tEXjsUWC.js"), true ? __vite__mapDeps([13,4,7,12,2,10]) : void 0));
 const queryClient$1 = new QueryClient();
 function RootComponent() {
   const { initStore, loadReceipts, loadProfile } = useAppStore();
@@ -25448,11 +25466,11 @@ export {
   useAppStore as a,
   Link as b,
   createLucideIcon as c,
-  ue as d,
+  addReceipt as d,
   ReactDOM$2 as e,
   React2 as f,
-  getDailyCount as g,
-  reactDomExports as h,
+  reactDomExports as g,
+  ue as h,
   Moon as i,
   jsxRuntimeExports as j,
   commonjsGlobal as k,

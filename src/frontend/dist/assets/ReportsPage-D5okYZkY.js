@@ -1,13 +1,22 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/jspdf.es.min-DZZpMX55.js","assets/index-Q7Jk8N_s.js","assets/index-BAmPHKAn.css"])))=>i.map(i=>d[i]);
-import { c as createLucideIcon, _ as __vitePreload, a as useAppStore, r as reactExports, M as MONTH_KEYS, t as tLang, j as jsxRuntimeExports, b as Link, F as FileText, X } from "./index-Q7Jk8N_s.js";
-import { A as AdModal, C as CircleAlert } from "./AdModal-DYZNHtbg.js";
-import { B as Button, f as Badge } from "./index-C6_FkSE_.js";
-import { d as Dialog, e as DialogContent, f as DialogHeader, g as DialogTitle } from "./dialog-DREfONgc.js";
-import { S as Select, a as SelectTrigger, b as SelectValue, c as SelectContent, d as SelectItem } from "./select-9qOUQ768.js";
-import { S as ShieldCheck, a as Separator, b as Share2 } from "./separator-a8AwY8RS.js";
-import { h as hasPremiumAccess, i as isAdminUser, S as Sparkles, C as CircleCheck, a as isBetaPeriodActive, b as getBetaDaysLeft } from "./premium-Bn9eQttf.js";
-import { m as motion } from "./proxy-oEYfaByQ.js";
-import "./index-CmqUWI1H.js";
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/jspdf.es.min-c5E_du-x.js","assets/index-sLtUKWe7.js","assets/index-BV3QIHB4.css"])))=>i.map(i=>d[i]);
+import { c as createLucideIcon, _ as __vitePreload, a as useAppStore, r as reactExports, M as MONTH_KEYS, t as tLang, j as jsxRuntimeExports, b as Link, F as FileText, X } from "./index-sLtUKWe7.js";
+import { B as Button, f as Badge } from "./index-CEbyqI8d.js";
+import { d as Dialog, e as DialogContent, f as DialogHeader, g as DialogTitle } from "./dialog-eyf2N99O.js";
+import { S as Select, a as SelectTrigger, b as SelectValue, c as SelectContent, d as SelectItem } from "./select-d716xdjI.js";
+import { i as isAdminUser, S as Separator, a as Share2 } from "./premium-Cz-afQUj.js";
+import { m as motion } from "./proxy-DD_kan0r.js";
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$2 = [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["line", { x1: "12", x2: "12", y1: "8", y2: "12", key: "1pkeuh" }],
+  ["line", { x1: "12", x2: "12.01", y1: "16", y2: "16", key: "4dfq90" }]
+];
+const CircleAlert = createLucideIcon("circle-alert", __iconNode$2);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -324,13 +333,13 @@ async function generateExpenseReport(profile, receipts, month, year, isFreeUser)
           "Fieldspend — Daily Receipts",
           `${MONTH_NAMES[month - 1]} ${year}`
         );
-        if (isFreeUser) addWatermark(doc);
+        if (isFreeUser) ;
         return HEADER_H + 4;
       }
       return currentY2;
     };
     const jsPDF = (await __vitePreload(async () => {
-      const { default: __vite_default__ } = await import("./jspdf.es.min-DZZpMX55.js").then((n) => n.j);
+      const { default: __vite_default__ } = await import("./jspdf.es.min-c5E_du-x.js").then((n) => n.j);
       return { default: __vite_default__ };
     }, true ? __vite__mapDeps([0,1,2]) : void 0)).default;
     const doc = new jsPDF({
@@ -339,7 +348,7 @@ async function generateExpenseReport(profile, receipts, month, year, isFreeUser)
       format: "a4"
     });
     drawCoverPage(doc, profile, receipts, month, year);
-    if (isFreeUser) addWatermark(doc);
+    if (isFreeUser) ;
     const thumbResults = await Promise.allSettled(
       receipts.map(
         (r) => r.imageData ? compressToThumbnail(r.imageData) : Promise.resolve(null)
@@ -359,7 +368,7 @@ async function generateExpenseReport(profile, receipts, month, year, isFreeUser)
       "Fieldspend — Daily Receipts",
       `${MONTH_NAMES[month - 1]} ${year}`
     );
-    if (isFreeUser) addWatermark(doc);
+    if (isFreeUser) ;
     let currentY = HEADER_H + 4;
     for (const [dateStr, dayReceipts] of dayGroups) {
       const dayTotal = dayReceipts.reduce((s, r) => s + (r.amount ?? 0), 0);
@@ -466,11 +475,13 @@ function getPeriodEndDate(month, year) {
   const lastDay = new Date(year, month, 0).getDate();
   return `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 }
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !("MSStream" in window);
 function PdfPreviewModal({
   open,
   onClose,
   blob,
-  filename
+  filename,
+  lang
 }) {
   const [objectUrl, setObjectUrl] = reactExports.useState(null);
   const [canShare, setCanShare] = reactExports.useState(false);
@@ -501,26 +512,34 @@ function PdfPreviewModal({
       }
     };
   }, [open, blob]);
-  function handleDownload() {
-    const freshUrl = URL.createObjectURL(blob);
+  async function handleDownload() {
+    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = freshUrl;
+    a.href = url;
     a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(freshUrl), 5e3);
+    setTimeout(() => URL.revokeObjectURL(url), 1e4);
+    if (isIOS) {
+      setTimeout(() => {
+        try {
+          window.open(url, "_blank");
+        } catch {
+        }
+      }, 500);
+    }
   }
   async function handleShare() {
     if (!canShare) {
-      handleDownload();
+      await handleDownload();
       return;
     }
     const file = new File([blob], filename, { type: "application/pdf" });
     try {
       await navigator.share({ files: [file], title: filename });
     } catch {
-      handleDownload();
+      await handleDownload();
     }
   }
   return /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -565,17 +584,18 @@ function PdfPreviewModal({
                 ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex items-center justify-center h-full", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "inline-block w-6 h-6 rounded-full border-2 border-primary/30 border-t-primary animate-spin" }) })
               }
             ),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-3 px-4 py-4", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-3 px-4 pt-3 pb-4", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
                 Button,
                 {
-                  className: "flex-1 gap-2 h-11 rounded-xl",
+                  className: "flex-1 gap-2 h-11 rounded-xl flex-col py-1.5",
+                  style: { height: "auto", minHeight: "44px" },
                   onClick: handleDownload,
                   "data-ocid": "pdf_preview.download_button",
-                  children: [
+                  children: /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-2", children: [
                     /* @__PURE__ */ jsxRuntimeExports.jsx(Download, { size: 16 }),
-                    "Download PDF"
-                  ]
+                    tLang("action.download_report", lang)
+                  ] })
                 }
               ),
               canShare && /* @__PURE__ */ jsxRuntimeExports.jsxs(
@@ -587,7 +607,7 @@ function PdfPreviewModal({
                   "data-ocid": "pdf_preview.share_button",
                   children: [
                     /* @__PURE__ */ jsxRuntimeExports.jsx(Share2, { size: 16 }),
-                    "Share"
+                    tLang("action.share", lang)
                   ]
                 }
               )
@@ -665,8 +685,7 @@ function ReportsPage() {
   const [isGenerating, setIsGenerating] = reactExports.useState(false);
   const [pdfBlob, setPdfBlob] = reactExports.useState(null);
   const [showPreview, setShowPreview] = reactExports.useState(false);
-  const [showAd, setShowAd] = reactExports.useState(false);
-  const [pendingPdf, setPendingPdf] = reactExports.useState(false);
+  userProfile ? isAdminUser(userProfile) : false;
   const monthNames = reactExports.useMemo(
     () => MONTH_KEYS.map((key) => tLang(key, currentLanguage)),
     [currentLanguage]
@@ -699,11 +718,6 @@ function ReportsPage() {
     () => filteredReceipts.reduce((s, r) => s + (r.amount ?? 0), 0),
     [filteredReceipts]
   );
-  const isPremium = userProfile ? hasPremiumAccess(userProfile) : false;
-  const isAdmin = userProfile ? isAdminUser(userProfile) : false;
-  const isFreeUser = !isPremium;
-  const betaActive = isBetaPeriodActive();
-  const shouldShowAd = !betaActive && isFreeUser && !isAdmin;
   const monthName = monthNames[selectedMonth - 1];
   const reportTitle = `${monthName} ${selectedYear}`;
   const pdfFilename = `Expense_Report_${getPeriodEndDate(selectedMonth, selectedYear)}.pdf`;
@@ -725,7 +739,8 @@ function ReportsPage() {
         filteredReceipts,
         selectedMonth,
         selectedYear,
-        isFreeUser
+        false
+        // no watermark — open access
       );
       if (!blob) {
         setIsGenerating(false);
@@ -751,52 +766,25 @@ function ReportsPage() {
     }
   }
   function handleGenerate() {
-    if (shouldShowAd) {
-      setPendingPdf(true);
-      setShowAd(true);
-    } else {
-      runPdfGeneration();
-    }
-  }
-  function handleAdComplete() {
-    setShowAd(false);
-    if (pendingPdf) {
-      setPendingPdf(false);
-      runPdfGeneration();
-    }
+    runPdfGeneration();
   }
   const hasNoProfile = !userProfile || !userProfile.name;
   const hasNoReceipts = filteredReceipts.length === 0;
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
-      AdModal,
-      {
-        isOpen: showAd,
-        onComplete: handleAdComplete,
-        adNumber: 1,
-        totalAds: 1,
-        context: "report"
-      }
-    ),
     pdfBlob && /* @__PURE__ */ jsxRuntimeExports.jsx(
       PdfPreviewModal,
       {
         open: showPreview,
         onClose: () => setShowPreview(false),
         blob: pdfBlob,
-        filename: pdfFilename
+        filename: pdfFilename,
+        lang: currentLanguage
       }
     ),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "px-4 py-5 space-y-5 pb-8", "data-ocid": "reports.page", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display font-bold text-xl text-foreground", children: tLang("report.title", currentLanguage) }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground mt-0.5", children: tLang("report.month", currentLanguage) })
-        ] }),
-        isPremium && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1 bg-secondary/10 border border-secondary/20 rounded-full px-3 py-1", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldCheck, { size: 13, className: "text-secondary" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs font-semibold text-secondary", children: "Premium" })
-        ] })
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display font-bold text-xl text-foreground", children: tLang("report.title", currentLanguage) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground mt-0.5", children: tLang("report.month", currentLanguage) })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2.5", "data-ocid": "reports.period_selector", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs(
@@ -829,131 +817,6 @@ function ReportsPage() {
           /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: YEARS.map((y) => /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: String(y), children: y }, y)) })
         ] })
       ] }),
-      isFreeUser && betaActive && (() => {
-        const daysLeft = getBetaDaysLeft();
-        return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          motion.div,
-          {
-            initial: { opacity: 0, y: -6 },
-            animate: { opacity: 1, y: 0 },
-            className: "flex items-center gap-3 bg-primary/10 border border-primary/25 rounded-xl px-4 py-3",
-            "data-ocid": "reports.beta_banner",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { size: 15, className: "text-primary shrink-0" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-sm text-primary font-medium flex-1", children: [
-                tLang("beta_ends_in", currentLanguage),
-                " ",
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-bold", children: daysLeft }),
-                " ",
-                tLang("ad.seconds", currentLanguage) !== "seconds" ? tLang("settings.beta_days_remaining", currentLanguage) : `day${daysLeft !== 1 ? "s" : ""}`
-              ] })
-            ]
-          }
-        );
-      })(),
-      isFreeUser && !betaActive && !isAdmin && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        motion.div,
-        {
-          initial: { opacity: 0, y: -6 },
-          animate: { opacity: 1, y: 0 },
-          className: "flex items-start gap-3 bg-destructive/8 border border-destructive/20 rounded-xl px-4 py-3",
-          "data-ocid": "reports.beta_ended_banner",
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              CircleAlert,
-              {
-                size: 15,
-                className: "text-destructive shrink-0 mt-0.5"
-              }
-            ),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-sm text-destructive flex-1", children: [
-              tLang("beta_has_ended", currentLanguage),
-              " ",
-              /* @__PURE__ */ jsxRuntimeExports.jsx(Link, { to: "/settings", className: "underline font-semibold", children: tLang("action.upgrade", currentLanguage) })
-            ] })
-          ]
-        }
-      ),
-      isFreeUser && betaActive && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        motion.div,
-        {
-          initial: { opacity: 0, y: -6 },
-          animate: { opacity: 1, y: 0 },
-          className: "flex items-start gap-3 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3",
-          "data-ocid": "reports.watermark_banner",
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              CircleAlert,
-              {
-                size: 16,
-                className: "text-amber-500 shrink-0 mt-0.5"
-              }
-            ),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-1 min-w-0", children: /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm font-medium text-amber-700 dark:text-amber-400", children: tLang("report.watermark_note", currentLanguage) }) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx(Link, { to: "/settings", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-              Button,
-              {
-                size: "sm",
-                variant: "outline",
-                className: "shrink-0 text-xs border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10",
-                "data-ocid": "reports.upgrade_button",
-                children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { size: 12, className: "mr-1" }),
-                  tLang("report.upgrade", currentLanguage)
-                ]
-              }
-            ) })
-          ]
-        }
-      ),
-      shouldShowAd && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        motion.div,
-        {
-          initial: { opacity: 0, y: -6 },
-          animate: { opacity: 1, y: 0 },
-          className: "flex items-start gap-3 bg-muted/40 border border-border rounded-xl px-4 py-3",
-          "data-ocid": "reports.ad_notice",
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              CircleAlert,
-              {
-                size: 16,
-                className: "text-muted-foreground shrink-0 mt-0.5"
-              }
-            ),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-sm text-muted-foreground flex-1", children: [
-              "A short ad plays before PDF download.",
-              " ",
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                Link,
-                {
-                  to: "/settings",
-                  className: "underline text-primary font-medium",
-                  children: "Upgrade"
-                }
-              ),
-              " ",
-              "to remove ads."
-            ] })
-          ]
-        }
-      ),
-      isPremium && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        motion.div,
-        {
-          initial: { opacity: 0, scale: 0.97 },
-          animate: { opacity: 1, scale: 1 },
-          className: "flex items-center gap-2 bg-secondary/8 border border-secondary/20 rounded-xl px-4 py-2.5",
-          "data-ocid": "reports.premium_badge",
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheck, { size: 15, className: "text-secondary shrink-0" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-sm font-medium text-secondary", children: [
-              "Clean PDF — ",
-              tLang("settings.no_watermark", currentLanguage)
-            ] })
-          ]
-        }
-      ),
       hasNoProfile && /* @__PURE__ */ jsxRuntimeExports.jsxs(
         "div",
         {
@@ -1112,8 +975,7 @@ function ReportsPage() {
                 ]
               }
             ),
-            isFreeUser && !isGenerating && betaActive && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-center text-muted-foreground", children: tLang("report.watermark_note", currentLanguage) }),
-            shouldShowAd && !isGenerating && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-center text-muted-foreground", children: "📺 A short ad will play before download" })
+            !isGenerating && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-center text-muted-foreground", children: "PDF includes all receipts as thumbnails" })
           ]
         }
       )

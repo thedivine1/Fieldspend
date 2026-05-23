@@ -15,16 +15,7 @@ export type Language = "en" | "hi" | "mr";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-export const FREE_DAILY_LIMIT = 10;
-export const BETA_DAYS = 60; // kept for reference, not used for date calculation
-export const PREMIUM_MONTHLY_RS = 99;
-export const PREMIUM_ANNUAL_RS = 49;
-
-// Beta ends at midnight IST August 1, 2026 (= end of July 31, 2026)
-// IST = UTC+5:30, so midnight IST Aug 1 = 2026-07-31T18:30:00Z
-export const BETA_END_DATE = new Date("2026-08-01T00:00:00+05:30").getTime();
-
-// Admin email — grants full permanent premium access with no ads, no limits
+// Admin email — grants admin badge and identification
 export const ADMIN_EMAIL = "coepianraider@gmail.com";
 
 // ─── Core Types ───────────────────────────────────────────────────────────────
@@ -43,24 +34,14 @@ export interface Receipt {
   createdAt: Timestamp;
 }
 
-export type PremiumPlan = "monthly" | "annual";
-
 export interface UserProfile {
   userId: UserId;
   name: string;
   email?: string;
   companyName?: string;
   preferredLanguage: Language;
-  isPremium: boolean;
-  premiumPlan?: PremiumPlan;
-  premiumExpiryDate?: Timestamp;
-  betaExpiryDate: Timestamp;
   dailyUploadCount: number;
   lastUploadDate: string; // YYYY-MM-DD
-  // Ad gate counters (post-beta free users)
-  adWatchCount: number; // total ads ever watched
-  adUnlockedUploads: number; // total 5-upload batches unlocked via ads
-  lastAdWatchTime?: Timestamp; // when last ad was watched
 }
 
 export interface CategoryTotal {

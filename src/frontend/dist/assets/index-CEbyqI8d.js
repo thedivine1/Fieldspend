@@ -1,4 +1,4 @@
-import { r as reactExports, j as jsxRuntimeExports, R as React, h as reactDomExports } from "./index-Q7Jk8N_s.js";
+import { r as reactExports, j as jsxRuntimeExports, R as React, g as reactDomExports } from "./index-sLtUKWe7.js";
 function createContext2(rootComponentName, defaultContext) {
   const Context = reactExports.createContext(defaultContext);
   const Provider = (props) => {
@@ -3076,7 +3076,7 @@ function usePrevious(value) {
 }
 export {
   Button as B,
-  Primitive as P,
+  Primitive$1 as P,
   createSlottable as a,
   createContextScope as b,
   composeEventHandlers as c,
@@ -3085,11 +3085,11 @@ export {
   Badge as f,
   useLayoutEffect2 as g,
   useControllableState as h,
-  Primitive$1 as i,
-  createContext2 as j,
-  createSlot$1 as k,
-  dispatchDiscreteCustomEvent as l,
-  useSize as m,
-  usePrevious as n,
+  createContext2 as i,
+  createSlot$1 as j,
+  dispatchDiscreteCustomEvent as k,
+  useSize as l,
+  usePrevious as m,
+  Primitive as n,
   useComposedRefs as u
 };

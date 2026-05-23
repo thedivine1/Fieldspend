@@ -68,21 +68,6 @@ function dataUrlToFile(dataUrl: string, fileName: string): File {
   return new File([bytes], fileName, { type: mime });
 }
 
-/**
- * Converts a File to a base64 string (without the data URL prefix).
- */
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      resolve(result.split(",")[1]);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
 // ─── Tesseract Singleton Worker ───────────────────────────────────────────────
 
 type TesseractWorker = Awaited<
@@ -121,71 +106,113 @@ async function extractWithTesseract(source: File | string): Promise<string> {
 // ─── FALLBACK: OCR.Space API ──────────────────────────────────────────────────
 
 const OCR_SPACE_URL = "https://api.ocr.space/parse/image";
-const OCR_SPACE_KEY = "helloworld";
+// Primary key — free tier. Falls back to "helloworld" if quota exceeded.
+const OCR_SPACE_KEY = "K85312013688957";
+const OCR_SPACE_KEY_FALLBACK = "helloworld";
 
 interface OcrSpaceResult {
   ParsedResults?: Array<{ ParsedText?: string }>;
   IsErroredOnProcessing?: boolean;
 }
 
-async function extractWithOcrSpace(source: File | string): Promise<string> {
-  let base64: string;
-  let mimeType = "image/jpeg";
+async function extractWithOcrSpace(
+  source: File | string,
+  apiKey = OCR_SPACE_KEY,
+): Promise<string> {
+  // Build the full data URL (OCR.Space Engine 2 requires the full prefix)
+  let dataUrl: string;
 
   if (typeof source === "string") {
-    const parts = source.split(",");
-    base64 = parts[1];
-    const mimeMatch = parts[0].match(/:(.*?);/);
-    if (mimeMatch) mimeType = mimeMatch[1];
+    // Already a data URL — use as-is
+    dataUrl = source.startsWith("data:")
+      ? source
+      : `data:image/jpeg;base64,${source}`;
   } else {
-    base64 = await fileToBase64(source);
-    mimeType = source.type || "image/jpeg";
+    // File → convert to data URL
+    dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(source);
+    });
   }
 
-  const body = new FormData();
-  body.append("base64Image", `data:${mimeType};base64,${base64}`);
-  body.append("apikey", OCR_SPACE_KEY);
-  body.append("language", "eng");
-  body.append("OCREngine", "2");
-  body.append("isTable", "true");
+  const tryEngine = async (engine: number): Promise<string> => {
+    const body = new FormData();
+    body.append("base64Image", dataUrl);
+    body.append("apikey", apiKey);
+    body.append("language", "eng");
+    body.append("OCREngine", String(engine));
+    body.append("isOverlayRequired", "false");
+    body.append("isTable", "false");
+    body.append("detectOrientation", "true");
+    body.append("scale", "true");
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
+    // 30s timeout — OCR.Space Engine 2 can take up to 15s for complex receipts
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-  const response = await fetch(OCR_SPACE_URL, {
-    method: "POST",
-    body,
-    signal: controller.signal,
-  });
-  clearTimeout(timeoutId);
+    let response: Response;
+    try {
+      response = await fetch(OCR_SPACE_URL, {
+        method: "POST",
+        body,
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
-  if (!response.ok) throw new Error(`OCR.Space HTTP ${response.status}`);
+    if (!response.ok) throw new Error(`OCR.Space HTTP ${response.status}`);
 
-  const json: OcrSpaceResult = await response.json();
-  if (json.IsErroredOnProcessing) throw new Error("OCR.Space processing error");
+    const json: OcrSpaceResult = await response.json();
+    if (json.IsErroredOnProcessing)
+      throw new Error("OCR.Space processing error");
 
-  const text = json.ParsedResults?.[0]?.ParsedText ?? "";
-  if (!text.trim()) throw new Error("OCR.Space returned empty text");
+    return json.ParsedResults?.[0]?.ParsedText ?? "";
+  };
+
+  // Engine 2 first (better for receipts/documents)
+  let text = "";
+  try {
+    text = await tryEngine(2);
+  } catch {
+    // silent — fall through to Engine 1
+  }
+
+  // Retry with Engine 1 if empty or failed
+  if (!text.trim()) {
+    try {
+      text = await tryEngine(1);
+    } catch {
+      // silent
+    }
+  }
+
+  // If primary key quota exceeded, retry with fallback key
+  if (!text.trim() && apiKey === OCR_SPACE_KEY) {
+    return extractWithOcrSpace(source, OCR_SPACE_KEY_FALLBACK);
+  }
 
   return text;
 }
 
-// ─── Text Extraction (Primary: Tesseract → Fallback: OCR.Space) ──────────────
+// ─── Text Extraction (Primary: OCR.Space → Fallback: Tesseract.js) ──────────
 
 export async function extractTextFromImage(
   source: File | string,
 ): Promise<string> {
-  // Tesseract.js is primary — offline, instant, no API quota
+  // OCR.Space is primary — better accuracy on Indian receipts, mixed scripts
   try {
-    const text = await extractWithTesseract(source);
+    const text = await extractWithOcrSpace(source);
     if (text.trim()) return text;
   } catch {
     // silent — try fallback
   }
 
-  // OCR.Space as secondary fallback
+  // Tesseract.js as offline fallback
   try {
-    return await extractWithOcrSpace(source);
+    return await extractWithTesseract(source);
   } catch {
     return "";
   }
@@ -202,9 +229,13 @@ const HINDI_MONTHS: Record<string, number> = {
   जून: 6,
   जुलाई: 7,
   अगस्त: 8,
+  सितंबर: 9,
   सितम्बर: 9,
+  अक्तूबर: 10,
   अक्टूबर: 10,
+  नवंबर: 11,
   नवम्बर: 11,
+  दिसंबर: 12,
   दिसम्बर: 12,
 };
 
@@ -234,70 +265,97 @@ const ENGLISH_MONTHS: Record<string, number> = {
   dec: 12,
 };
 
-function padDate(n: number): string {
-  return String(n).padStart(2, "0");
-}
-
-function toISODate(day: number, month: number, year: number): string {
-  return `${year}-${padDate(month)}-${padDate(day)}`;
-}
-
 export function detectDate(text: string): string | null {
-  // Strip date-label prefixes so the regex hits the value regardless of label
+  // Normalise: strip common label prefixes
   const normalised = text
-    .replace(/(?:date|दिनांक|dated)\s*[:\-]\s*/gi, "")
+    .replace(
+      /(?:journey\s+date|travel\s+date|date\s+of\s+journey|booking\s+date|dt|date|दिनांक|dated)\s*[:\-\.\s]\s*/gi,
+      " ",
+    )
+    .replace(/\r/g, " ")
     .trim();
 
-  // DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY
-  const dmyMatch = normalised.match(
-    /\b(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})\b/,
-  );
-  if (dmyMatch) {
-    const d = Number.parseInt(dmyMatch[1]);
-    const m = Number.parseInt(dmyMatch[2]);
-    const y = Number.parseInt(dmyMatch[3]);
-    if (d >= 1 && d <= 31 && m >= 1 && m <= 12) return toISODate(d, m, y);
+  function isValidDMY(d: number, m: number, y: number): boolean {
+    return d >= 1 && d <= 31 && m >= 1 && m <= 12 && y >= 2000 && y <= 2035;
   }
 
-  // YYYY-MM-DD (ISO)
-  const isoMatch = normalised.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);
-  if (isoMatch) {
-    const y = Number.parseInt(isoMatch[1]);
-    const m = Number.parseInt(isoMatch[2]);
-    const d = Number.parseInt(isoMatch[3]);
-    if (d >= 1 && d <= 31 && m >= 1 && m <= 12) return toISODate(d, m, y);
+  function padDate(n: number): string {
+    return String(n).padStart(2, "0");
   }
 
-  // DD Month YYYY (English)
-  const engMonthMatch = normalised.match(
-    /\b(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\s+(\d{4})\b/i,
-  );
-  if (engMonthMatch) {
-    const d = Number.parseInt(engMonthMatch[1]);
-    const m = ENGLISH_MONTHS[engMonthMatch[2].toLowerCase()];
-    const y = Number.parseInt(engMonthMatch[3]);
-    if (m) return toISODate(d, m, y);
+  function toISO(d: number, m: number, y: number): string {
+    return `${y}-${padDate(m)}-${padDate(d)}`;
   }
 
-  // Month DD, YYYY (US format)
-  const usMonthMatch = normalised.match(
-    /\b(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\s+(\d{1,2}),?\s+(\d{4})\b/i,
-  );
-  if (usMonthMatch) {
-    const m = ENGLISH_MONTHS[usMonthMatch[1].toLowerCase()];
-    const d = Number.parseInt(usMonthMatch[2]);
-    const y = Number.parseInt(usMonthMatch[3]);
-    if (m) return toISODate(d, m, y);
+  function resolveYear(short: number): number {
+    return short < 50 ? 2000 + short : 1900 + short;
   }
 
-  // DD Hindi-Month YYYY
+  // --- Pattern 1: Railway short year DD-MMM-YY e.g. 12-May-26 ---
+  const railwayRe =
+    /\b(\d{1,2})[\-](jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\-](\d{2})\b/gi;
+  for (const m of normalised.matchAll(railwayRe)) {
+    const d = Number.parseInt(m[1]);
+    const mo = ENGLISH_MONTHS[m[2].toLowerCase()];
+    const y = resolveYear(Number.parseInt(m[3]));
+    if (mo && isValidDMY(d, mo, y)) return toISO(d, mo, y);
+  }
+
+  // --- Pattern 2: DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY ---
+  const dmyRe = /\b(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})\b/g;
+  for (const m of normalised.matchAll(dmyRe)) {
+    const d = Number.parseInt(m[1]);
+    const mo = Number.parseInt(m[2]);
+    const y = Number.parseInt(m[3]);
+    if (isValidDMY(d, mo, y)) return toISO(d, mo, y);
+  }
+
+  // --- Pattern 3: YYYY-MM-DD (ISO) ---
+  const isoRe = /\b(\d{4})-(\d{2})-(\d{2})\b/g;
+  for (const m of normalised.matchAll(isoRe)) {
+    const y = Number.parseInt(m[1]);
+    const mo = Number.parseInt(m[2]);
+    const d = Number.parseInt(m[3]);
+    if (isValidDMY(d, mo, y)) return toISO(d, mo, y);
+  }
+
+  // --- Pattern 4: DD Mon YYYY or DD Month YYYY (e.g. 15 Mar 2026 / 5th March 2026) ---
+  const ddMonYYYY =
+    /\b(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*,?\s*(\d{4})\b/gi;
+  for (const m of normalised.matchAll(ddMonYYYY)) {
+    const d = Number.parseInt(m[1]);
+    const mo = ENGLISH_MONTHS[m[2].toLowerCase()];
+    const y = Number.parseInt(m[3]);
+    if (mo && isValidDMY(d, mo, y)) return toISO(d, mo, y);
+  }
+
+  // --- Pattern 5: Mon DD, YYYY (US format — e.g. Mar 15, 2026) ---
+  const monDDYYYY =
+    /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{1,2}),?\s*(\d{4})\b/gi;
+  for (const m of normalised.matchAll(monDDYYYY)) {
+    const mo = ENGLISH_MONTHS[m[1].toLowerCase()];
+    const d = Number.parseInt(m[2]);
+    const y = Number.parseInt(m[3]);
+    if (mo && isValidDMY(d, mo, y)) return toISO(d, mo, y);
+  }
+
+  // --- Pattern 6: DD/MM/YY (2-digit year) ---
+  const dmyShortRe = /\b(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2})\b/g;
+  for (const m of normalised.matchAll(dmyShortRe)) {
+    const d = Number.parseInt(m[1]);
+    const mo = Number.parseInt(m[2]);
+    const y = resolveYear(Number.parseInt(m[3]));
+    if (isValidDMY(d, mo, y)) return toISO(d, mo, y);
+  }
+
+  // --- Pattern 7: Hindi month names ---
   for (const [monthName, monthNum] of Object.entries(HINDI_MONTHS)) {
-    const regex = new RegExp(`(\\d{1,2})\\s+${monthName}\\s+(\\d{4})`);
-    const match = normalised.match(regex);
+    const re = new RegExp(`(\\d{1,2})\\s+${monthName}\\s+(\\d{4})`);
+    const match = normalised.match(re);
     if (match) {
       const d = Number.parseInt(match[1]);
       const y = Number.parseInt(match[2]);
-      return toISODate(d, monthNum, y);
+      if (isValidDMY(d, monthNum, y)) return toISO(d, monthNum, y);
     }
   }
 
@@ -306,101 +364,159 @@ export function detectDate(text: string): string | null {
 
 // ─── Category Detection ───────────────────────────────────────────────────────
 
-const CATEGORY_KEYWORDS: Record<Category, string[]> = {
-  cab: ["uber", "ola", "rapido", "namma yatri", "taxi", "cab"],
-  auto: ["auto rickshaw", "autorickshaw", "rikshaw", "three wheeler", "auto"],
+const CATEGORY_KEYWORDS: Record<Exclude<Category, "other">, string[]> = {
+  // auto rickshaw — checked first vs cab to avoid "auto" in URL strings
+  auto: [
+    "auto rickshaw",
+    "autorickshaw",
+    "auto rik",
+    "3 wheeler",
+    "three wheeler",
+    "auto",
+  ],
+  // cab / taxi
+  cab: [
+    "uber eats", // listed above plain 'uber' to avoid wrong meal match — handled by auto ordering
+    "uber",
+    "ola cabs",
+    "ola",
+    "rapido",
+    "meru",
+    "savaari",
+    "taxiforsure",
+    "swift dzire",
+    "sedan",
+    "hatchback",
+    "taxi",
+    "cab",
+  ],
+  // local city bus
   localBus: [
     "local bus",
     "city bus",
-    "brts",
-    "pmpml",
+    "st bus",
+    "msrtc",
     "bmtc",
     "best bus",
     "amts",
+    "pmpml",
+    "brts",
+    "apsrtc",
+    "volvo bus",
+    "kadam",
   ],
-  flight: [
-    "indigo",
-    "air india",
-    "spicejet",
-    "vistara",
-    "goair",
-    "akasa",
-    "airasia",
-    "airline",
-    "airport",
-    "boarding",
-    "departure",
-    "arrival",
-    "airways",
-    "flight",
+  // inter-city / state bus
+  bus: [
+    "gsrtc",
+    "ksrtc",
+    "redbus",
+    "state transport",
+    "roadways",
+    "volvo",
+    "travels",
+    "bus",
   ],
+  // train / railway
   train: [
     "irctc",
     "indian railways",
     "railway",
     "train",
-    "station",
-    "sleeper",
-    "berth",
-    "platform",
-    "reservation",
     "express",
+    "superfast",
+    "shatabdi",
+    "rajdhani",
+    "duronto",
+    "mail",
+    "passenger train",
+    "reservation",
+    "pnr",
+    "berth",
+    "sleeper",
+    "platform",
+    "station",
+    "rail",
   ],
-  bus: [
-    "msrtc",
-    "gsrtc",
-    "ksrtc",
-    "st bus",
-    "redbus",
-    "state transport",
-    "volvo",
-    "travels",
-    "roadways",
+  // flight / airline
+  flight: [
+    "boarding pass",
+    "air india",
+    "airindia",
+    "indigo",
+    "spicejet",
+    "vistara",
+    "goair",
+    "akasa",
+    "airasia",
+    "go first",
+    "airline",
+    "airways",
+    "airport",
+    "departure",
+    "arrival",
+    "flight",
   ],
+  // hotel / accommodation
   hotel: [
+    "guest house",
+    "guesthouse",
+    "fab hotel",
+    "fabhotel",
+    "itc hotel",
+    "marriott",
+    "hyatt",
+    "treebo",
+    "oyo",
     "hotel",
     "lodge",
     "inn",
-    "stay",
-    "accommodation",
     "resort",
-    "guest house",
-    "guesthouse",
-    "oyo",
+    "hostel",
+    "taj",
     "room",
+    "accommodation",
+    "stay",
   ],
+  // meal / food
   meal: [
     "restaurant",
+    "swiggy",
+    "zomato",
+    "dhaba",
+    "biryani",
+    "pizza",
+    "burger",
+    "coffee",
+    "tea stall",
+    "bakery",
+    "dabba",
+    "thali",
     "cafe",
     "food",
     "meal",
     "lunch",
     "dinner",
     "breakfast",
-    "dhaba",
-    "thali",
-    "snacks",
-    "beverages",
-    "swiggy",
-    "zomato",
-    "tea",
+    "snack",
     "chai",
-    "biryani",
+    "tea",
   ],
-  other: [],
 };
 
 export function detectCategory(text: string): Category | null {
   const lower = text.toLowerCase();
 
-  // Check multi-word keywords first (more specific) before single-word ones
-  const orderedCategories: Category[] = [
+  // Priority order: most-specific multi-word categories first, then single-word
+  // auto before cab to catch "auto rickshaw" before bare "auto"
+  // localBus before bus to catch specific operators before generic "bus"
+  // flight before train (both may mention "express")
+  const orderedCategories: Exclude<Category, "other">[] = [
+    "auto",
+    "cab",
     "localBus",
     "train",
     "flight",
     "hotel",
-    "cab",
-    "auto",
     "bus",
     "meal",
   ];
@@ -408,7 +524,7 @@ export function detectCategory(text: string): Category | null {
   for (const cat of orderedCategories) {
     const keywords = CATEGORY_KEYWORDS[cat];
     for (const kw of keywords) {
-      if (lower.includes(kw)) return cat;
+      if (lower.includes(kw.toLowerCase())) return cat;
     }
   }
 
@@ -417,51 +533,53 @@ export function detectCategory(text: string): Category | null {
 
 // ─── Amount Detection ─────────────────────────────────────────────────────────
 
-function parseAmount(raw: string): number | null {
-  const cleaned = raw.replace(/,/g, "").trim();
-  const val = Number.parseFloat(cleaned);
-  return Number.isNaN(val) || val <= 0 ? null : val;
-}
-
 export function detectAmount(text: string): number | null {
-  const AMOUNT_NUM = /[\d]{1,3}(?:,\d{3})*(?:\.\d{0,2})?/;
+  // Collect all candidate amounts, score by label confidence
+  const candidates: Array<{ amount: number; score: number }> = [];
 
-  // 1. High-confidence total labels
-  const highConfidencePattern = new RegExp(
-    `(?:grand\\s+total|net\\s+payable|total\\s+amount|amount\\s+due|net\\s+total|subtotal)\\s*[:\\-]?\\s*(?:₹|rs\\.?|inr)?\\s*(${AMOUNT_NUM.source})`,
-    "i",
-  );
-  const highMatch = text.match(highConfidencePattern);
-  if (highMatch) {
-    const val = parseAmount(highMatch[1]);
-    if (val) return val;
+  function extractNum(raw: string): number | null {
+    const cleaned = raw.replace(/,/g, "").trim();
+    const val = Number.parseFloat(cleaned);
+    return Number.isNaN(val) || val <= 0 ? null : val;
   }
 
-  // 2. Currency-prefixed amounts — return the largest (usually the total)
-  const currencyPattern = new RegExp(
-    `(?:₹|rs\\.?|inr)\\s*(${AMOUNT_NUM.source})`,
-    "gi",
-  );
-  const currencyMatches = [...text.matchAll(currencyPattern)];
-  if (currencyMatches.length > 0) {
-    const amounts = currencyMatches
-      .map((m) => parseAmount(m[1]))
-      .filter((v): v is number => v !== null);
-    if (amounts.length > 0) return Math.max(...amounts);
+  // Pattern 1 — Highest-confidence labeled totals (score 10)
+  const highLabels =
+    /(?:grand\s+total|total\s+fare|ticket\s+fare|net\s+payable|total\s+amount|amount\s+due|amount\s+payable|net\s+amount|net\s+total|amount\s+paid|payable|subtotal|fare)\s*[:\-]?\s*(?:₹|Rs\.?|INR)?\s*([\d,]+(?:\.\d{1,2})?)/gi;
+  for (const m of text.matchAll(highLabels)) {
+    const v = extractNum(m[1]);
+    if (v) candidates.push({ amount: v, score: 10 });
   }
 
-  // 3. Labelled amounts without currency symbol
-  const labelledPattern = new RegExp(
-    `(?:total|amount|payable|net|bill|charge)\\s*[:\\-]?\\s*(${AMOUNT_NUM.source})`,
-    "i",
-  );
-  const labelledMatch = text.match(labelledPattern);
-  if (labelledMatch) {
-    const val = parseAmount(labelledMatch[1]);
-    if (val) return val;
+  // Pattern 2 — Generic "total" label (score 6)
+  const totalLabel =
+    /\btotal\b\s*[:\-]?\s*(?:₹|Rs\.?|INR)?\s*([\d,]+(?:\.\d{1,2})?)/gi;
+  for (const m of text.matchAll(totalLabel)) {
+    const v = extractNum(m[1]);
+    if (v) candidates.push({ amount: v, score: 6 });
   }
 
-  return null;
+  // Pattern 3 — Currency-symbol prefixed (₹, Rs, Rs., INR) with optional space (score 4)
+  const currencyPfx = /(?:₹|Rs\.?|INR)\s*([\d,]+(?:\.\d{1,2})?)/gi;
+  for (const m of text.matchAll(currencyPfx)) {
+    const v = extractNum(m[1]);
+    if (v) candidates.push({ amount: v, score: 4 });
+  }
+
+  // Pattern 4 — Labeled amounts without currency (score 2)
+  const labeledNoCurrency =
+    /(?:amount|payable|net|bill|charge)\s*[:\-]?\s*([\d,]+(?:\.\d{1,2})?)/gi;
+  for (const m of text.matchAll(labeledNoCurrency)) {
+    const v = extractNum(m[1]);
+    if (v) candidates.push({ amount: v, score: 2 });
+  }
+
+  if (candidates.length === 0) return null;
+
+  // Among all candidates: return the one with the highest score.
+  // Ties broken by largest amount (the total, not a line item).
+  candidates.sort((a, b) => b.score - a.score || b.amount - a.amount);
+  return candidates[0].amount;
 }
 
 // ─── Main Export: extractOCRData ──────────────────────────────────────────────

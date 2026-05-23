@@ -28,23 +28,6 @@ export const Receipt = IDL.Record({
   'category' : Category,
   'amount' : IDL.Opt(IDL.Float64),
 });
-export const PlanType = IDL.Variant({
-  'annual' : IDL.Null,
-  'monthly' : IDL.Null,
-});
-export const CreateOrderRequest = IDL.Record({ 'planType' : PlanType });
-export const CreateOrderResult = IDL.Record({
-  'error' : IDL.Opt(IDL.Text),
-  'orderId' : IDL.Text,
-  'currency' : IDL.Text,
-  'success' : IDL.Bool,
-  'amount' : IDL.Nat,
-});
-export const PremiumStatusResult = IDL.Record({
-  'isPremium' : IDL.Bool,
-  'premiumExpiryDate' : IDL.Opt(Timestamp),
-  'planType' : IDL.Opt(PlanType),
-});
 export const Language = IDL.Variant({
   'en' : IDL.Null,
   'hi' : IDL.Null,
@@ -61,33 +44,15 @@ export const UserProfile = IDL.Record({
   'betaExpiryDate' : Timestamp,
   'dailyUploadCount' : IDL.Nat,
 });
-export const VerifyPaymentRequest = IDL.Record({
-  'email' : IDL.Text,
-  'razorpay_payment_id' : IDL.Text,
-  'razorpay_order_id' : IDL.Text,
-  'razorpay_signature' : IDL.Text,
-  'planType' : PlanType,
-});
-export const VerifyPaymentResult = IDL.Record({
-  'error' : IDL.Opt(IDL.Text),
-  'success' : IDL.Bool,
-});
 
 export const idlService = IDL.Service({
   'addExpense' : IDL.Func([Receipt], [ExpenseId], []),
-  'createOrder' : IDL.Func([CreateOrderRequest], [CreateOrderResult], []),
   'deleteExpense' : IDL.Func([ExpenseId], [], []),
   'getDailyCount' : IDL.Func([], [IDL.Nat], ['query']),
   'getExpenses' : IDL.Func([], [IDL.Vec(Receipt)], ['query']),
-  'getUserPremiumStatus' : IDL.Func(
-      [IDL.Text],
-      [PremiumStatusResult],
-      ['query'],
-    ),
   'getUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], []),
   'updateExpense' : IDL.Func([Receipt], [], []),
   'updateUserProfile' : IDL.Func([UserProfile], [], []),
-  'verifyPayment' : IDL.Func([VerifyPaymentRequest], [VerifyPaymentResult], []),
 });
 
 export const idlInitArgs = [];
@@ -113,20 +78,6 @@ export const idlFactory = ({ IDL }) => {
     'category' : Category,
     'amount' : IDL.Opt(IDL.Float64),
   });
-  const PlanType = IDL.Variant({ 'annual' : IDL.Null, 'monthly' : IDL.Null });
-  const CreateOrderRequest = IDL.Record({ 'planType' : PlanType });
-  const CreateOrderResult = IDL.Record({
-    'error' : IDL.Opt(IDL.Text),
-    'orderId' : IDL.Text,
-    'currency' : IDL.Text,
-    'success' : IDL.Bool,
-    'amount' : IDL.Nat,
-  });
-  const PremiumStatusResult = IDL.Record({
-    'isPremium' : IDL.Bool,
-    'premiumExpiryDate' : IDL.Opt(Timestamp),
-    'planType' : IDL.Opt(PlanType),
-  });
   const Language = IDL.Variant({
     'en' : IDL.Null,
     'hi' : IDL.Null,
@@ -143,37 +94,15 @@ export const idlFactory = ({ IDL }) => {
     'betaExpiryDate' : Timestamp,
     'dailyUploadCount' : IDL.Nat,
   });
-  const VerifyPaymentRequest = IDL.Record({
-    'email' : IDL.Text,
-    'razorpay_payment_id' : IDL.Text,
-    'razorpay_order_id' : IDL.Text,
-    'razorpay_signature' : IDL.Text,
-    'planType' : PlanType,
-  });
-  const VerifyPaymentResult = IDL.Record({
-    'error' : IDL.Opt(IDL.Text),
-    'success' : IDL.Bool,
-  });
   
   return IDL.Service({
     'addExpense' : IDL.Func([Receipt], [ExpenseId], []),
-    'createOrder' : IDL.Func([CreateOrderRequest], [CreateOrderResult], []),
     'deleteExpense' : IDL.Func([ExpenseId], [], []),
     'getDailyCount' : IDL.Func([], [IDL.Nat], ['query']),
     'getExpenses' : IDL.Func([], [IDL.Vec(Receipt)], ['query']),
-    'getUserPremiumStatus' : IDL.Func(
-        [IDL.Text],
-        [PremiumStatusResult],
-        ['query'],
-      ),
     'getUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], []),
     'updateExpense' : IDL.Func([Receipt], [], []),
     'updateUserProfile' : IDL.Func([UserProfile], [], []),
-    'verifyPayment' : IDL.Func(
-        [VerifyPaymentRequest],
-        [VerifyPaymentResult],
-        [],
-      ),
   });
 };
 

@@ -1,6 +1,6 @@
-import { r as reactExports, u as useNavigate, a as useAppStore, s as setLanguage, j as jsxRuntimeExports, t as tLang, L as LANGUAGES } from "./index-Q7Jk8N_s.js";
-import { A as AnimatePresence } from "./index-CmqUWI1H.js";
-import { m as motion } from "./proxy-oEYfaByQ.js";
+import { r as reactExports, u as useNavigate, a as useAppStore, s as setLanguage, j as jsxRuntimeExports, t as tLang, L as LANGUAGES } from "./index-sLtUKWe7.js";
+import { A as AnimatePresence } from "./index-OcH-pJzN.js";
+import { m as motion } from "./proxy-DD_kan0r.js";
 function SnapIllustration() {
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(
     "svg",

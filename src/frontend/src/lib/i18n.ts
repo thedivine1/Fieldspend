@@ -38,6 +38,9 @@ const translations: Record<Language, Record<string, string>> = {
     "action.share": "Share",
     "action.download": "Download PDF",
     "action.upgrade": "Upgrade to Premium",
+    "action.save_to_device": "Save to Device",
+    "action.choose_save_location": "(choose save location)",
+    "action.download_report": "Download Report",
 
     // Upload
     "upload.camera": "Camera",
@@ -192,6 +195,11 @@ const translations: Record<Language, Record<string, string>> = {
     beta_ends_in: "Beta ends in",
     beta_has_ended: "Beta period has ended — upgrade to continue",
     upgrade_required: "Upgrade Required",
+
+    // Draft restore
+    draftRestored: "Draft restored",
+    draftDiscard: "Discard",
+    draftReceipts: "{count} receipt(s) waiting",
   },
 
   hi: {
@@ -227,6 +235,9 @@ const translations: Record<Language, Record<string, string>> = {
     "action.share": "शेयर करें",
     "action.download": "PDF डाउनलोड करें",
     "action.upgrade": "प्रीमियम में अपग्रेड करें",
+    "action.save_to_device": "डिवाइस पर सहेजें",
+    "action.choose_save_location": "(सहेजने की जगह चुनें)",
+    "action.download_report": "रिपोर्ट डाउनलोड करें",
 
     // Upload
     "upload.camera": "कैमरा",
@@ -379,6 +390,11 @@ const translations: Record<Language, Record<string, string>> = {
     beta_ends_in: "बीटा समाप्त होगा",
     beta_has_ended: "बीटा अवधि समाप्त — जारी रखने के लिए अपग्रेड करें",
     upgrade_required: "अपग्रेड आवश्यक",
+
+    // Draft restore
+    draftRestored: "ड्राफ्ट वापस लाया गया",
+    draftDiscard: "हटाएं",
+    draftReceipts: "{count} रसीद(ें) तैयार",
   },
 
   mr: {
@@ -414,6 +430,9 @@ const translations: Record<Language, Record<string, string>> = {
     "action.share": "शेअर करा",
     "action.download": "PDF डाउनलोड करा",
     "action.upgrade": "प्रीमियमवर अपग्रेड करा",
+    "action.save_to_device": "डिव्हाइसवर जतन करा",
+    "action.choose_save_location": "(जतन करण्याची जागा निवडा)",
+    "action.download_report": "अहवाल डाउनलोड करा",
 
     // Upload
     "upload.camera": "कॅमेरा",
@@ -568,6 +587,11 @@ const translations: Record<Language, Record<string, string>> = {
     beta_ends_in: "बीटा संपतो",
     beta_has_ended: "बीटा कालावधी संपली — पुढे चालू ठेवण्यासाठी अपग्रेड करा",
     upgrade_required: "अपग्रेड आवश्यक",
+
+    // Draft restore
+    draftRestored: "मसुदा पुनर्संचयित झाला",
+    draftDiscard: "हटवा",
+    draftReceipts: "{count} पावती(त्या) तयार",
   },
 };
 

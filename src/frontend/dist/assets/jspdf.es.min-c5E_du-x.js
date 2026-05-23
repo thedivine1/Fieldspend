@@ -1,8 +1,8 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/index.es-DGlC9Z_B.js","assets/index-Q7Jk8N_s.js","assets/index-BAmPHKAn.css"])))=>i.map(i=>d[i]);
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/index.es-DG7LcBKL.js","assets/index-sLtUKWe7.js","assets/index-BV3QIHB4.css"])))=>i.map(i=>d[i]);
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
-import { _ as __vitePreload } from "./index-Q7Jk8N_s.js";
+import { _ as __vitePreload } from "./index-sLtUKWe7.js";
 function _typeof(o2) {
   "@babel/helpers - typeof";
   return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function(o3) {
@@ -10762,7 +10762,7 @@ function(t2) {
   var h2 = l2.getContext("2d");
   h2.fillStyle = "#fff", h2.fillRect(0, 0, l2.width, l2.height);
   var f2 = { ignoreMouse: true, ignoreAnimation: true, ignoreDimensions: true }, d2 = this;
-  return (i.canvg ? Promise.resolve(i.canvg) : __vitePreload(() => import("./index.es-DGlC9Z_B.js"), true ? __vite__mapDeps([0,1,2]) : void 0)).catch(function(t3) {
+  return (i.canvg ? Promise.resolve(i.canvg) : __vitePreload(() => import("./index.es-DG7LcBKL.js"), true ? __vite__mapDeps([0,1,2]) : void 0)).catch(function(t3) {
     return Promise.reject(new Error("Could not load canvg: " + t3));
   }).then(function(t3) {
     return t3.default ? t3.default : t3;

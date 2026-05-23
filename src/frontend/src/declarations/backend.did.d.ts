@@ -17,25 +17,10 @@ export type Category = { 'bus' : null } |
   { 'other' : null } |
   { 'flight' : null } |
   { 'meal' : null };
-export interface CreateOrderRequest { 'planType' : PlanType }
-export interface CreateOrderResult {
-  'error' : [] | [string],
-  'orderId' : string,
-  'currency' : string,
-  'success' : boolean,
-  'amount' : bigint,
-}
 export type ExpenseId = bigint;
 export type Language = { 'en' : null } |
   { 'hi' : null } |
   { 'mr' : null };
-export type PlanType = { 'annual' : null } |
-  { 'monthly' : null };
-export interface PremiumStatusResult {
-  'isPremium' : boolean,
-  'premiumExpiryDate' : [] | [Timestamp],
-  'planType' : [] | [PlanType],
-}
 export interface Receipt {
   'id' : ExpenseId,
   'imageData' : string,
@@ -57,28 +42,14 @@ export interface UserProfile {
   'betaExpiryDate' : Timestamp,
   'dailyUploadCount' : bigint,
 }
-export interface VerifyPaymentRequest {
-  'email' : string,
-  'razorpay_payment_id' : string,
-  'razorpay_order_id' : string,
-  'razorpay_signature' : string,
-  'planType' : PlanType,
-}
-export interface VerifyPaymentResult {
-  'error' : [] | [string],
-  'success' : boolean,
-}
 export interface _SERVICE {
   'addExpense' : ActorMethod<[Receipt], ExpenseId>,
-  'createOrder' : ActorMethod<[CreateOrderRequest], CreateOrderResult>,
   'deleteExpense' : ActorMethod<[ExpenseId], undefined>,
   'getDailyCount' : ActorMethod<[], bigint>,
   'getExpenses' : ActorMethod<[], Array<Receipt>>,
-  'getUserPremiumStatus' : ActorMethod<[string], PremiumStatusResult>,
   'getUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'updateExpense' : ActorMethod<[Receipt], undefined>,
   'updateUserProfile' : ActorMethod<[UserProfile], undefined>,
-  'verifyPayment' : ActorMethod<[VerifyPaymentRequest], VerifyPaymentResult>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

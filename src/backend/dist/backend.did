@@ -1,16 +1,3 @@
-type VerifyPaymentResult = 
- record {
-   error: opt text;
-   success: bool;
- };
-type VerifyPaymentRequest = 
- record {
-   email: text;
-   planType: PlanType;
-   razorpay_order_id: text;
-   razorpay_payment_id: text;
-   razorpay_signature: text;
- };
 type UserProfile = 
  record {
    betaExpiryDate: Timestamp;
@@ -34,17 +21,6 @@ type Receipt =
    imageData: text;
    notes: opt text;
  };
-type PremiumStatusResult = 
- record {
-   isPremium: bool;
-   planType: opt PlanType;
-   premiumExpiryDate: opt Timestamp;
- };
-type PlanType = 
- variant {
-   annual;
-   monthly;
- };
 type Language = 
  variant {
    en;
@@ -52,15 +28,6 @@ type Language =
    mr;
  };
 type ExpenseId = nat;
-type CreateOrderResult = 
- record {
-   amount: nat;
-   currency: text;
-   error: opt text;
-   orderId: text;
-   success: bool;
- };
-type CreateOrderRequest = record {planType: PlanType;};
 type Category = 
  variant {
    bus;
@@ -73,13 +40,10 @@ type Category =
  };
 service : {
   addExpense: (receipt: Receipt) -> (ExpenseId);
-  createOrder: (req: CreateOrderRequest) -> (CreateOrderResult);
   deleteExpense: (id: ExpenseId) -> ();
   getDailyCount: () -> (nat) query;
   getExpenses: () -> (vec Receipt) query;
-  getUserPremiumStatus: (email: text) -> (PremiumStatusResult) query;
   getUserProfile: () -> (opt UserProfile);
   updateExpense: (receipt: Receipt) -> ();
   updateUserProfile: (profile: UserProfile) -> ();
-  verifyPayment: (req: VerifyPaymentRequest) -> (VerifyPaymentResult);
 }
