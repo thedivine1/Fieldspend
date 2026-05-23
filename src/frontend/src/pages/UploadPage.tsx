@@ -27,6 +27,7 @@ import {
   ImageIcon,
   Loader2Icon,
   RefreshCwIcon,
+  RotateCwIcon,
   SparklesIcon,
   Trash2Icon,
   XIcon,
@@ -482,6 +483,21 @@ export default function UploadPage() {
     [saveOneReceipt],
   );
 
+  const handleManualRotate = useCallback(async () => {
+    const item = queue[activeIndex];
+    if (!item?.imageDataUrl) return;
+    const rotatedUrl = await rotateImageByDegrees(item.imageDataUrl, 90);
+    // When manually rotating, we don't convert back to File because processFile handles Data URLs inside if we want it to, 
+    // but here we just rotate the visual representation to help the user. They can retry OCR with the refresh button if needed.
+    setQueue((prev) =>
+      prev.map((q, i) =>
+        i === activeIndex
+          ? { ...q, previewUrl: rotatedUrl, imageDataUrl: rotatedUrl }
+          : q
+      )
+    );
+  }, [queue, activeIndex]);
+
   // ─── File handling ──────────────────────────────────────────────────────────
 
   const enqueueFiles = useCallback(
@@ -828,6 +844,18 @@ export default function UploadPage() {
                   </button>
                 </div>
               </div>
+            )}
+
+            {activeItem.imageDataUrl && (
+              <button
+                type="button"
+                onClick={handleManualRotate}
+                className="absolute bottom-3 right-3 p-2 bg-background/80 text-foreground rounded-full shadow hover:bg-background transition-colors"
+                aria-label="Rotate Image"
+                data-ocid="upload.manual_rotate"
+              >
+                <RotateCwIcon size={18} />
+              </button>
             )}
           </div>
 

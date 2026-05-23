@@ -33,13 +33,17 @@ import { useAppStore } from "@/store/useAppStore";
 import type { Category, DayGroup, Receipt } from "@/types";
 import { Link } from "@tanstack/react-router";
 import {
+  CheckSquare2Icon,
   ChevronLeftIcon,
   ChevronRightIcon,
   GripVerticalIcon,
   InboxIcon,
   PencilIcon,
   PlusCircleIcon,
+  Square as SquareIcon,
+  Trash2Icon,
   TrashIcon,
+  XIcon,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -55,6 +59,7 @@ const CATEGORY_COLORS: Record<Category, string> = {
   flight: "badge-flight",
   hotel: "badge-hotel",
   meal: "badge-meal",
+  metro: "badge-train",
   other: "badge-other",
 };
 
@@ -67,6 +72,7 @@ const CATEGORY_ICONS: Record<Category, string> = {
   flight: "✈️",
   hotel: "🏨",
   meal: "🍽️",
+  metro: "🚇",
   other: "📄",
 };
 
@@ -75,6 +81,7 @@ const CATEGORIES: Category[] = [
   "auto",
   "localBus",
   "train",
+  "metro",
   "bus",
   "flight",
   "hotel",
@@ -165,7 +172,23 @@ function groupByDay(
 
 // ─── Month Selector ───────────────────────────────────────────────────────────
 
-function MonthSelector() {
+interface MonthSelectorProps {
+  selectionMode: boolean;
+  selectedCount: number;
+  totalCount: number;
+  onToggleSelectMode: () => void;
+  onSelectAll: () => void;
+  onDeleteSelected: () => void;
+}
+
+function MonthSelector({
+  selectionMode,
+  selectedCount,
+  totalCount,
+  onToggleSelectMode,
+  onSelectAll,
+  onDeleteSelected,
+}: MonthSelectorProps) {
   const {
     selectedMonth,
     selectedYear,
@@ -203,6 +226,48 @@ function MonthSelector() {
   const isCurrentMonth =
     selectedMonth === now.getMonth() + 1 && selectedYear === now.getFullYear();
 
+  if (selectionMode) {
+    return (
+      <div className="flex items-center justify-between px-4 py-3 bg-card border-b border-border sticky top-0 z-20">
+        <button
+          type="button"
+          onClick={onToggleSelectMode}
+          className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          data-ocid="gallery.select_cancel_button"
+        >
+          <XIcon size={16} /> Cancel
+        </button>
+
+        <span className="text-sm font-semibold text-foreground">
+          {selectedCount} selected
+        </span>
+
+        <div className="flex items-center gap-2">
+          {selectedCount < totalCount && (
+            <button
+              type="button"
+              onClick={onSelectAll}
+              className="text-xs font-medium text-primary hover:underline"
+              data-ocid="gallery.select_all_button"
+            >
+              All
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onDeleteSelected}
+            disabled={selectedCount === 0}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium disabled:opacity-40 transition-opacity"
+            data-ocid="gallery.delete_selected_button"
+          >
+            <Trash2Icon size={14} />
+            Delete{selectedCount > 0 ? ` (${selectedCount})` : ""}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center justify-between px-4 py-3 bg-card border-b border-border sticky top-0 z-20">
       <button
@@ -215,10 +280,22 @@ function MonthSelector() {
         <ChevronLeftIcon size={18} className="text-foreground" />
       </button>
 
-      <div className="text-center">
-        <p className="font-display font-semibold text-foreground text-base">
-          {monthNames[selectedMonth - 1]} {selectedYear}
-        </p>
+      <div className="flex items-center gap-3">
+        <div className="text-center">
+          <p className="font-display font-semibold text-foreground text-base">
+            {monthNames[selectedMonth - 1]} {selectedYear}
+          </p>
+        </div>
+        {totalCount > 0 && (
+          <button
+            type="button"
+            onClick={onToggleSelectMode}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
+            data-ocid="gallery.select_mode_button"
+          >
+            <CheckSquare2Icon size={13} /> Select
+          </button>
+        )}
       </div>
 
       <button
@@ -423,6 +500,9 @@ interface ReceiptCardProps {
   index: number;
   dayIndex: number;
   isDraggingThis: boolean;
+  selectionMode: boolean;
+  isSelected: boolean;
+  onToggleSelect: (id: string) => void;
   onEdit: (r: Receipt) => void;
   onDelete: (id: string) => void;
   onDragStart: (receiptId: string, sourceDateStr: string) => void;
@@ -439,6 +519,9 @@ function ReceiptCard({
   index,
   dayIndex,
   isDraggingThis,
+  selectionMode,
+  isSelected,
+  onToggleSelect,
   onEdit,
   onDelete,
   onDragStart,
@@ -454,6 +537,7 @@ function ReceiptCard({
   const cardRef = useRef<HTMLDivElement>(null);
 
   function handlePointerDown() {
+    if (selectionMode) return;
     longPressTimer.current = setTimeout(() => {
       if (cardRef.current) {
         cardRef.current.draggable = true;
@@ -466,6 +550,7 @@ function ReceiptCard({
   }
 
   function handleNativeDragStart(e: React.DragEvent) {
+    if (selectionMode) return;
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", receipt.id);
     onDragStart(receipt.id, receipt.date);
@@ -474,27 +559,43 @@ function ReceiptCard({
   return (
     <div
       ref={cardRef}
-      draggable
+      draggable={!selectionMode}
       onDragStart={handleNativeDragStart}
-      onDragOver={onDragOver}
-      onDrop={(e) => onDropOnCard(e, receipt.id, receipt.date)}
+      onDragOver={selectionMode ? undefined : onDragOver}
+      onDrop={selectionMode ? undefined : (e) => onDropOnCard(e, receipt.id, receipt.date)}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
-      className={`receipt-card flex items-center gap-3 p-3 cursor-default select-none transition-opacity duration-150 ${
-        isDraggingThis ? "opacity-40 scale-[0.98]" : "opacity-100"
+      onClick={selectionMode ? () => onToggleSelect(receipt.id) : undefined}
+      className={`receipt-card flex items-center gap-3 p-3 select-none transition-all duration-150 ${
+        selectionMode ? "cursor-pointer" : "cursor-default"
+      } ${isDraggingThis ? "opacity-40 scale-[0.98]" : "opacity-100"} ${
+        isSelected ? "bg-primary/8 border-l-2 border-l-primary" : ""
       }`}
       data-ocid={`gallery.receipt.${dayIndex}.${index}`}
     >
-      {/* Drag handle */}
-      <button
-        type="button"
-        className="shrink-0 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing p-0.5"
-        aria-label="Drag to reorder"
-        data-ocid={`gallery.drag_handle.${dayIndex}.${index}`}
-      >
-        <GripVerticalIcon size={16} />
-      </button>
+      {/* Checkbox (selection mode) or Drag handle (normal mode) */}
+      {selectionMode ? (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onToggleSelect(receipt.id); }}
+          className="shrink-0"
+          aria-label={isSelected ? "Deselect" : "Select"}
+        >
+          {isSelected
+            ? <CheckSquare2Icon size={22} className="text-primary" />
+            : <SquareIcon size={22} className="text-muted-foreground" />}
+        </button>
+      ) : (
+        <button
+          type="button"
+          className="shrink-0 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing p-0.5"
+          aria-label="Drag to reorder"
+          data-ocid={`gallery.drag_handle.${dayIndex}.${index}`}
+        >
+          <GripVerticalIcon size={16} />
+        </button>
+      )}
 
       {/* Thumbnail */}
       {receipt.imageData ? (
@@ -534,27 +635,29 @@ function ReceiptCard({
         )}
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-1 shrink-0">
-        <button
-          type="button"
-          onClick={() => onEdit(receipt)}
-          className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-          aria-label="Edit receipt"
-          data-ocid={`gallery.edit_button.${dayIndex}.${index}`}
-        >
-          <PencilIcon size={14} />
-        </button>
-        <button
-          type="button"
-          onClick={() => onDelete(receipt.id)}
-          className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-destructive/10 transition-colors text-muted-foreground hover:text-destructive"
-          aria-label="Delete receipt"
-          data-ocid={`gallery.delete_button.${dayIndex}.${index}`}
-        >
-          <TrashIcon size={14} />
-        </button>
-      </div>
+      {/* Actions — hidden in selection mode */}
+      {!selectionMode && (
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            onClick={() => onEdit(receipt)}
+            className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+            aria-label="Edit receipt"
+            data-ocid={`gallery.edit_button.${dayIndex}.${index}`}
+          >
+            <PencilIcon size={14} />
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(receipt.id)}
+            className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-destructive/10 transition-colors text-muted-foreground hover:text-destructive"
+            aria-label="Delete receipt"
+            data-ocid={`gallery.delete_button.${dayIndex}.${index}`}
+          >
+            <TrashIcon size={14} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -612,6 +715,9 @@ interface DayGroupCardProps {
   group: DayGroup;
   groupIndex: number;
   activeDrag: DragState | null;
+  selectionMode: boolean;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
   onEdit: (r: Receipt) => void;
   onDelete: (id: string) => void;
   onDragStart: (receiptId: string, sourceDateStr: string) => void;
@@ -624,6 +730,9 @@ function DayGroupCard({
   group,
   groupIndex,
   activeDrag,
+  selectionMode,
+  selectedIds,
+  onToggleSelect,
   onEdit,
   onDelete,
   onDragStart,
@@ -781,6 +890,9 @@ function DayGroupCard({
                 index={ri + 1}
                 dayIndex={groupIndex + 1}
                 isDraggingThis={activeDrag?.receiptId === receipt.id}
+                selectionMode={selectionMode}
+                isSelected={selectedIds.has(receipt.id)}
+                onToggleSelect={onToggleSelect}
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onDragStart={onDragStart}
@@ -898,9 +1010,23 @@ export default function GalleryPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isLoadingReceipts, setIsLoadingReceipts] = useState(true);
 
-  useEffect(() => {
-    setIsLoadingReceipts(false);
-  }, []);
+  // ─── Multi-select ──────────────────────────────────────────────────────────
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+
+  function enterSelectionMode() { setSelectionMode(true); setSelectedIds(new Set()); }
+  function exitSelectionMode()  { setSelectionMode(false); setSelectedIds(new Set()); }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  useEffect(() => { setIsLoadingReceipts(false); }, []);
 
   // Global drag state — lifted from individual day groups
   const [activeDrag, setActiveDrag] = useState<DragState | null>(null);
@@ -913,10 +1039,8 @@ export default function GalleryPage() {
     return base.map((g) => {
       const local = dayOrders.get(g.dateStr);
       if (local) {
-        // Reconcile: only keep ids still present in g.receipts
         const validIds = new Set(g.receipts.map((r) => r.id));
         const reconciled = local.filter((r) => validIds.has(r.id));
-        // Append any newly added receipts not yet in local order
         const inLocal = new Set(reconciled.map((r) => r.id));
         const extras = g.receipts.filter((r) => !inLocal.has(r.id));
         return { ...g, receipts: [...reconciled, ...extras] };
@@ -925,16 +1049,18 @@ export default function GalleryPage() {
     });
   }, [receipts, selectedMonth, selectedYear, dayOrders]);
 
+  const totalVisibleCount = groups.reduce((s, g) => s + g.receipts.length, 0);
+
+  function selectAll() {
+    const allIds = groups.flatMap((g) => g.receipts.map((r) => r.id));
+    setSelectedIds(new Set(allIds));
+  }
+
   const handleDragStart = useCallback(
-    (receiptId: string, sourceDateStr: string) => {
-      setActiveDrag({ receiptId, sourceDateStr });
-    },
+    (receiptId: string, sourceDateStr: string) => { setActiveDrag({ receiptId, sourceDateStr }); },
     [],
   );
-
-  const handleDragEnd = useCallback(() => {
-    setActiveDrag(null);
-  }, []);
+  const handleDragEnd = useCallback(() => { setActiveDrag(null); }, []);
 
   const handleSameDayReorder = useCallback(
     (dateStr: string, newOrder: Receipt[]) => {
@@ -947,62 +1073,57 @@ export default function GalleryPage() {
     async (receiptId: string, targetDateStr: string) => {
       const receipt = receipts.find((r) => r.id === receiptId);
       if (!receipt || receipt.date === targetDateStr) return;
-
       const updated: Receipt = { ...receipt, date: targetDateStr };
-
-      // Optimistic: remove from source day's local order
       setDayOrders((prev) => {
         const next = new Map(prev);
-        const sourceDateStr = receipt.date;
-        const sourceOrder = next.get(sourceDateStr);
-        if (sourceOrder) {
-          next.set(
-            sourceDateStr,
-            sourceOrder.filter((r) => r.id !== receiptId),
-          );
-        }
-        // Remove stale target order so it re-derives from store
+        const sourceOrder = next.get(receipt.date);
+        if (sourceOrder) next.set(receipt.date, sourceOrder.filter((r) => r.id !== receiptId));
         next.delete(targetDateStr);
         return next;
       });
-
-      // Persist — updateReceipt updates the store and IndexedDB
       await updateReceipt(updated);
     },
     [receipts, updateReceipt],
   );
 
-  const handleSaveEdit = useCallback(
-    async (updated: Receipt) => {
-      await updateReceipt(updated);
-    },
-    [updateReceipt],
-  );
+  const handleSaveEdit = useCallback(async (updated: Receipt) => { await updateReceipt(updated); }, [updateReceipt]);
 
   const handleConfirmDelete = useCallback(async () => {
     if (!deletingId) return;
     await deleteReceipt(deletingId);
     setDayOrders((prev) => {
       const next = new Map(prev);
-      for (const [k, arr] of next.entries()) {
-        next.set(
-          k,
-          arr.filter((r) => r.id !== deletingId),
-        );
-      }
+      for (const [k, arr] of next.entries()) next.set(k, arr.filter((r) => r.id !== deletingId));
       return next;
     });
   }, [deletingId, deleteReceipt]);
+
+  const handleConfirmBulkDelete = useCallback(async () => {
+    const ids = [...selectedIds];
+    await Promise.allSettled(ids.map((id) => deleteReceipt(id)));
+    setDayOrders((prev) => {
+      const next = new Map(prev);
+      for (const [k, arr] of next.entries()) next.set(k, arr.filter((r) => !ids.includes(r.id)));
+      return next;
+    });
+    exitSelectionMode();
+  }, [selectedIds, deleteReceipt]);
 
   return (
     <div
       className="flex flex-col min-h-full"
       data-ocid="gallery.page"
-      // Clear drag state if user releases outside any drop zone
       onDragEnd={handleDragEnd}
     >
-      {/* Month selector */}
-      <MonthSelector />
+      {/* Month selector / selection-mode toolbar */}
+      <MonthSelector
+        selectionMode={selectionMode}
+        selectedCount={selectedIds.size}
+        totalCount={totalVisibleCount}
+        onToggleSelectMode={() => selectionMode ? exitSelectionMode() : enterSelectionMode()}
+        onSelectAll={selectAll}
+        onDeleteSelected={() => setBulkDeleteOpen(true)}
+      />
 
       {isLoadingReceipts ? (
         <div className="p-4 space-y-4" data-ocid="gallery.loading_state">
@@ -1025,6 +1146,9 @@ export default function GalleryPage() {
                 group={group}
                 groupIndex={gi}
                 activeDrag={activeDrag}
+                selectionMode={selectionMode}
+                selectedIds={selectedIds}
+                onToggleSelect={toggleSelect}
                 onEdit={setEditingReceipt}
                 onDelete={setDeletingId}
                 onDragStart={handleDragStart}
@@ -1035,27 +1159,37 @@ export default function GalleryPage() {
             ))}
           </div>
 
-          <MonthTotalBar
-            groups={groups}
-            month={selectedMonth}
-            year={selectedYear}
-          />
+          <MonthTotalBar groups={groups} month={selectedMonth} year={selectedYear} />
         </>
       )}
 
       {/* Edit modal */}
-      <EditModal
-        receipt={editingReceipt}
-        onClose={() => setEditingReceipt(null)}
-        onSave={handleSaveEdit}
-      />
+      <EditModal receipt={editingReceipt} onClose={() => setEditingReceipt(null)} onSave={handleSaveEdit} />
 
-      {/* Delete confirmation */}
-      <DeleteDialog
-        open={!!deletingId}
-        onClose={() => setDeletingId(null)}
-        onConfirm={handleConfirmDelete}
-      />
+      {/* Single-delete confirmation */}
+      <DeleteDialog open={!!deletingId} onClose={() => setDeletingId(null)} onConfirm={handleConfirmDelete} />
+
+      {/* Bulk-delete confirmation */}
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={(o) => !o && setBulkDeleteOpen(false)}>
+        <AlertDialogContent className="max-w-sm mx-4" data-ocid="gallery.bulk_delete_dialog">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedIds.size} receipt{selectedIds.size !== 1 ? "s" : ""}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This cannot be undone. The selected receipts will be permanently removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel onClick={() => setBulkDeleteOpen(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => { setBulkDeleteOpen(false); await handleConfirmBulkDelete(); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-ocid="gallery.bulk_delete_confirm_button"
+            >
+              Delete {selectedIds.size}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

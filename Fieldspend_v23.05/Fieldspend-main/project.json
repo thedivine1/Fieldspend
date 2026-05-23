@@ -1,0 +1,27 @@
+{
+  "overview": "Fieldspend is a mobile-first PWA expense tracker for field sales professionals in India. It features automatic receipt scanning with OCR, PDF report generation, multi-language support (EN/HI/MR), and Razorpay in-app payments for premium subscriptions.",
+  "features": [
+    "Receipt photo capture with auto-crop and OCR",
+    "Expense categorization and daily grouping",
+    "PDF report generation with all receipts",
+    "Razorpay in-app premium subscription (₹99/month or ₹49/month annual)",
+    "Rewarded ad gates for free tier (upload and report triggers)",
+    "Auto-switch to paywall after July 31 2026 beta period",
+    "Admin bypass for coepianraider@gmail.com",
+    "Multi-language support: English, Hindi, Marathi",
+    "Drag-to-reorder receipts across days",
+    "Dark mode and offline PWA support"
+  ],
+  "category": "productivity",
+  "tags": [
+    "expense-tracker",
+    "pwa",
+    "ocr",
+    "razorpay",
+    "india",
+    "sales",
+    "receipts",
+    "pdf"
+  ],
+  "last_updated": "2026-05-05T20:44:03.555Z"
+}

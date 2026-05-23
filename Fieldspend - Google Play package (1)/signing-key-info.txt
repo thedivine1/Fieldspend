@@ -1,0 +1,10 @@
+Keep this file and signing.keystore in a safe place. You'll need these files if you want to upload future versions of your PWA to the Google Play Store.
+
+Key store file: signing.keystore
+Key store password: z6km2T4wTLeV
+Key alias: my-key-alias
+Key password: z6km2T4wTLeV
+Signer's full name: Fieldspend Admin
+Signer's organization: Fieldspend
+Signer's organizational unit: Engineering
+Signer's country code: IN
