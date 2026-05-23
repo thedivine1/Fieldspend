@@ -682,11 +682,14 @@ export function detectAmount(text: string): number | null {
 
 // ─── AI Extraction Module (Primary Parser) ────────────────────────────────────
 
-const GEMINI_API_KEY = "AIzaSyD_TvG8r4N6_VKJZuALvqWYCH35MJyGQos";
+// API key is stored in Vercel environment variables (VITE_GEMINI_API_KEY).
+// Never hardcode secrets in source code.
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
 
 async function parseTextWithAI(
   rawText: string,
 ): Promise<{ date?: string; amount?: number; category?: Category } | null> {
+  if (!GEMINI_API_KEY) return null; // key not configured — fall back to regex
   const prompt = `You are an expense receipt parser. Read this raw OCR text from any receipt or payment screenshot from anywhere in the world. Identify the origin of the bill. Extract exactly three fields: 1) Date in YYYY-MM-DD format — ignore timestamps, extract date only. 2) Amount — the total fare or total bill amount paid, not surge or base fare separately. 3) Category — map to: auto, cab, train, metro, flight, hotel, meal, fuel, or other. Return strictly valid JSON only: {"date": "YYYY-MM-DD", "amount": 123.45, "category": "auto"}. If any field cannot be determined, return null for that field.
 
 Raw OCR Text:
