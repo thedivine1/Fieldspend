@@ -358,7 +358,7 @@ export function detectDate(text: string): string | null {
 
   // --- Pattern 1: Railway short year DD-MMM-YY e.g. 12-May-26 ---
   const railwayRe =
-    /\b(\d{1,2})[\-](jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\-](\d{2})\b/gi;
+    /\b(\d{1,2})[\-](jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\-](\d{2})(?!\d)/gi;
   for (const m of normalised.matchAll(railwayRe)) {
     const d = Number.parseInt(m[1]);
     const mo = ENGLISH_MONTHS[m[2].toLowerCase()];
@@ -367,7 +367,7 @@ export function detectDate(text: string): string | null {
   }
 
   // --- Pattern 2: DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY (with optional spaces) ---
-  const dmyRe = /\b(\d{1,2})\s*[\/.\-]\s*(\d{1,2})\s*[\/.\-]\s*(\d{4})\b/g;
+  const dmyRe = /\b(\d{1,2})\s*[\/.\-]\s*(\d{1,2})\s*[\/.\-]\s*(\d{4})/g;
   for (const m of normalised.matchAll(dmyRe)) {
     const d = Number.parseInt(m[1]);
     const mo = Number.parseInt(m[2]);
@@ -376,7 +376,7 @@ export function detectDate(text: string): string | null {
   }
 
   // --- Pattern 3: YYYY-MM-DD (ISO or space separated) ---
-  const isoRe = /\b(\d{4})\s*[-\/.]\s*(\d{2})\s*[-\/.]\s*(\d{2})\b/g;
+  const isoRe = /\b(\d{4})\s*[-\/.]\s*(\d{2})\s*[-\/.]\s*(\d{2})(?!\d)/g;
   for (const m of normalised.matchAll(isoRe)) {
     const y = Number.parseInt(m[1]);
     const mo = Number.parseInt(m[2]);
@@ -386,7 +386,7 @@ export function detectDate(text: string): string | null {
 
   // --- Pattern 4: DD Mon YYYY or DD Month YYYY (e.g. 15 Mar 2026 / 5th March 2026) ---
   const ddMonYYYY =
-    /\b(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*,?\s*(\d{4})\b/gi;
+    /\b(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*,?\s*(\d{4})/gi;
   for (const m of normalised.matchAll(ddMonYYYY)) {
     const d = Number.parseInt(m[1]);
     const mo = ENGLISH_MONTHS[m[2].toLowerCase()];
@@ -396,7 +396,7 @@ export function detectDate(text: string): string | null {
 
   // --- Pattern 5: Mon DD, YYYY (US format — e.g. Mar 15, 2026) ---
   const monDDYYYY =
-    /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{1,2}),?\s*(\d{4})\b/gi;
+    /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{1,2}),?\s*(\d{4})/gi;
   for (const m of normalised.matchAll(monDDYYYY)) {
     const mo = ENGLISH_MONTHS[m[1].toLowerCase()];
     const d = Number.parseInt(m[2]);
@@ -405,7 +405,7 @@ export function detectDate(text: string): string | null {
   }
 
   // --- Pattern 6: DD/MM/YY (2-digit year) ---
-  const dmyShortRe = /\b(\d{1,2})\s*[\/.\-]\s*(\d{1,2})\s*[\/.\-]\s*(\d{2})\b/g;
+  const dmyShortRe = /\b(\d{1,2})\s*[\/.\-]\s*(\d{1,2})\s*[\/.\-]\s*(\d{2})(?!\d)/g;
   for (const m of normalised.matchAll(dmyShortRe)) {
     const d = Number.parseInt(m[1]);
     const mo = Number.parseInt(m[2]);
