@@ -27,6 +27,7 @@ export type Timestamp = number; // Unix ms
 export interface Receipt {
   id: ExpenseId;
   imageData: string; // base64 data URL
+  thumbnailData?: string; // pre-compressed JPEG data URL for PDF (max 400px / 0.72 quality)
   date: string; // YYYY-MM-DD
   category: Category;
   amount?: number;

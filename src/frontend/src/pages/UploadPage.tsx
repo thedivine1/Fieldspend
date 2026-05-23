@@ -18,7 +18,9 @@ import {
   detectCategory,
   detectDate,
   extractTextFromImage,
+  prewarmOcrWorker,
 } from "@/lib/ocr";
+import { compressToThumbnail } from "@/lib/pdf";
 import { useAppStore } from "@/store/useAppStore";
 import type { Category, Receipt } from "@/types";
 import { useNavigate } from "@tanstack/react-router";
@@ -272,6 +274,7 @@ export default function UploadPage() {
 
   // Restore draft on mount from localStorage
   useEffect(() => {
+    prewarmOcrWorker();
     const data = loadDraft();
     if (!data || !Array.isArray(data.items) || data.items.length === 0) return;
     const restored: QueueItem[] = data.items.map(
@@ -350,9 +353,12 @@ export default function UploadPage() {
             }
           })());
 
+        const thumbnailData = await compressToThumbnail(imageData) ?? undefined;
+
         const receipt: Receipt = {
           id: generateId(),
           imageData,
+          thumbnailData,
           date: current.date,
           category: current.category,
           amount: current.amount
@@ -420,6 +426,8 @@ export default function UploadPage() {
         const detectedCategory = detectCategory(text);
         const detectedAmount = detectAmount(text);
 
+        const anyDetected = detectedDate || detectedCategory || detectedAmount != null;
+
         // Step 4 — populate fields and mark OCR done
         setQueue((prev) =>
           prev.map((q) =>
@@ -428,7 +436,7 @@ export default function UploadPage() {
                   ...q,
                   status: "done",
                   ocrAttempted: true,
-                  ocrFailed: false,
+                  ocrFailed: !anyDetected,
                   date: detectedDate ?? q.date,
                   category: detectedCategory ?? q.category,
                   amount:

@@ -312,6 +312,13 @@ export default function ReportsPage() {
   const isAdmin = userProfile ? isAdminUser(userProfile) : false;
   void isAdmin;
 
+  // Pre-load jsPDF so it's ready when the user clicks Download
+  useEffect(() => {
+    import("jspdf").catch(() => {
+      /* silent */
+    });
+  }, []);
+
   const monthNames = useMemo(
     () => MONTH_KEYS.map((key) => tLang(key, currentLanguage)),
     [currentLanguage],

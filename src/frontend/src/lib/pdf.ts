@@ -392,7 +392,11 @@ export async function generateExpenseReport(
     // ── Compress all thumbnails up front (Promise.allSettled — never throws) ────
     const thumbResults = await Promise.allSettled(
       receipts.map((r) =>
-        r.imageData ? compressToThumbnail(r.imageData) : Promise.resolve(null),
+        r.thumbnailData
+          ? Promise.resolve(r.thumbnailData)
+          : r.imageData
+            ? compressToThumbnail(r.imageData)
+            : Promise.resolve(null),
       ),
     );
     const thumbMap = new Map<string, string | null>();

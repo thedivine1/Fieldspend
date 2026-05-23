@@ -93,7 +93,20 @@ async function getTesseractWorker(): Promise<TesseractWorker> {
   return workerInitPromise;
 }
 
-// ─── PRIMARY: Tesseract.js (offline, no API) ──────────────────────────────────
+// ─── Warm-up export (call on page mount to pre-download Tesseract models) ────
+
+/**
+ * Fire-and-forget: starts loading the Tesseract worker + language models in the
+ * background as soon as the Upload page mounts, so the offline fallback is ready
+ * by the time the user finishes picking photos.
+ */
+export function prewarmOcrWorker(): void {
+  getTesseractWorker().catch(() => {
+    /* silent — pre-warm is best-effort */
+  });
+}
+
+// ─── PRIMARY: Tesseract.js (offline, no API) ─────────────────────────────────
 
 async function extractWithTesseract(source: File | string): Promise<string> {
   const worker = await getTesseractWorker();
@@ -103,10 +116,10 @@ async function extractWithTesseract(source: File | string): Promise<string> {
   return data.text;
 }
 
-// ─── FALLBACK: OCR.Space API ──────────────────────────────────────────────────
+// ─── FALLBACK: OCR.Space API ─────────────────────────────────────────────────
 
 const OCR_SPACE_URL = "https://api.ocr.space/parse/image";
-// Primary key — free tier. Falls back to "helloworld" if quota exceeded.
+// Free-tier key. Falls back to the public demo key if daily quota is exceeded.
 const OCR_SPACE_KEY = "K85312013688957";
 const OCR_SPACE_KEY_FALLBACK = "helloworld";
 
@@ -115,20 +128,63 @@ interface OcrSpaceResult {
   IsErroredOnProcessing?: boolean;
 }
 
+/**
+ * Compresses a data URL image to a smaller size specifically for OCR API calls.
+ *
+ * The free OCR.Space plan has a hard 1 024 KB payload limit.
+ * Base64 encoding adds ~33 % overhead, so a raw file must stay under ~750 KB.
+ * We scale the image to max 800 px on the longest side at JPEG 0.72 quality,
+ * which keeps typical receipt photos well under 400 KB as base64.
+ */
+async function compressForOcr(dataUrl: string): Promise<string> {
+  return new Promise((resolve) => {
+    try {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const MAX_PX = 800;
+          const scale = Math.min(
+            MAX_PX / Math.max(img.width, img.height),
+            1,
+          );
+          const w = Math.max(1, Math.round(img.width * scale));
+          const h = Math.max(1, Math.round(img.height * scale));
+          const canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            resolve(dataUrl);
+            return;
+          }
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL("image/jpeg", 0.72));
+        } catch {
+          resolve(dataUrl);
+        }
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    } catch {
+      resolve(dataUrl);
+    }
+  });
+}
+
 async function extractWithOcrSpace(
   source: File | string,
   apiKey = OCR_SPACE_KEY,
 ): Promise<string> {
-  // Build the full data URL (OCR.Space Engine 2 requires the full prefix)
+  // Build data URL from File if needed
   let dataUrl: string;
 
   if (typeof source === "string") {
-    // Already a data URL — use as-is
     dataUrl = source.startsWith("data:")
       ? source
       : `data:image/jpeg;base64,${source}`;
   } else {
-    // File → convert to data URL
     dataUrl = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
@@ -137,9 +193,13 @@ async function extractWithOcrSpace(
     });
   }
 
+  // *** KEY FIX: Compress to a small size BEFORE sending so we stay under the
+  // 1 024 KB free-tier limit. This also speeds up the request significantly.
+  const smallDataUrl = await compressForOcr(dataUrl);
+
   const tryEngine = async (engine: number): Promise<string> => {
     const body = new FormData();
-    body.append("base64Image", dataUrl);
+    body.append("base64Image", smallDataUrl);
     body.append("apikey", apiKey);
     body.append("language", "eng");
     body.append("OCREngine", String(engine));
@@ -148,9 +208,9 @@ async function extractWithOcrSpace(
     body.append("detectOrientation", "true");
     body.append("scale", "true");
 
-    // 30s timeout — OCR.Space Engine 2 can take up to 15s for complex receipts
+    // 25 s timeout — generous but not blocking
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
 
     let response: Response;
     try {
@@ -172,24 +232,25 @@ async function extractWithOcrSpace(
     return json.ParsedResults?.[0]?.ParsedText ?? "";
   };
 
-  // Engine 2 first (better for receipts/documents)
+  // *** KEY FIX: Engine 1 first — it works on the free plan.
+  // Engine 2 is tried as a second pass (it may work if the key has credits).
   let text = "";
   try {
-    text = await tryEngine(2);
+    text = await tryEngine(1);
   } catch {
-    // silent — fall through to Engine 1
+    // silent
   }
 
-  // Retry with Engine 1 if empty or failed
+  // Engine 2 as a second attempt if Engine 1 returned nothing
   if (!text.trim()) {
     try {
-      text = await tryEngine(1);
+      text = await tryEngine(2);
     } catch {
       // silent
     }
   }
 
-  // If primary key quota exceeded, retry with fallback key
+  // If quota exceeded on primary key, retry with public demo key
   if (!text.trim() && apiKey === OCR_SPACE_KEY) {
     return extractWithOcrSpace(source, OCR_SPACE_KEY_FALLBACK);
   }
