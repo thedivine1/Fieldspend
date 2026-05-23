@@ -386,7 +386,7 @@ export function detectDate(text: string): string | null {
 
   // --- Pattern 4: DD Mon YYYY or DD Month YYYY (e.g. 15 Mar 2026 / 5th March 2026) ---
   const ddMonYYYY =
-    /\b(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*,?\s*(\d{4})/gi;
+    /(?:^|[^\dA-Za-z])(\d{1,2})(?:st|nd|rd|th)?\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*,?\s*(\d{4})/gi;
   for (const m of normalised.matchAll(ddMonYYYY)) {
     const d = Number.parseInt(m[1]);
     const mo = ENGLISH_MONTHS[m[2].toLowerCase()];
@@ -396,7 +396,7 @@ export function detectDate(text: string): string | null {
 
   // --- Pattern 5: Mon DD, YYYY (US format — e.g. Mar 15, 2026) ---
   const monDDYYYY =
-    /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{1,2}),?\s*(\d{4})/gi;
+    /(?:^|[^\dA-Za-z])(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{1,2}),?\s*(\d{4})/gi;
   for (const m of normalised.matchAll(monDDYYYY)) {
     const mo = ENGLISH_MONTHS[m[1].toLowerCase()];
     const d = Number.parseInt(m[2]);
@@ -411,6 +411,24 @@ export function detectDate(text: string): string | null {
     const mo = Number.parseInt(m[2]);
     const y = resolveYear(Number.parseInt(m[3]));
     if (isValidDMY(d, mo, y)) return toISO(d, mo, y);
+  }
+
+  // --- Pattern 8: DD Mon or DD Month (without year, assume current year) ---
+  const ddMonNoYear = /(?:^|[^\dA-Za-z])(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/gi;
+  for (const m of normalised.matchAll(ddMonNoYear)) {
+    const d = Number.parseInt(m[1]);
+    const mo = ENGLISH_MONTHS[m[2].toLowerCase()];
+    const y = new Date().getFullYear();
+    if (mo && isValidDMY(d, mo, y)) return toISO(d, mo, y);
+  }
+
+  // --- Pattern 9: Mon DD (US format without year, assume current year) ---
+  const monDDNoYear = /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{1,2})\b/gi;
+  for (const m of normalised.matchAll(monDDNoYear)) {
+    const mo = ENGLISH_MONTHS[m[1].toLowerCase()];
+    const d = Number.parseInt(m[2]);
+    const y = new Date().getFullYear();
+    if (mo && isValidDMY(d, mo, y)) return toISO(d, mo, y);
   }
 
   // --- Pattern 7: Hindi month names ---
@@ -435,6 +453,7 @@ const CATEGORY_KEYWORDS: Record<Exclude<Category, "other">, string[]> = {
     "auto rickshaw",
     "autorickshaw",
     "auto rik",
+    "auto ride",
     "3 wheeler",
     "three wheeler",
     "auto",
@@ -617,7 +636,7 @@ export function detectAmount(text: string): number | null {
 
   // Pattern 1 — Highest-confidence labeled totals (score 10)
   const highLabels =
-    /(?:grand\s+total|total\s+fare|ticket\s+fare|net\s+payable|total\s+amount|amount\s+due|amount\s+payable|net\s+amount|net\s+total|amount\s+paid|payable|subtotal|fare)\s*[:\-]?\s*(?:₹|Rs\.?|INR)?\s*([\d,]+(?:\.\d{1,2})?)/gi;
+    /(?:grand\s+total|total\s+fare|suggested\s+fare|ride\s+fare|ticket\s+fare|total\s+bill|net\s+payable|total\s+amount|amount\s+due|amount\s+payable|net\s+amount|net\s+total|amount\s+paid|payable|subtotal|fare|cash|paid)\s*[:\-]?\s*(?:₹|Rs\.?|INR|[?zZ])?\s*([\d,]+(?:\.\d{1,2})?)/gi;
   for (const m of text.matchAll(highLabels)) {
     const v = extractNum(m[1]);
     if (v) candidates.push({ amount: v, score: 10 });
@@ -625,7 +644,7 @@ export function detectAmount(text: string): number | null {
 
   // Pattern 2 — Generic "total" label (score 6)
   const totalLabel =
-    /\btotal\b\s*[:\-]?\s*(?:₹|Rs\.?|INR)?\s*([\d,]+(?:\.\d{1,2})?)/gi;
+    /\btotal\b\s*[:\-]?\s*(?:₹|Rs\.?|INR|[?zZ])?\s*([\d,]+(?:\.\d{1,2})?)/gi;
   for (const m of text.matchAll(totalLabel)) {
     const v = extractNum(m[1]);
     if (v) candidates.push({ amount: v, score: 6 });
@@ -640,10 +659,17 @@ export function detectAmount(text: string): number | null {
 
   // Pattern 4 — Labeled amounts without currency (score 2)
   const labeledNoCurrency =
-    /(?:amount|payable|net|bill|charge)\s*[:\-]?\s*(?:₹|Rs\.?|INR)?\s*([\d,]+(?:\.\d{1,2})?)/gi;
+    /(?:amount|payable|net|bill|charge)\s*[:\-]?\s*(?:₹|Rs\.?|INR|[?zZ])?\s*([\d,]+(?:\.\d{1,2})?)/gi;
   for (const m of text.matchAll(labeledNoCurrency)) {
     const v = extractNum(m[1]);
     if (v) candidates.push({ amount: v, score: 2 });
+  }
+
+  // Pattern 5 — Any standalone amount looking like XX.XX on its own line (score 1)
+  const standaloneAmount = /^[^\d\w]*([\d,]+\.\d{2})[^\d\w]*$/gm;
+  for (const m of text.matchAll(standaloneAmount)) {
+    const v = extractNum(m[1]);
+    if (v) candidates.push({ amount: v, score: 1 });
   }
 
   if (candidates.length === 0) return null;
