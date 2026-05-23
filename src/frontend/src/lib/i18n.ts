@@ -26,6 +26,7 @@ const translations: Record<Language, Record<string, string>> = {
     "cat.flight": "Flight",
     "cat.hotel": "Hotel",
     "cat.meal": "Meal",
+    "cat.metro": "Metro",
     "cat.other": "Other",
 
     // Actions
@@ -223,6 +224,7 @@ const translations: Record<Language, Record<string, string>> = {
     "cat.flight": "फ्लाइट",
     "cat.hotel": "होटल",
     "cat.meal": "भोजन",
+    "cat.metro": "मेट्रो",
     "cat.other": "अन्य",
 
     // Actions
@@ -418,6 +420,7 @@ const translations: Record<Language, Record<string, string>> = {
     "cat.flight": "फ्लाइट",
     "cat.hotel": "हॉटेल",
     "cat.meal": "जेवण",
+    "cat.metro": "मेट्रो",
     "cat.other": "इतर",
 
     // Actions

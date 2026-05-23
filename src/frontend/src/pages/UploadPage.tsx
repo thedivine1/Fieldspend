@@ -126,6 +126,7 @@ const CATEGORIES: Category[] = [
   "flight",
   "hotel",
   "meal",
+  "metro",
   "other",
 ];
 
@@ -138,6 +139,7 @@ const CATEGORY_COLORS: Record<Category, string> = {
   flight: "badge-flight",
   hotel: "badge-hotel",
   meal: "badge-meal",
+  metro: "badge-train",
   other: "badge-other",
 };
 
@@ -150,6 +152,7 @@ const CATEGORY_ICONS: Record<Category, string> = {
   flight: "✈️",
   hotel: "🏨",
   meal: "🍽️",
+  metro: "🚇",
   other: "📋",
 };
 

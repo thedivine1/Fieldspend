@@ -9,6 +9,7 @@ export type Category =
   | "flight"
   | "hotel"
   | "meal"
+  | "metro"
   | "other";
 
 export type Language = "en" | "hi" | "mr";

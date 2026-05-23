@@ -371,8 +371,8 @@ export function detectDate(text: string): string | null {
     if (isValidDMY(d, mo, y)) return toISO(d, mo, y);
   }
 
-  // --- Pattern 3: YYYY-MM-DD (ISO) ---
-  const isoRe = /\b(\d{4})-(\d{2})-(\d{2})\b/g;
+  // --- Pattern 3: YYYY-MM-DD (ISO or space separated) ---
+  const isoRe = /\b(\d{4})[-\s\/.](\d{2})[-\s\/.](\d{2})\b/g;
   for (const m of normalised.matchAll(isoRe)) {
     const y = Number.parseInt(m[1]);
     const mo = Number.parseInt(m[2]);
@@ -562,6 +562,7 @@ const CATEGORY_KEYWORDS: Record<Exclude<Category, "other">, string[]> = {
     "chai",
     "tea",
   ],
+  metro: ["metro", "mumbai metro", "delhi metro", "namma metro", "maha metro", "pune metro", "chennai metro", "kochi metro", "lucknow metro", "jaipur metro", "hyderabad metro"],
 };
 
 export function detectCategory(text: string): Category | null {
@@ -576,6 +577,7 @@ export function detectCategory(text: string): Category | null {
     "cab",
     "localBus",
     "train",
+    "metro",
     "flight",
     "hotel",
     "bus",
@@ -629,7 +631,7 @@ export function detectAmount(text: string): number | null {
 
   // Pattern 4 — Labeled amounts without currency (score 2)
   const labeledNoCurrency =
-    /(?:amount|payable|net|bill|charge)\s*[:\-]?\s*([\d,]+(?:\.\d{1,2})?)/gi;
+    /(?:amount|payable|net|bill|charge)\s*[:\-]?\s*(?:₹|Rs\.?|INR)?\s*([\d,]+(?:\.\d{1,2})?)/gi;
   for (const m of text.matchAll(labeledNoCurrency)) {
     const v = extractNum(m[1]);
     if (v) candidates.push({ amount: v, score: 2 });
