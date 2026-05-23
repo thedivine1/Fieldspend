@@ -557,7 +557,6 @@ const slides = [
     IllustrationComponent: SnapIllustration,
     titleKey: "onboard.step1.title",
     descKey: "onboard.step1.desc",
-    accentClass: "from-primary/20 via-primary/8 to-transparent",
     showLangSelector: true,
   },
   {
@@ -565,7 +564,6 @@ const slides = [
     IllustrationComponent: OrganizeIllustration,
     titleKey: "onboard.step2.title",
     descKey: "onboard.step2.desc",
-    accentClass: "from-primary/20 via-primary/8 to-transparent",
     showLangSelector: false,
   },
   {
@@ -573,7 +571,6 @@ const slides = [
     IllustrationComponent: ExportIllustration,
     titleKey: "onboard.step3.title",
     descKey: "onboard.step3.desc",
-    accentClass: "from-primary/20 via-primary/8 to-transparent",
     showLangSelector: false,
   },
 ] as const;
@@ -626,23 +623,18 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col overflow-hidden relative">
-      {/* Ambient gradient */}
-      <div
-        className={`absolute inset-0 bg-gradient-to-b ${slide.accentClass} pointer-events-none transition-all duration-700`}
-        aria-hidden="true"
-      />
-
+    <div className="min-h-screen flex flex-col overflow-hidden relative" style={{ background: "#ffffff" }}>
       {/* Top bar */}
       <div className="relative z-10 flex items-center justify-between px-5 pt-5 pb-2">
-        <span className="font-display font-bold text-lg text-foreground tracking-tight">
-          Field<span className="text-primary">spend</span>
+        <span className="font-display font-bold text-lg tracking-tight" style={{ color: "#000" }}>
+          FIELDSPEND
         </span>
         {!isLast && (
           <button
             type="button"
             onClick={handleSkip}
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-muted/60"
+            className="text-sm font-medium transition-colors px-3 py-1.5 rounded-lg"
+            style={{ color: "#888" }}
             data-ocid="onboard.skip_button"
           >
             {tLang("onboard.skip", lang)}
@@ -665,16 +657,16 @@ export default function OnboardingPage() {
             data-ocid="onboard.step_card"
           >
             {/* Illustration */}
-            <div className="w-full max-w-xs aspect-square rounded-3xl bg-card/80 backdrop-blur-sm border border-border/60 shadow-lg p-6 flex items-center justify-center">
+            <div className="w-full max-w-xs aspect-square rounded-3xl p-6 flex items-center justify-center" style={{ background: "#f5f5f5", border: "1px solid #e0e0e0", filter: "grayscale(100%)" }}>
               <slide.IllustrationComponent />
             </div>
 
             {/* Headline + body */}
             <div className="text-center max-w-sm px-2">
-              <h2 className="font-display font-bold text-2xl text-foreground mb-3 leading-tight">
+              <h2 className="font-display font-bold text-2xl mb-3 leading-tight" style={{ color: "#000" }}>
                 {tLang(slide.titleKey, lang)}
               </h2>
-              <p className="text-muted-foreground text-base leading-relaxed">
+              <p className="text-base leading-relaxed" style={{ color: "#666" }}>
                 {tLang(slide.descKey, lang)}
               </p>
             </div>
@@ -693,11 +685,11 @@ export default function OnboardingPage() {
                     key={l.value}
                     type="button"
                     onClick={() => handleLangChange(l.value)}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                      lang === l.value
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground hover:bg-background/60"
-                    }`}
+                    className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200"
+                    style={{
+                      background: lang === l.value ? "#000" : "transparent",
+                      color: lang === l.value ? "#fff" : "#888",
+                    }}
                     data-ocid={`onboard.lang_${l.value}`}
                   >
                     {l.native}
@@ -722,13 +714,11 @@ export default function OnboardingPage() {
               type="button"
               onClick={() => handleDotClick(i)}
               aria-label={`Go to step ${i + 1}`}
-              className={`h-2 rounded-full transition-all duration-300 ${
-                i === current
-                  ? "w-7 bg-primary"
-                  : i < current
-                    ? "w-2 bg-primary/40"
-                    : "w-2 bg-muted-foreground/25"
-              }`}
+              className="h-2 rounded-full transition-all duration-300"
+              style={{
+                width: i === current ? 28 : 8,
+                background: i === current ? "#000" : i < current ? "#aaa" : "#ddd",
+              }}
               data-ocid={`onboard.dot.${i + 1}`}
             />
           ))}
@@ -738,7 +728,8 @@ export default function OnboardingPage() {
         <button
           type="button"
           onClick={handleNext}
-          className="w-full max-w-sm h-14 rounded-2xl bg-primary text-primary-foreground font-display font-bold text-base shadow-lg hover:opacity-90 active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2"
+          className="w-full max-w-sm h-14 rounded-2xl font-display font-bold text-base shadow-lg hover:opacity-90 active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2"
+          style={{ background: "#000", color: "#fff" }}
           data-ocid="onboard.next_button"
         >
           {isLast ? (
@@ -780,8 +771,8 @@ export default function OnboardingPage() {
         </button>
 
         {/* Free tier info */}
-        <p className="text-xs text-muted-foreground text-center leading-relaxed">
-          <span className="text-primary font-semibold">10 receipts free</span> +
+        <p className="text-xs text-center leading-relaxed" style={{ color: "#999" }}>
+          <span className="font-semibold" style={{ color: "#000" }}>10 receipts free</span> +
           open beta till 31st July 26
         </p>
       </div>
