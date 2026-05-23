@@ -2,149 +2,40 @@
 // Full pipeline: EXIF read → rotate → edge detect/crop → resize → compress
 // All steps are silent — any failure falls back gracefully.
 
-// ─── EXIF Orientation ─────────────────────────────────────────────────────────
+// ─── Enforce Portrait ──────────────────────────────────────────────────────────
 
 /**
- * Reads the EXIF orientation tag from a JPEG file.
- * Returns 1–8 per EXIF spec, or 1 (no-op) on any failure.
- *
- * EXIF orientation values:
- *   1 = normal (0°)
- *   3 = 180°
- *   6 = 90° CW (shot in portrait, stored landscape)
- *   8 = 90° CCW
+ * Modern browsers automatically apply EXIF rotation to HTMLImageElement.
+ * This function simply draws the image, and if it's landscape (width > height),
+ * it rotates it 90° CW to force it into portrait mode for easier receipt reading.
  */
-function readExifOrientation(file: File): Promise<number> {
-  return new Promise((resolve) => {
-    if (!file.type.includes("jpeg") && !file.type.includes("jpg")) {
-      resolve(1);
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const buffer = e.target?.result as ArrayBuffer;
-        if (!buffer || buffer.byteLength < 12) {
-          resolve(1);
-          return;
-        }
-        const view = new DataView(buffer);
-        // Check JPEG SOI marker
-        if (view.getUint16(0) !== 0xffd8) {
-          resolve(1);
-          return;
-        }
-        let offset = 2;
-        while (offset + 4 < buffer.byteLength) {
-          const marker = view.getUint16(offset);
-          const length = view.getUint16(offset + 2);
-          // APP1 marker (0xFFE1) contains EXIF data
-          if (marker === 0xffe1) {
-            // Check for "Exif\0\0" header
-            const exifHeader = view.getUint32(offset + 4);
-            if (exifHeader !== 0x45786966) {
-              // "Exif"
-              resolve(1);
-              return;
-            }
-            const tiffOffset = offset + 10;
-            const littleEndian = view.getUint16(tiffOffset) === 0x4949;
-            const readUint16 = (o: number) =>
-              view.getUint16(tiffOffset + o, littleEndian);
-            const readUint32 = (o: number) =>
-              view.getUint32(tiffOffset + o, littleEndian);
-            if (readUint16(0) !== (littleEndian ? 0x4949 : 0x4d4d)) {
-              // fallback
-            }
-            const ifdOffset = readUint32(4);
-            const entries = readUint16(ifdOffset);
-            for (let i = 0; i < entries; i++) {
-              const entryOffset = ifdOffset + 2 + i * 12;
-              if (entryOffset + 12 > buffer.byteLength - tiffOffset) break;
-              const tag = readUint16(entryOffset);
-              if (tag === 0x0112) {
-                // Orientation tag
-                const orientation = readUint16(entryOffset + 8);
-                resolve(orientation);
-                return;
-              }
-            }
-          }
-          offset += 2 + length;
-        }
-        resolve(1);
-      } catch {
-        resolve(1);
-      }
-    };
-    reader.onerror = () => resolve(1);
-    // Read first 64KB — sufficient for EXIF in APP1
-    reader.readAsArrayBuffer(file.slice(0, 65536));
-  });
-}
-
-// ─── Canvas Rotation by EXIF Orientation ──────────────────────────────────────
-
-/**
- * Returns a canvas with the image correctly rotated per EXIF orientation.
- * Also handles non-EXIF landscape detection (width > height → rotate 90° CW).
- */
-function applyOrientation(
-  img: HTMLImageElement,
-  orientation: number,
-): HTMLCanvasElement {
-  const { naturalWidth: w, naturalHeight: h } = img;
-
-  // If orientation is 1 but image is landscape (width > height), rotate 90° CW
-  const needsRotationFallback = orientation === 1 && w > h;
-  const effectiveOrientation = needsRotationFallback ? 6 : orientation;
+function enforcePortrait(img: HTMLImageElement): HTMLCanvasElement {
+  const w = img.naturalWidth;
+  const h = img.naturalHeight;
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
+
   if (!ctx) {
     canvas.width = w;
     canvas.height = h;
     return canvas;
   }
 
-  // Set canvas dimensions based on rotation
-  if (effectiveOrientation >= 5 && effectiveOrientation <= 8) {
-    // 90° or 270° — swap width/height
+  if (w > h) {
+    // It's landscape, force it to portrait by rotating 90° CW
     canvas.width = h;
     canvas.height = w;
+    ctx.translate(h / 2, w / 2);
+    ctx.rotate((90 * Math.PI) / 180);
+    ctx.drawImage(img, -w / 2, -h / 2, w, h);
   } else {
+    // Already portrait or square
     canvas.width = w;
     canvas.height = h;
+    ctx.drawImage(img, 0, 0, w, h);
   }
 
-  // Apply transform for each orientation
-  switch (effectiveOrientation) {
-    case 2: // Flip horizontal
-      ctx.transform(-1, 0, 0, 1, w, 0);
-      break;
-    case 3: // 180°
-      ctx.transform(-1, 0, 0, -1, w, h);
-      break;
-    case 4: // Flip vertical
-      ctx.transform(1, 0, 0, -1, 0, h);
-      break;
-    case 5: // Transpose
-      ctx.transform(0, 1, 1, 0, 0, 0);
-      break;
-    case 6: // 90° CW
-      ctx.transform(0, 1, -1, 0, h, 0);
-      break;
-    case 7: // Transverse
-      ctx.transform(0, -1, -1, 0, h, w);
-      break;
-    case 8: // 90° CCW
-      ctx.transform(0, -1, 1, 0, 0, w);
-      break;
-    default:
-      break;
-  }
-
-  ctx.drawImage(img, 0, 0, w, h);
   return canvas;
 }
 
@@ -404,8 +295,8 @@ function loadImageFromFile(file: File): Promise<HTMLImageElement> {
 
 /**
  * Full image processing pipeline for receipts:
- *  1. Read EXIF orientation tag
- *  2. Rotate canvas to correct orientation (EXIF → fallback landscape check)
+ *  1. Load image (browser handles EXIF automatically)
+ *  2. Enforce portrait mode (rotate 90° if landscape)
  *  3. Detect receipt bounds via edge detection (Sobel)
  *  4. Crop to receipt bounds (skip if unconfident)
  *  5. Resize to max 800×1024 (no upscale)
@@ -416,14 +307,11 @@ function loadImageFromFile(file: File): Promise<HTMLImageElement> {
  */
 export async function processImage(file: File): Promise<string> {
   try {
-    // Step 1: Load image + read EXIF
-    const [img, orientation] = await Promise.all([
-      loadImageFromFile(file),
-      readExifOrientation(file),
-    ]);
+    // Step 1: Load image
+    const img = await loadImageFromFile(file);
 
-    // Step 2: Rotate per EXIF (or landscape fallback)
-    let canvas = applyOrientation(img, orientation);
+    // Step 2: Enforce portrait mode
+    let canvas = enforcePortrait(img);
 
     // Step 3+4: Detect receipt bounds and crop (silently skip on failure)
     try {
